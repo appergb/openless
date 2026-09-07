@@ -4,7 +4,7 @@
 //
 // Ported verbatim from design_handoff_openless/variants.jsx::FloatingShell.
 
-import { useEffect, useMemo, useState, type ComponentType, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { Tooltip } from './Tooltip';
@@ -19,7 +19,7 @@ import { Marketplace } from '../pages/Marketplace';
 import { Translation } from '../pages/Translation';
 import { SelectionAsk } from '../pages/SelectionAsk';
 // 风格市场（Marketplace）现在是侧栏「风格」展开组下的独立页面（不再是 Style 页面内 modal）。
-// LocalAsr 不再作为主 nav tab——本地 ASR 模型管理已合并到 Settings → Advanced 中
+// LocalAsr 不再作为主 nav tab——本地 ASR 模型管理已合并到 Settings → Services 中
 // 通过 <LocalAsr embedded /> 渲染。这里之前的 import 与 NAV_BASE 条目都已移除。
 import { APP_VERSION_LABEL, IS_BETA_BUILD } from '../lib/appVersion';
 import {
@@ -103,6 +103,12 @@ function FloatingShellBody({ os, initialTab, initialSettings }: { os: OS; initia
   const [hotkeyModePromptOpen, setHotkeyModePromptOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [styleOpen, setStyleOpen] = useState(false);
+  const shellRef = useRef<HTMLDivElement>(null);
+
+  // The dialog records and moves focus before its background becomes inert.
+  useEffect(() => {
+    if (shellRef.current) shellRef.current.inert = settingsOpen;
+  }, [settingsOpen]);
 
   // tab 切换的 cross-fade：旧页 blur+fade out（180ms），结束后挂载新页（走 ol-page-slide enter）。
   // displayTab 是实际渲染的 tab，currentTab 是用户点中的目标 tab。
@@ -171,7 +177,7 @@ function FloatingShellBody({ os, initialTab, initialSettings }: { os: OS; initia
   }, []);
 
   // 之前监听的 NAVIGATE_LOCAL_ASR_EVENT 已无意义——「模型设置」独立 tab 已下线，
-  // 模型管理 UI 现在通过 Settings → Advanced 的 <LocalAsr embedded /> 渲染，
+  // 模型管理 UI 现在通过 Settings → Services 的 <LocalAsr embedded /> 渲染，
   // 用户在 Settings 内即可一站式管理，无需跨页跳转。
 
   const rememberProviderPrompt = () => {
@@ -191,17 +197,17 @@ function FloatingShellBody({ os, initialTab, initialSettings }: { os: OS; initia
     setStyleOpen(false);
   };
 
-  // ⌘, 打开设置页面
+  // 跟随平台的设置快捷键。
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.metaKey && e.key === ',') {
+      if ((os === 'mac' ? e.metaKey : e.ctrlKey) && e.key === ',') {
         e.preventDefault();
         openSettings();
       }
     };
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, []);
+  }, [os]);
 
   const openProviderSettings = () => {
     rememberProviderPrompt();
@@ -227,15 +233,18 @@ function FloatingShellBody({ os, initialTab, initialSettings }: { os: OS; initia
     <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0, paddingTop: 0, background: 'var(--ol-app-shell-bg)' }}>
 
       {mobile && (
+        <div ref={element => { if (element) element.inert = settingsOpen; }} style={{ display: 'contents' }}>
         <MobileTopBar
           title={mobileTitle}
           onOpenSettings={() => openSettings()}
           settingsActive={settingsOpen}
         />
+        </div>
       )}
 
       {/* Main shell — flush with the frosted backplate (no separate float). */}
       <div
+        ref={shellRef}
         data-ol-settings-open={settingsOpen ? 'true' : undefined}
         className="ol-app-shell-bg"
         style={{
@@ -461,7 +470,7 @@ function FloatingShellBody({ os, initialTab, initialSettings }: { os: OS; initia
               }}
             >
               {displayTab === 'overview' ? (
-                <Overview onOpenHistory={() => setCurrentTab('history')} />
+                <Overview onOpenHistory={() => setCurrentTab('history')} onOpenSettings={openSettings} />
               ) : (
                 <div
                   className={conservative ? 'ol-conservative-scope' : undefined}

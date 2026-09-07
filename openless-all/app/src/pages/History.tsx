@@ -96,8 +96,14 @@ export function History() {
     });
   }, []);
   const { prefs } = useHotkeySettings();
-  const mobile = useMobileLayout();
-  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  // The list/detail split needs space after the main sidebar and page padding.
+  const mobile = useMobileLayout(1000);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(() => !mobile);
+  // A wide layout already shows the detail. Keep that same subtree mounted
+  // when shrinking, including its in-flight or completed repolish result.
+  useEffect(() => {
+    if (!mobile) setMobileDetailOpen(true);
+  }, [mobile]);
   // 风格包在本页有两个用途：给历史条目显示包名、给「重新润色」面板选风格。加载提到这里
   // 一次拿全，两处共用，省掉切换条目时 RepolishPanel 重挂载带来的重复 IPC。
   // 注意这里存的是**全部**包（含已禁用）：历史条目可能出自后来被禁用的包，显示名字要能查到；

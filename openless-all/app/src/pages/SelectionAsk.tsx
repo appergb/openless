@@ -87,7 +87,7 @@ export function SelectionAsk() {
 
   return (
     <>
-      <PageHeader title={t('selectionAsk.title')} />
+      <PageHeader title={t('selectionAsk.title')} desc={t('selectionAsk.desc')} />
 
       <SavedToast saveState={saveState} message={saveMessage} />
 

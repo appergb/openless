@@ -59,15 +59,21 @@ export function ShortcutRecorder({
   useEffect(() => {
     if (!menuOpen) return;
     const onKeyDown = (e: globalThis.KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuOpen(false);
+      if (e.key === 'Escape' && !e.isComposing) {
+        e.preventDefault();
+        e.stopPropagation();
+        setMenuOpen(false);
+        rootRef.current?.querySelector<HTMLButtonElement>('[aria-expanded]')?.focus();
+      }
     };
     const onPointerDown = (e: MouseEvent) => {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setMenuOpen(false);
     };
-    window.addEventListener('keydown', onKeyDown);
+    // Capture Escape before the surrounding settings dialog handles it.
+    window.addEventListener('keydown', onKeyDown, true);
     window.addEventListener('mousedown', onPointerDown);
     return () => {
-      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keydown', onKeyDown, true);
       window.removeEventListener('mousedown', onPointerDown);
     };
   }, [menuOpen]);

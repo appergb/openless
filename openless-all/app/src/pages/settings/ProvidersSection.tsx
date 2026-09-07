@@ -1,7 +1,7 @@
 // 服务 → AI 提供商：LLM 润色模型 + ASR 语音转写两张卡片。
 // 自 Settings.tsx 整体迁出，逻辑零改动；i18n key 全部保持 `settings.providers.*`。
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { detectOS } from '../../components/WindowChrome';
@@ -52,6 +52,29 @@ const LOCAL_ASR_PRESET_IDS: ReadonlySet<string> = new Set([
 function isLocalAsrPreset(id: string): boolean {
   return LOCAL_ASR_PRESET_IDS.has(id);
 }
+
+/** Channel-local form layout; do not change the shared settings row contract. */
+export function ChannelFormRow({ label, htmlFor, children }: { label: string; htmlFor?: string; children: ReactNode }) {
+  const stack = useLayoutStack();
+  const conservative = useConservativeLayout();
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: stack || conservative ? 'minmax(0, 1fr)' : '140px minmax(0, 1fr)', gap: '8px 20px', alignItems: 'start', padding: '10px 0' }}>
+      <label htmlFor={htmlFor} style={{ paddingTop: stack || conservative ? 0 : 9, color: 'var(--ol-ink-2)', fontSize: 12.5, lineHeight: 1.6 }}>{label}</label>
+      <div style={{ minWidth: 0, width: '100%' }}>{children}</div>
+    </div>
+  );
+}
+
+export function ChannelSectionHeading({ title, description }: { title: string; description?: string }) {
+  return (
+    <div style={{ marginBottom: 6 }}>
+      <h3 style={{ margin: 0, fontSize: 14, color: 'var(--ol-ink)', fontWeight: 600 }}>{title}</h3>
+      {description && <p style={{ margin: '6px 0 0', color: 'var(--ol-ink-3)', fontSize: 12, lineHeight: 1.65 }}>{description}</p>}
+    </div>
+  );
+}
+
+const channelSectionStyle: CSSProperties = { borderTop: '1px solid var(--ol-line)', marginTop: 24, paddingTop: 20 };
 
 function LlmThinkingToggle({ enabled, onToggle }: { enabled: boolean; onToggle: (next: boolean) => void }) {
   const { t } = useTranslation();
@@ -189,14 +212,6 @@ export function ChannelCredentialFields({
             {providerType === 'custom' && (
               <>
                 <CredentialField
-                  key={`${channelId}:temperature`}
-                  label={t('settings.providers.temperatureLabel')}
-                  account="ark.temperature"
-                  placeholder={t('settings.providers.temperaturePlaceholder')}
-                  mono
-                  onUserMutation={onUserMutation}
-                />
-                <CredentialField
                   key={`${channelId}:extra_headers`}
                   label={t('settings.providers.extraHeadersLabel')}
                   account="ark.extra_headers"
@@ -209,6 +224,7 @@ export function ChannelCredentialFields({
             )}
           </>
         )}
+        <div style={channelSectionStyle}><ChannelSectionHeading title={t('settings.channels.modelTitle')} /></div>
         <CredentialField key={`${channelId}:model:${llmModelRevision}`} label={t('settings.providers.modelLabel')}
           account="ark.model_id" provider={channelId}
           placeholder={defaultModel || 'model-name'} mono
@@ -221,6 +237,16 @@ export function ChannelCredentialFields({
             />
           )}
         />
+        {providerType === 'custom' && (
+          <CredentialField
+            key={`${channelId}:temperature`}
+            label={t('settings.providers.temperatureLabel')}
+            account="ark.temperature"
+            placeholder={t('settings.providers.temperaturePlaceholder')}
+            mono
+            onUserMutation={onUserMutation}
+          />
+        )}
         <ProviderTools kind="llm" modelAccount="ark.model_id" provider={channelId}
           onModelSelected={() => setLlmModelRevision(v => v + 1)} onTested={onTested}
           onUserMutation={onUserMutation} />
@@ -234,7 +260,7 @@ export function ChannelCredentialFields({
   if (descriptor?.authRequirement === 'volcengine') {
     return (
       <>
-        <SettingRow label={t('settings.providers.volcengineAuthModeLabel')}>
+        <ChannelFormRow label={t('settings.providers.volcengineAuthModeLabel')}>
           <SelectLite
             value={volcengineAuthMode}
             onChange={async (v) => {
@@ -257,9 +283,9 @@ export function ChannelCredentialFields({
               { value: 'api_key', label: t('settings.providers.volcengineAuthModeApiKey') },
             ]}
             ariaLabel={t('settings.providers.volcengineAuthModeLabel')}
-            style={{ ...inputStyle, width: '100%', maxWidth: layoutStack ? '100%' : 260 }}
+            style={{ ...inputStyle, width: '100%', maxWidth: '100%', height: 38 }}
           />
-        </SettingRow>
+        </ChannelFormRow>
         {/* 两种模式使用各自独立的凭据槽位：旧版 Access Token（volcengine.access_key）
             与方舟 API Key（volcengine.api_key）互不预填，切换模式不会残留混淆。 */}
         {volcengineAuthMode === 'app_id_token' ? (
@@ -273,6 +299,7 @@ export function ChannelCredentialFields({
           <CredentialField key={`${channelId}:api_key`} label={t('settings.providers.volcengineApiKeyLabel')}
             account="volcengine.api_key" provider={channelId} mono mask onUserMutation={onUserMutation} />
         )}
+        <div style={channelSectionStyle}><ChannelSectionHeading title={t('settings.channels.modelTitle')} /></div>
         <CredentialField
           key={`${channelId}:resource_id`}
           label={t('settings.providers.volcengineResourceIdLabel')}
@@ -329,6 +356,7 @@ export function ChannelCredentialFields({
         account="asr.endpoint" provider={channelId}
         placeholder={defaultEndpoint || 'https://your-endpoint/v1'}
         defaultValue={defaultEndpoint || undefined} onUserMutation={onUserMutation} />
+      <div style={channelSectionStyle}><ChannelSectionHeading title={t('settings.channels.modelTitle')} /></div>
       <CredentialField key={`${channelId}:model:${asrModelRevision}`} label={t('settings.providers.modelLabel')}
         account="asr.model" provider={channelId}
         placeholder={defaultModel || 'model-name'}
@@ -367,13 +395,13 @@ export function ChannelCredentialFields({
           {t('settings.providers.zenmuxVocabularyNote')}
         </div>
       )}
+      {(providerType === 'openai-compatible' || providerType === 'zenmux') && (
+        <AsrAdvancedOptions provider={channelId} onUserMutation={onUserMutation} />
+      )}
       {/* 统一百炼「拉取模型」只写 model，不覆盖用户选择的区域或工作空间 endpoint。 */}
       <ProviderTools kind="asr" modelAccount="asr.model" provider={channelId}
         onModelSelected={() => setAsrModelRevision(v => v + 1)} onTested={onTested}
         onUserMutation={onUserMutation} />
-      {(providerType === 'openai-compatible' || providerType === 'zenmux') && (
-        <AsrAdvancedOptions provider={channelId} onUserMutation={onUserMutation} />
-      )}
     </>
   );
 }
@@ -580,6 +608,7 @@ function ProviderTools({ kind, modelAccount, provider, onModelSelected, onTested
   const [selectedModel, setSelectedModel] = useState('');
   const [status, setStatus] = useState<ProviderToolStatus>('idle');
   const [message, setMessage] = useState('');
+  const [operation, setOperation] = useState<'validate' | 'models'>('validate');
 
   const setResult = (next: ProviderToolStatus, nextMessage: string) => {
     setStatus(next);
@@ -601,6 +630,7 @@ function ProviderTools({ kind, modelAccount, provider, onModelSelected, onTested
 
   const validate = async () => {
     onUserMutation?.();
+    setOperation('validate');
     setModels([]);
     setSelectedModel('');
     setResult('loading', t('settings.providers.validating'));
@@ -632,6 +662,7 @@ function ProviderTools({ kind, modelAccount, provider, onModelSelected, onTested
 
   const loadModels = async () => {
     onUserMutation?.();
+    setOperation('models');
     setResult('loading', t('settings.providers.loadingModels'));
     try {
       const result = await listProviderModels(kind, provider);
@@ -650,6 +681,7 @@ function ProviderTools({ kind, modelAccount, provider, onModelSelected, onTested
 
   const applyModel = async (model: string) => {
     onUserMutation?.();
+    setOperation('models');
     setResult('loading', t('common.saving'));
     try {
       await setCredential(modelAccount, model, provider);
@@ -661,33 +693,39 @@ function ProviderTools({ kind, modelAccount, provider, onModelSelected, onTested
     }
   };
 
+  const resultMessage = message && (
+    <div role="status" style={{ fontSize: 12, color: status === 'error' ? 'var(--ol-warn)' : status === 'success' ? 'var(--ol-ok)' : 'var(--ol-ink-3)', lineHeight: 1.65, overflowWrap: 'anywhere', marginTop: 10 }}>
+      {message}
+    </div>
+  );
+
   return (
-    <SettingRow label={t('settings.providers.toolsLabel')}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: layoutStack ? '100%' : 420 }}>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
-          <button onClick={validate} style={miniBtnStyle} disabled={status === 'loading'}>{t('settings.providers.validate')}</button>
-          {showFetchModels && (
-            <button onClick={loadModels} style={miniBtnStyle} disabled={status === 'loading'}>{t('settings.providers.fetchModels')}</button>
-          )}
-          {showFetchModels && models.length > 0 && (
-            <SelectLite
-              value={selectedModel}
-              onChange={applyModel}
-              disabled={status === 'loading'}
-              options={models.map(model => ({ value: model, label: model }))}
-              placeholder={t('settings.providers.selectModel')}
-              ariaLabel={t('settings.providers.selectModel')}
-              style={{ flex: layoutStack ? '1 1 100%' : '1 1 180px', maxWidth: layoutStack ? '100%' : 220, minWidth: 0 }}
-            />
-          )}
-        </div>
-        {message && (
-          <span style={{ fontSize: 11, color: status === 'error' ? 'var(--ol-warn)' : status === 'empty' ? 'var(--ol-ink-4)' : 'var(--ol-ok)', lineHeight: 1.4 }}>
-            {message}
-          </span>
-        )}
-      </div>
-    </SettingRow>
+    <>
+      {showFetchModels && (
+        <ChannelFormRow label={t('settings.channels.availableModels')}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10, minWidth: 0 }}>
+            <button type="button" onClick={loadModels} style={miniBtnStyle} disabled={status === 'loading'}>{t('settings.providers.fetchModels')}</button>
+            {models.length > 0 && (
+              <SelectLite
+                value={selectedModel}
+                onChange={applyModel}
+                disabled={status === 'loading'}
+                options={models.map(model => ({ value: model, label: model }))}
+                placeholder={t('settings.providers.selectModel')}
+                ariaLabel={t('settings.providers.selectModel')}
+                style={{ width: '100%', minWidth: 0, height: 38 }}
+              />
+            )}
+          </div>
+          {operation === 'models' && resultMessage}
+        </ChannelFormRow>
+      )}
+      <section style={channelSectionStyle}>
+        <ChannelSectionHeading title={t('settings.channels.validationTitle')} description={t('settings.channels.validationHint')} />
+        <button type="button" onClick={validate} style={{ ...miniBtnStyle, marginTop: 12, color: 'var(--ol-blue)', borderColor: 'var(--ol-blue)' }} disabled={status === 'loading'}>{t('settings.channels.verify')}</button>
+        {operation === 'validate' && resultMessage}
+      </section>
+    </>
   );
 }
 
@@ -739,6 +777,7 @@ interface CredentialFieldProps {
 }
 
 function CredentialField({ label, account, provider, placeholder, mono, mask, defaultValue, trailing, onValueChange, onUserMutation, options }: CredentialFieldProps) {
+  const fieldId = useId();
   const { t } = useTranslation();
   const baseLayoutStack = useLayoutStack();
   const conservative = useConservativeLayout();
@@ -879,9 +918,9 @@ function CredentialField({ label, account, provider, placeholder, mono, mask, de
     && value.trim().toLowerCase().startsWith('http://');
 
   return (
-    <SettingRow label={label}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, width: '100%', maxWidth: layoutStack ? '100%' : 420 }}>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', width: '100%', flexWrap: layoutStack ? 'wrap' : 'nowrap' }}>
+    <ChannelFormRow label={label} htmlFor={options && !customModelMode ? undefined : fieldId}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, width: '100%', minWidth: 0 }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', width: '100%', flexWrap: 'nowrap' }}>
           {options && !customModelMode ? (
             <SelectLite
               value={value}
@@ -906,17 +945,18 @@ function CredentialField({ label, account, provider, placeholder, mono, mask, de
               placeholder={loaded ? placeholder : t('common.loading')}
               disabled={disabled}
               ariaLabel={label}
-              style={{ flex: layoutStack ? '1 1 180px' : 1, minWidth: 0, maxWidth: '100%', fontFamily: mono ? 'var(--ol-font-mono)' : 'inherit' }}
+              style={{ flex: 1, height: 38, minWidth: 0, maxWidth: '100%', fontFamily: mono ? 'var(--ol-font-mono)' : 'inherit' }}
             />
           ) : (
             <input
+              id={fieldId}
               type={inputType}
               value={value}
               placeholder={loaded ? placeholder : t('common.loading')}
               onChange={handleChange}
               onBlur={onBlur}
               disabled={disabled}
-              style={{ ...inputStyle, flex: layoutStack ? '1 1 180px' : 1, minWidth: 0, maxWidth: '100%', fontFamily: mono ? 'var(--ol-font-mono)' : 'inherit' }}
+              style={{ ...inputStyle, flex: 1, height: 38, minWidth: 0, maxWidth: '100%', fontFamily: mono ? 'var(--ol-font-mono)' : 'inherit' }}
             />
           )}
           {options && customModelMode && (
@@ -934,7 +974,6 @@ function CredentialField({ label, account, provider, placeholder, mono, mask, de
               <Icon name="check" size={13} />
             </button>
           )}
-          {trailing}
           {mask && (
             <button
               onClick={() => setRevealed(r => !r)}
@@ -968,22 +1007,23 @@ function CredentialField({ label, account, provider, placeholder, mono, mask, de
             </span>
           )}
         </div>
+        {trailing && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>{trailing}</div>}
         {showInsecureEndpointWarning && (
           <span style={{ fontSize: 11, color: 'var(--ol-warn)', lineHeight: 1.45 }}>
             {t('settings.providers.endpointHttpWarning')}
           </span>
         )}
       </div>
-    </SettingRow>
+    </ChannelFormRow>
   );
 }
 
 const miniBtnStyle: CSSProperties = {
   height: 32, padding: '0 12px',
   border: '0.5px solid var(--ol-line-strong)',
-  borderRadius: 8, background: 'var(--ol-surface)',
+  borderRadius: 8, background: 'var(--ol-control-solid)',
   boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-  color: 'var(--ol-ink-2)', cursor: 'default', flexShrink: 0,
+  color: 'var(--ol-ink-2)', cursor: 'pointer', flexShrink: 0,
   fontSize: 12.5, fontWeight: 500, letterSpacing: '0.01em',
   transition: 'background 0.16s var(--ol-motion-quick), border-color 0.16s var(--ol-motion-quick), color 0.16s var(--ol-motion-quick), box-shadow 0.16s var(--ol-motion-quick)',
 };
@@ -991,10 +1031,10 @@ const miniBtnStyle: CSSProperties = {
 const iconBtnStyle: CSSProperties = {
   width: 32, height: 32,
   border: '0.5px solid var(--ol-line-strong)',
-  borderRadius: 8, background: 'var(--ol-surface)',
+  borderRadius: 8, background: 'var(--ol-control-solid)',
   boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-  color: 'var(--ol-ink-3)', cursor: 'default', flexShrink: 0,
+  color: 'var(--ol-ink-3)', cursor: 'pointer', flexShrink: 0,
   transition: 'background 0.16s var(--ol-motion-quick), border-color 0.16s var(--ol-motion-quick), color 0.16s var(--ol-motion-quick), transform 0.12s var(--ol-motion-quick)',
 };
 

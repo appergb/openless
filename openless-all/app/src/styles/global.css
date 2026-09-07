@@ -296,6 +296,43 @@ html[data-ol-conservative-layout="true"] .ol-conservative-scope .ol-select-lite-
   background: var(--ol-settings-content-bg);
 }
 
+.ol-service-views {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--ol-settings-content-bg);
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--ol-line);
+  margin-bottom: 4px;
+}
+
+.ol-service-views > button {
+  flex-shrink: 0;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ol-ink-3);
+  cursor: pointer;
+}
+
+.ol-service-views > button[aria-pressed="true"] {
+  color: var(--ol-blue);
+  border-bottom-color: var(--ol-blue);
+  font-weight: 650;
+}
+
+.ol-service-views > button:hover { color: var(--ol-ink); }
+.ol-service-views > button:focus-visible { outline: 2px solid var(--ol-blue); outline-offset: -3px; }
+.ol-service-content { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.ol-service-storage-note { margin: 0; font-size: 12px; line-height: 1.6; color: var(--ol-ink-3); }
+
 .ol-settings-surface[data-ol-mobile="true"] {
   border-radius: var(--ol-panel-radius) var(--ol-panel-radius) 0 0;
 }
@@ -368,6 +405,11 @@ html[data-ol-platform="android"] .ol-capsule-pill {
     from { --ol-sf-b: 28px; }
     to   { --ol-sf-b: 0px; }
   }
+}
+
+.ol-page-header-actions > div {
+  max-width: 100%;
+  flex-wrap: wrap;
 }
 
 /* 降级（macOS 现行 WKWebView 尚无 scroll-driven animations）：静态双边渐隐，
