@@ -1,49 +1,45 @@
-# Core 2.0 架构
+# OpenLess 2.0 架构
 
-状态：canonical；阶段：implementation-backed；更新：2026-09-07；源码基线：`fc38edd1`，应用版本 `2.0.0-Beta.1`，公开合同 `2.0.0`。
+状态：canonical（2026-09-07 以源码为准重写）；更新：2026-09-07。
 
-## 分层与入口
+## 1. 分层与工作区
 
-```mermaid
-flowchart LR
-    UI[React 桌面界面] --> IPC[typed IPC / 启动合同]
-    IPC --> Tauri[Tauri Host]
-    Egui[Linux egui 界面] --> Linux[Linux Host facade]
-    Tauri --> Core[openless-core 共享业务]
-    Linux --> Core
-    Core --> Ports[Host interfaces]
-    Ports --> Native[录音 / 系统凭据 / 热键 / 目标输入 / 窗口]
-    Core --> Events[带 sequence 与 session 的事件]
-    Events --> Tauri
-    Events --> Linux
-```
+应用唯一源是 `openless-all/app/`。Cargo workspace 成员为 `crates/openless-core` + `linux-egui`；`src-tauri`（及其 `backend-tests` 测试 crate）被 exclude，独立构建。
 
-应用工作目录为 `openless-all/app`。
-
-| 层 | 实现位置 | 职责 |
+| 层 | 位置 | 职责 |
 | --- | --- | --- |
-| React | `src/App.tsx`、`src/components/FloatingShell.tsx`、`src/pages/` | 启动显示、页面、草稿、操作与结果反馈 |
-| IPC | `src/lib/ipc/shared.ts`、`src/lib/ipc/` | `2.0.0` 启动检查，typed invoke，业务调用前等待 Core 可用 |
-| 共享 Core | `crates/openless-core/src/lib.rs`、`api.rs`、`domains.rs` | 公开门面、领域服务、状态机、配置、迁移与会话规则 |
-| 原生接口 | `crates/openless-core/src/ports.rs` | 录音、插入、资源、目标上下文、窗口等 Host effect 合同 |
-| Tauri Host | `src-tauri/src/commands/`、`core_adapters.rs`、`tauri_coordinator_host.rs`、`tauri_events.rs` | 连接现有 Windows/macOS 原生实现并桥接 React |
-| Linux Host/UI | `linux-egui/src/{backend,lib,main}.rs` | 共享 Core 接入、现有 Linux Adapter、egui 页面与事件显示 |
-| 合同 | `contract/backend-2.0.json`、`crates/openless-core/tests/`、前端 IPC 测试 | 版本、DTO、事件和领域行为回归 |
+| 界面（桌面/移动） | `src/`（React/TypeScript/i18next，五语言） | 唯一桌面 UI；页面、设置分类、窗口分支；不另写业务规则 |
+| Host（Win/mac/Android） | `src-tauri/`（crate `2.0.0-Beta.1`） | IPC 命令面（`src/lib.rs` 两个 `generate_handler!`，共 188 个注册）；原生 Adapter：窗口、热键、音频、凭据、插入、IME、coordinator |
+| 共享 Core | `crates/openless-core/`（crate `0.1.0`） | 全部业务规则与状态机；平台动作只经 `ports.rs` 接口注入 |
+| Linux Host + UI | `linux-egui/`（crate `openless-linux-egui` 0.1.0） | 与 Core 同进程：`backend.rs` 组装 `OpenLessBackend`，`main.rs` 跑 egui 界面，不依赖 Tauri/WebKitGTK |
 
-## 听写与状态
+Android 侧：`src-tauri/src/android/`（JNI/桥接）+ `android/`（aidl、kotlin、manifests、frontend）；`android/frontend` 经 vite 别名 `@android` 被 `src/` 引用；manifest 由 `scripts/merge-android-*.mjs` 合成。
 
-UI/热键发起 → Core 获取会话及真实目标 → Host 录音与识别 → Core 转写/润色 → Host 向原目标输入 → 真实结果、历史与事件反馈。停止录音、取消会话和正常结束分别调用已有门面，页面导航不接管录音资源。
+## 2. 数据流
 
-主窗口与胶囊、问答、选区预览、Agent 等 WebView 共用启动合同检查。布局改进只改变启动说明，不跳过检查。`recordingReady` 由首帧 PCM 证据驱动，不能用定时器伪造就绪。
+- 桌面：React → 类型化 IPC 门面（`src/lib/ipc/`）→ Tauri command → Core；Core 事件由 Host 转发回界面。
+- Linux：egui UI → `LinuxHost`（`lib.rs`：`snapshot` / `subscribe` / `save_settings` / `drain_events` 等）→ `OpenLessBackend` → Core，类型化 Rust 接口，不经 IPC。
+- 浏览器预览：provider 公开目录由 Core 生成到 `src/lib/ipc/provider-descriptors.generated.json`（`cargo run --locked -p openless-core --example export_provider_descriptors` 重新生成；只含公开元数据，无凭据）；原生端走同一受启动合同保护的 IPC。
+- 旧 React command/event 名称只保留在 Tauri 兼容 Adapter；跨平台合同以 `contract/backend-2.0.json` 为准。
 
-事件以 `sequence` 去重，以 `sessionId` 归属；Unicode delta 的 offset 是 scalar 数量。QA 全量 messages 校准与 Agent 多轮重放仍遵循各自规则。具体语义的规范来源是 [Linux 事件与会话合同](linux-egui-handoff/06-events-and-sessions.md)及对应代码。
+## 3. Core 模块地图（按域，见 `src/lib.rs` pub mod 清单）
 
-凭据状态、provider descriptor 与有效 pipeline 由 Core 提供。UI 不在渠道 ID 上猜认证规则，不回显已有密钥，不把“已配置”当成设备或网络测试成功。普通写入、已发送粘贴、已复制回退和未知结果分别反馈。
+- 听写链路：`dictation_engine` / `dictation_context` / `audio` / `external_audio` / `silence_auto_stop` / `streaming_insert` / `hotkey_interpreter` / `voice_session`
+- 服务与凭据：`provider_rules` / `provider_registry` / `provider_resolution` / `provider_service` / `provider_transport` / `cloud_providers` / `providers` / `omni` / `llm_gemini` / `credentials`(+`credentials_legacy`) / `endpoint_security` / `net`
+- 本地模型：`model_store` / `local_asr_service` / `local_asr_catalog` / `asr/`（云与本地 provider 实现）
+- 文本加工：`polish` / `prompt_compose`(+`prompts/`，`include_str!` 编译进二进制) / `output_cleaning` / `correction` / `vocabulary`
+- 知识与历史：`history` / `activity` / `style_packs` / `style_pack_store`(+`style_pack_archive`) / `marketplace`
+- 交互域：`qa_service` / `selection_service` / `selection_voice_service`(+`selection_voice_intent`) / `edit_plan` / `less_computer` / `coding_agent`(+`coding_agent_guard`) / `remote_input_service` / `auxiliary` / `cli`
+- 基座：`api` / `events` / `ports` / `settings` / `preferences` / `persistence` / `config` / `errors` / `types` / `shared_types` / `shortcut_types` / `domains` / `android_types` / `host_document/` / `testing` / `vendor/`
 
-## 平台边界
+## 4. Host 注入点
 
-当前完整支持范围、Linux 交接要求与发布验收统一指向 [2.0 当前范围](2.0-requirements.md)。Linux 有运行与界面起点，但 [缺口登记](linux-egui-handoff/02-gap-register.md)仍存在。React 的 Linux 外观预览不能替代 egui 产品验收。
+Core 不直接做平台动作；Host 通过 `ports.rs` 接口注入能力。注入清单以 `linux-egui/src/backend.rs` 的 builder 为准：`with_task_spawner` / `with_recorder` / `with_auxiliary_polisher` / `with_text_inserter` / `with_credential_store` / `with_services` / `with_host_actions` / `with_settings_runtime` / `with_local_asr_runtime` / `with_polish_failure_policy`。业务规则缺失时回报 Core 修复，不在 UI/Host 复制规则。
 
-## 验证入口
+## 5. 窗口体系
 
-`npm test` 会先构建 React，再跑前端与源码合同；其中 `check-hotkey-injection.mjs` 还会运行 Core 的实际快捷键测试。Core 全量验证使用 `cargo test -p openless-core --locked`；Linux 使用 `cargo test -p openless-linux-egui --locked`，原生目标验证遵循 [Linux 验收](linux-egui-handoff/07-acceptance.md)。所列命令不代表已执行；验证结论以当次运行输出为准。
+`tauri.conf.json` 声明 `main`、`capsule` 两个窗口；其余窗口由运行时按 `?window=` 种类创建（`src/App.tsx` 分支）：`qa`、`selection` 追问、划词润色预览、语音意图选择、Less Computer（含 glow 变体）与移动端变体。Linux 单实例由 `linux-egui/src/single_instance.rs` 守护并转发启动意图。
+
+## 6. 验证入口
+
+在 `openless-all/app/`：`npm test`（构建 + 前端/合同测试，含 Core 快捷键回归）；`cargo fmt --check`（三 crate）；`cargo test -p openless-core --locked`；`cargo test -p openless-linux-egui --locked`。`src-tauri` 按平台独立构建，macOS 需 `git submodule update --init --recursive`（vendored qwen-asr C 引擎）。
