@@ -14,17 +14,16 @@ pub fn validate_shortcut_binding(binding: ShortcutBinding) -> Result<(), String>
 }
 
 #[tauri::command]
-pub fn set_dictation_hotkey(
+pub async fn set_dictation_hotkey(
     coord: CoordinatorState<'_>,
     binding: ShortcutBinding,
 ) -> Result<(), String> {
-    crate::shortcut_binding::validate_binding(&binding).map_err(|e| e.to_string())?;
-    reject_bare_shift_dictation_shortcut(&binding)?;
-    let mut prefs = coord.backend().get_preferences();
-    prefs.dictation_hotkey = binding;
-    sync_dictation_hotkey_legacy_fields(&mut prefs);
-    reject_hotkey_collisions(&prefs)?;
-    super::settings::persist_strict_settings(&coord, prefs)
+    let coord = Arc::clone(coord.inner());
+    tauri::async_runtime::spawn_blocking(move || {
+        super::settings::replace_dictation_hotkey(&coord, binding, None)
+    })
+    .await
+    .map_err(|error| error.to_string())?
 }
 
 #[tauri::command]
@@ -120,19 +119,21 @@ pub fn validate_combo_hotkey(binding: ComboBinding) -> Result<(), String> {
 
 /// 设置自定义录音组合键并热更新 monitor。
 #[tauri::command]
-pub fn set_combo_hotkey(coord: CoordinatorState<'_>, binding: ComboBinding) -> Result<(), String> {
-    let mut prefs = coord.backend().get_preferences();
+pub async fn set_combo_hotkey(
+    coord: CoordinatorState<'_>,
+    binding: ComboBinding,
+) -> Result<(), String> {
     let shortcut = ShortcutBinding {
-        primary: binding.primary.clone(),
-        modifiers: binding.modifiers.clone(),
+        primary: binding.primary,
+        modifiers: binding.modifiers,
     };
-    reject_bare_shift_dictation_shortcut(&shortcut)?;
-    crate::combo_hotkey::validate_binding(&shortcut).map_err(|e| e.to_string())?;
-    prefs.custom_combo_hotkey = Some(binding);
-    prefs.dictation_hotkey = shortcut;
-    sync_dictation_hotkey_legacy_fields(&mut prefs);
-    reject_hotkey_collisions(&prefs)?;
-    super::settings::persist_strict_settings(&coord, prefs)
+    crate::combo_hotkey::validate_binding(&shortcut).map_err(|error| error.to_string())?;
+    let coord = Arc::clone(coord.inner());
+    tauri::async_runtime::spawn_blocking(move || {
+        super::settings::replace_dictation_hotkey(&coord, shortcut, None)
+    })
+    .await
+    .map_err(|error| error.to_string())?
 }
 
 #[cfg(test)]
@@ -363,5 +364,74 @@ mod tests {
             ..Default::default()
         };
         assert!(reject_non_dictation_side_specific_shortcuts(&prefs).is_ok());
+    }
+}
+
+#[tauri::command]
+pub async fn test_macos_dictation_key(coord: CoordinatorState<'_>) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let coord = Arc::clone(coord.inner());
+        return tauri::async_runtime::spawn_blocking(move || {
+            let test = crate::macos_dictation_key::TestGuard::begin()?;
+            if coord.dictation_key_setup_is_busy() {
+                return Err("macDictationKeyBusy".into());
+            }
+            test.wait()
+        })
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = coord;
+        Err("macDictationKeyUnavailable".into())
+    }
+}
+
+#[tauri::command]
+pub fn cancel_macos_dictation_key_test() {
+    #[cfg(target_os = "macos")]
+    crate::macos_dictation_key::cancel_test();
+}
+
+#[tauri::command]
+pub async fn activate_macos_dictation_key(
+    coord: CoordinatorState<'_>,
+    expected_binding: ShortcutBinding,
+) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let coord = Arc::clone(coord.inner());
+        return tauri::async_runtime::spawn_blocking(move || {
+            super::settings::replace_dictation_hotkey(
+                &coord,
+                ShortcutBinding {
+                    primary: crate::macos_dictation_key::PRIMARY.into(),
+                    modifiers: vec![],
+                },
+                Some(expected_binding),
+            )
+        })
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (coord, expected_binding);
+        Err("macDictationKeyUnavailable".into())
+    }
+}
+
+#[tauri::command]
+pub fn macos_dictation_key_active(coord: CoordinatorState<'_>) -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        return coord.native_dictation_key_active();
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = coord;
+        false
     }
 }

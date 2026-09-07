@@ -4,6 +4,27 @@ import type { zhCN } from './zh-CN';
 // 新增 key 時，必須同步更新 en.ts，避免切換到 English 後出現中文殘留。
 
 export const zhTW: typeof zhCN = {
+  macDictationKey: {
+    inactive: '攔截尚未生效；若未自動啟動，請重試。',
+    restore: '恢復 {{shortcut}}',
+    label: 'Mac 聽寫鍵',
+    use: '使用 Mac 聽寫鍵',
+    description: 'OpenLess 執行時，麥克風圖示鍵會依上方錄音模式觸發聽寫。一般 F5 和修飾鍵組合仍可正常使用；結束應用程式後，此鍵將交回 macOS。',
+    testing: '請按下並放開一次麥克風圖示鍵。本次偵測不會錄音，剩餘 {{seconds}} 秒；原快捷鍵會保留。',
+    confirm: '已收到聽寫鍵，偵測已結束。剛才 macOS 系統聽寫視窗也出現了嗎？',
+    accept: '沒有，使用此鍵',
+    keep: '有，保留原快捷鍵',
+    active: '正在接管 Mac 聽寫鍵。',
+    checking: '正在檢查鍵盤攔截狀態…',
+    replace: '若要停止使用此鍵，請在上方錄製其他快捷鍵，或結束 OpenLess。',
+    retry: '重試接管',
+    Permission: '請在 macOS「隱私權與安全性 → 輔助使用」中允許 OpenLess 後重試。此權限允許觀察鍵盤事件；本功能只使用聽寫鍵和 Fn 狀態，不會儲存或傳送輸入的按鍵。',
+    Timeout: '未收到聽寫鍵。請檢查鍵盤重新對應軟體是否更改了此鍵；原快捷鍵未變更。',
+    Busy: '請先結束目前的錄音或快捷鍵偵測，再重試。',
+    Changed: '偵測期間快捷鍵已變更，已保留新設定。若要替換，請重新偵測。',
+    Unavailable: '原生鍵盤攔截無法使用；若啟用失敗，原快捷鍵會保留。請重試或恢復原快捷鍵。',
+    permissionSettings: '開啟輔助使用設定',
+  },
   app: {
     name: 'OpenLess',
     tagline: '自然說話，完美書寫',

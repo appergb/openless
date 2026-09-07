@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { MacDictationKeySetup } from '../../components/MacDictationKeySetup';
 import { ShortcutRecorder } from '../../components/ShortcutRecorder';
 import { SelectLite } from '../../components/ui/SelectLite';
 import {
@@ -30,7 +31,7 @@ import { detectOS } from '../../components/WindowChrome';
 export function ShortcutsSection() {
   const { t } = useTranslation();
   const os = detectOS();
-  const { prefs, hotkey, updatePrefs: savePrefs } = useHotkeySettings();
+  const { prefs, hotkey, refresh, updatePrefs: savePrefs } = useHotkeySettings();
   const [platformCaps, setPlatformCaps] = useState<PlatformCapabilities | null>(null);
   const [stylePacks, setStylePacks] = useState<StylePack[]>([]);
   // 新增行的草稿状态：先选风格包、再录快捷键，两者齐了才真正落库。
@@ -112,6 +113,7 @@ export function ShortcutsSection() {
           <div style={{ fontSize: 11, color: 'var(--ol-ink-4)' }}>
             {hotkeyModeSuffix(hotkey.mode)}
           </div>
+          {os === 'mac' && <MacDictationKeySetup binding={prefs.dictationHotkey} previousBinding={prefs.previousDictationHotkey} onChanged={refresh} />}
         </div>
       </SettingRow>
       <SettingRow label={t('translation.hotkey.title', 'Translation shortcut')}>

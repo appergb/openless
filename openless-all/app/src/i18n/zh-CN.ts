@@ -2,6 +2,27 @@
 // 添加新 key 时，必须同步更新 en.ts，否则首次切换到 English 会回落到中文残留。
 
 export const zhCN = {
+  macDictationKey: {
+    inactive: '拦截尚未生效；如未自动启动，请重试。',
+    restore: '恢复 {{shortcut}}',
+    label: 'Mac 听写键',
+    use: '使用 Mac 听写键',
+    description: 'OpenLess 运行时，麦克风图标键按上方录音模式触发听写。普通 F5 和修饰键组合仍正常使用；退出应用后将此键交回 macOS。',
+    testing: '请按下并松开一次麦克风图标键。本次检测不录音，剩余 {{seconds}} 秒；保留原快捷键。',
+    confirm: '已收到听写键，检测已结束。刚才 macOS 系统听写窗口也出现了吗？',
+    accept: '没有，使用此键',
+    keep: '出现了，保留原快捷键',
+    active: '正在接管 Mac 听写键。',
+    checking: '正在检查键盘拦截状态…',
+    replace: '如需停止使用此键，请在上方录制其他快捷键，或退出 OpenLess。',
+    retry: '重试接管',
+    Permission: '请在 macOS「隐私与安全性 → 辅助功能」中允许 OpenLess 后重试。此权限允许观察键盘事件；本功能只使用听写键和 Fn 状态，不保存或发送输入的按键。',
+    Timeout: '未收到听写键。请检查键盘重映射软件是否改变了此键；原快捷键未变。',
+    Busy: '请先结束当前录音或快捷键检测，再重试。',
+    Changed: '检测期间快捷键已被更改，已保留新设置。如需替换，请重新检测。',
+    Unavailable: '原生键盘拦截不可用；若启用失败，原快捷键会保留。请检查辅助功能权限后重试。',
+    permissionSettings: '打开辅助功能设置'
+  },
   app: {
     name: 'OpenLess',
     tagline: '自然说话，完美书写',

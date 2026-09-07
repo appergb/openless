@@ -320,6 +320,7 @@ fn resolve_windows_sendinput_insertion_only_legacy(
 pub struct UserPreferences {
     pub hotkey: HotkeyBinding,
     pub dictation_hotkey: ShortcutBinding,
+    pub previous_dictation_hotkey: Option<ShortcutBinding>,
     pub default_mode: PolishMode,
     pub enabled_modes: Vec<PolishMode>,
     #[serde(default = "default_active_style_pack_id")]
@@ -749,6 +750,7 @@ fn default_active_asr_provider() -> String {
 struct UserPreferencesWire {
     hotkey: HotkeyBinding,
     dictation_hotkey: Option<ShortcutBinding>,
+    previous_dictation_hotkey: Option<ShortcutBinding>,
     default_mode: PolishMode,
     enabled_modes: Vec<PolishMode>,
     #[serde(default)]
@@ -980,6 +982,7 @@ impl Default for UserPreferencesWire {
         Self {
             hotkey: prefs.hotkey,
             dictation_hotkey: None,
+            previous_dictation_hotkey: None,
             default_mode: prefs.default_mode,
             enabled_modes: prefs.enabled_modes,
             active_style_pack_id: Some(prefs.active_style_pack_id),
@@ -1125,6 +1128,7 @@ impl<'de> Deserialize<'de> for UserPreferences {
         Ok(Self {
             hotkey: wire.hotkey,
             dictation_hotkey,
+            previous_dictation_hotkey: wire.previous_dictation_hotkey,
             default_mode: wire.default_mode,
             enabled_modes: wire.enabled_modes,
             active_style_pack_id: wire
@@ -1479,6 +1483,7 @@ impl Default for UserPreferences {
                 &None,
             )
             .expect("default legacy hotkey is not custom"),
+            previous_dictation_hotkey: None,
             default_mode: PolishMode::Structured,
             enabled_modes: vec![
                 PolishMode::Raw,
@@ -3168,6 +3173,32 @@ mod tests {
 
         assert_eq!(prefs.dictation_hotkey.primary, "D");
         assert_eq!(prefs.dictation_hotkey.modifiers, vec!["cmd", "shift"]);
+    }
+
+    #[test]
+    fn native_dictation_fallback_survives_preferences_roundtrip() {
+        let mut prefs = UserPreferences::default();
+        let fallback = ShortcutBinding {
+            primary: "F20".into(),
+            modifiers: vec![],
+        };
+        prefs.dictation_hotkey = ShortcutBinding {
+            primary: "MacDictationKey".into(),
+            modifiers: vec![],
+        };
+        prefs.previous_dictation_hotkey = Some(fallback.clone());
+        prefs.hotkey.trigger = HotkeyTrigger::Custom;
+        let json = serde_json::to_value(&prefs).unwrap();
+        let restored: UserPreferences = serde_json::from_value(json.clone()).unwrap();
+        assert_eq!(restored.previous_dictation_hotkey, Some(fallback));
+        assert_eq!(restored.dictation_hotkey.primary, "MacDictationKey");
+        let mut old_json = json;
+        old_json
+            .as_object_mut()
+            .unwrap()
+            .remove("previousDictationHotkey");
+        let legacy: UserPreferences = serde_json::from_value(old_json).unwrap();
+        assert!(legacy.previous_dictation_hotkey.is_none());
     }
 
     #[test]

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatComboParts, modifiersFromPressedCodes } from '../lib/hotkey';
+import { functionKeyPrimaryFromEvent } from '../lib/hotkeyRecorder';
 import { KbdGroup } from './Kbd';
 import { setShortcutRecordingActive, validateShortcutBinding } from '../lib/ipc';
 import type { ShortcutBinding } from '../lib/types';
@@ -426,6 +427,8 @@ function modifierPrimaryFromCode(code: string, key: string): string {
 }
 
 function primaryFromKeyboardEvent(e: KeyboardEvent): string {
+  const functionKey = functionKeyPrimaryFromEvent(e);
+  if (functionKey) return functionKey;
   const printable = primaryFromPrintableCode(e.code);
   if (printable) return printable;
   if (e.key.length === 1) return e.key;

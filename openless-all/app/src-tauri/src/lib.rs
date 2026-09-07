@@ -31,6 +31,8 @@ mod coordinator;
 mod coordinator_state;
 mod core_adapters;
 mod correction;
+#[cfg(target_os = "macos")]
+mod macos_dictation_key;
 mod qa_adapter;
 mod tauri_coordinator_host;
 // 托盘麦克风设备变更监听：macOS CoreAudio / Windows MMDevice 原生通知（空闲零唤醒），
@@ -312,6 +314,10 @@ macro_rules! app_invoke_handler_desktop {
             commands::revert_selection_voice_preview,
             commands::validate_shortcut_binding,
             commands::set_dictation_hotkey,
+            commands::test_macos_dictation_key,
+            commands::cancel_macos_dictation_key_test,
+            commands::activate_macos_dictation_key,
+            commands::macos_dictation_key_active,
             commands::set_translation_hotkey,
             commands::set_switch_style_hotkey,
             commands::set_open_app_hotkey,
