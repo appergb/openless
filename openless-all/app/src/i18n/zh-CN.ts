@@ -1393,9 +1393,9 @@ export const zhCN = {
       portInUse: '端口 {{port}} 被占用，请更换',
       startError: '远程输入服务启动失败：{{reason}}',
       securityHint: '仅同一局域网可访问，需输入配对码；不用时建议关闭。',
-      certHint: '首次访问浏览器会提示证书不受信任，按提示选择"继续访问"。',
-      certTrustWarning:
-        '该证书仅用于本机远程输入服务（不能签发其他证书），请勿信任来源不明的证书；不再使用时可在手机系统设置中移除。',
+      certHint: "首次连接请在手机页面展开“首次设置：信任此电脑”，安装并信任证书。升级旧版需设置一次；以后重启和换 IP 会保留信任。",
+      certTrustWarning: "只安装你自己电脑提供的 OpenLess 根证书。它具备签发证书的能力，私钥保存在这台电脑；不再使用时请从手机移除。",
+      certSetupLink: "复制 iPhone 证书链接",
       waitingStart: '服务尚未启动。请关闭开关再打开一次，不要重启软件。',
       starting: '正在启动远程输入服务…',
       urlsStale: '这些地址来自上次运行，可能已经过期。',

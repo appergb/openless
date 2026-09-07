@@ -289,71 +289,8 @@ fn access_urls(port: u16) -> Vec<String> {
 }
 
 #[cfg(target_os = "linux")]
-fn load_or_generate_certificate(
-    directory: &std::path::Path,
-    sans: &[String],
-) -> Result<(Vec<u8>, rustls::pki_types::PrivateKeyDer<'static>), BackendError> {
-    use rustls::pki_types::{PrivateKeyDer, PrivatePkcs8KeyDer};
-
-    let cert_path = directory.join("remote-cert-v4.der");
-    let key_path = directory.join("remote-key-v4.der");
-    let sans_path = directory.join("remote-cert-sans-v4.txt");
-    if let (Ok(cert), Ok(key), Ok(saved)) = (
-        std::fs::read(&cert_path),
-        std::fs::read(&key_path),
-        std::fs::read_to_string(&sans_path),
-    ) {
-        let saved = saved.lines().collect::<std::collections::HashSet<_>>();
-        if sans.iter().all(|value| saved.contains(value.as_str())) {
-            return Ok((cert, PrivateKeyDer::Pkcs8(PrivatePkcs8KeyDer::from(key))));
-        }
-    }
-    let mut params = rcgen::CertificateParams::new(sans.to_vec())
-        .map_err(|error| remote_platform_error(format!("invalid TLS names: {error}")))?;
-    let mut name = rcgen::DistinguishedName::new();
-    name.push(rcgen::DnType::CommonName, "OpenLess Remote Input");
-    params.distinguished_name = name;
-    params
-        .extended_key_usages
-        .push(rcgen::ExtendedKeyUsagePurpose::ServerAuth);
-    let key = rcgen::KeyPair::generate()
-        .map_err(|error| remote_platform_error(format!("TLS key generation failed: {error}")))?;
-    let cert = params
-        .self_signed(&key)
-        .map_err(|error| remote_platform_error(format!("TLS certificate failed: {error}")))?;
-    let cert_der = cert.der().as_ref().to_vec();
-    let key_der = key.serialize_der();
-    std::fs::create_dir_all(directory)
-        .map_err(|error| remote_platform_error(format!("TLS directory failed: {error}")))?;
-    std::fs::write(&cert_path, &cert_der)
-        .map_err(|error| remote_platform_error(format!("TLS certificate save failed: {error}")))?;
-    std::fs::write(&key_path, &key_der)
-        .map_err(|error| remote_platform_error(format!("TLS key save failed: {error}")))?;
-    std::fs::write(&sans_path, sans.join("\n"))
-        .map_err(|error| remote_platform_error(format!("TLS names save failed: {error}")))?;
-    use std::os::unix::fs::PermissionsExt;
-    std::fs::set_permissions(&key_path, std::fs::Permissions::from_mode(0o600))
-        .map_err(|error| remote_platform_error(format!("TLS key permissions failed: {error}")))?;
-    Ok((
-        cert_der,
-        PrivateKeyDer::Pkcs8(PrivatePkcs8KeyDer::from(key_der)),
-    ))
-}
-
-#[cfg(target_os = "linux")]
-fn tls_config(
-    cert: Vec<u8>,
-    key: rustls::pki_types::PrivateKeyDer<'static>,
-) -> Result<Arc<rustls::ServerConfig>, BackendError> {
-    let provider = Arc::new(rustls::crypto::ring::default_provider());
-    rustls::ServerConfig::builder_with_provider(provider)
-        .with_safe_default_protocol_versions()
-        .map_err(|error| remote_platform_error(format!("TLS protocol failed: {error}")))?
-        .with_no_client_auth()
-        .with_single_cert(vec![rustls::pki_types::CertificateDer::from(cert)], key)
-        .map(Arc::new)
-        .map_err(|error| remote_platform_error(format!("TLS certificate failed: {error}")))
-}
+#[path = "../../src-tauri/src/remote_server/tls_identity.rs"]
+mod tls_identity;
 
 #[cfg(target_os = "linux")]
 fn router(state: Arc<WebState>) -> Router {
@@ -387,11 +324,29 @@ fn router(state: Arc<WebState>) -> Router {
             "/cert.cer",
             get(|State(state): State<Arc<WebState>>| async move {
                 (
-                    [(
-                        axum::http::header::CONTENT_TYPE,
-                        "application/x-x509-ca-cert",
-                    )],
+                    [
+                        (
+                            axum::http::header::CONTENT_TYPE,
+                            "application/x-x509-ca-cert",
+                        ),
+                        (axum::http::header::CACHE_CONTROL, "no-store"),
+                    ],
                     state.cert_der.clone(),
+                )
+            }),
+        )
+        .route(
+            "/cert.mobileconfig",
+            get(|State(state): State<Arc<WebState>>| async move {
+                (
+                    [
+                        (
+                            axum::http::header::CONTENT_TYPE,
+                            "application/x-apple-aspen-config",
+                        ),
+                        (axum::http::header::CACHE_CONTROL, "no-store"),
+                    ],
+                    tls_identity::mobileconfig(&state.cert_der),
                 )
             }),
         )
@@ -444,8 +399,10 @@ async fn start_server(
 ) -> Result<LinuxRemoteServerHandle, BackendError> {
     let mut sans = vec!["localhost".to_string(), "127.0.0.1".to_string()];
     sans.extend(local_lan_ipv4s());
-    let (cert_der, key) = load_or_generate_certificate(&data_dir.join("remote-input"), &sans)?;
-    let acceptor = TlsAcceptor::from(tls_config(cert_der.clone(), key)?);
+    let identity = tls_identity::load_or_create(&data_dir.join("remote-input"), &sans)
+        .map_err(remote_platform_error)?;
+    let cert_der = identity.trust_cert;
+    let acceptor = TlsAcceptor::from(identity.server_config);
     let listener = TcpListener::bind(SocketAddr::from(([0, 0, 0, 0], port)))
         .await
         .map_err(|error| remote_platform_error(format!("remote input bind failed: {error}")))?;

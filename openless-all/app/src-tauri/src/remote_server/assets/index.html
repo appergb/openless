@@ -35,16 +35,18 @@
         <button id="btn-connect" class="btn btn-primary" data-i18n="btnConnect">连接</button>
       </div>
 
-      <!-- 连接帮助：证书信任引导（手机上直接照做）。暂时隐藏（用户要求），需要时去掉 hidden 即可恢复。 -->
-      <div class="help" hidden>
-        <div class="help-title" data-i18n="helpTitle">连不上？多半是手机没信任证书</div>
-        <p class="help-step" data-i18n="helpAndroid">① 安卓 / 一般情况：用浏览器无痕模式打开本页，出现“不安全”警告时选“继续前往”，再输入配对码连接。</p>
-        <p class="help-step" data-i18n="helpIos">② iOS Safari 必须装证书：点下方按钮下载并安装描述文件，然后到「设置 → 通用 → 关于本机 → 证书信任设置」里打开它的“完全信任”，再回来连接。</p>
+      <!-- Keep setup discoverable without obscuring the pairing form. -->
+      <details class="help">
+        <summary class="help-title" data-i18n="helpTitle">首次设置：信任此电脑</summary>
+        <p class="help-step" data-i18n="helpIos">iPhone / iPad：下载描述文件，打开“设置 → 通用 → VPN 与设备管理”安装；再到“通用 → 关于本机 → 证书信任设置”，为 OpenLess Remote Input CA 打开“完全信任”，返回 Safari 刷新。每台电脑只需设置一次；旧版证书需要重新安装。</p>
+        <p class="help-step" data-i18n="helpAndroid">安卓：下载 CA 证书，在系统设置的“安装证书 → CA 证书”中安装，再回到本页。菜单名称因设备而异。</p>
+        <p class="help-step" data-i18n="helpTrustWarning">只安装你自己电脑提供的 OpenLess 根证书。它具备签发证书的能力，私钥保存在这台电脑；不再使用时请从手机移除。</p>
         <div class="help-actions">
-          <a class="help-link" href="/cert.cer" data-i18n="helpDownloadCert">⬇ 下载并安装证书</a>
+          <a class="help-link" href="/cert.mobileconfig" data-i18n="helpDownloadCert">↓ iPhone：下载描述文件</a>
+          <a class="help-link help-link-ghost" href="/cert.cer" data-i18n="helpDownloadAndroid">↓ 安卓：下载 CA 证书</a>
           <button type="button" class="help-link help-link-ghost" id="copy-cert-link" data-i18n="helpCopyLink">⧉ 复制链接</button>
         </div>
-      </div>
+      </details>
     </section>
 
     <!-- ===== 录音屏 ===== -->

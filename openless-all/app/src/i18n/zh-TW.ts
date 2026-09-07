@@ -1361,9 +1361,9 @@ export const zhTW: typeof zhCN = {
       portInUse: '連接埠 {{port}} 被佔用，請更換',
       startError: '遠端輸入服務啟動失敗：{{reason}}',
       securityHint: '僅同一區域網路可存取，需輸入配對碼；不用時建議關閉。',
-      certHint: '首次存取瀏覽器會提示憑證不受信任，按提示選擇「繼續存取」。',
-      certTrustWarning:
-        '該憑證僅用於本機遠端輸入服務（無法簽發其他憑證），請勿信任來源不明的憑證；不再使用時可在手機系統設定中移除。',
+      certHint: "首次連線請在手機頁面展開「首次設定：信任這台電腦」，安裝並信任憑證。升級舊版需設定一次；之後重新啟動和更換 IP 會保留信任。",
+      certTrustWarning: "只安裝你自己電腦提供的 OpenLess 根憑證。它能簽發憑證，私密金鑰保存在這台電腦；不再使用時請從手機移除。",
+      certSetupLink: "複製 iPhone 憑證連結",
       waitingStart: '服務尚未啟動。請關閉開關再打開一次，不要重啟軟體。',
       starting: '正在啟動遠端輸入服務…',
       urlsStale: '這些地址來自上次執行，可能已經過期。',
