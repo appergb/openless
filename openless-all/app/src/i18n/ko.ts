@@ -920,8 +920,8 @@ export const ko: typeof zhCN = {
       windowsSendInputNewlineModeShiftEnter: 'Shift+Enter(채팅 입력창)',
       windowsSendInputNewlineModeCrLf: 'CR+LF Unicode',
       windowsShowOpenlessInKeyboardListLabel: '키보드 목록에 OpenLess 표시',
-      windowsShowOpenlessInKeyboardListDesc: '끄면 Win+Space로 OpenLess에 전환되지 않습니다. SendInput 삽입에는 영향 없습니다. 다시 켜면 목록에 복원됩니다.',
-      windowsShowOpenlessInKeyboardListError: '키보드 목록을 업데이트할 수 없습니다: OpenLess TSF IME가 설치되지 않았거나 시스템이 변경을 거부했습니다.',
+      windowsShowOpenlessInKeyboardListDesc: '끄면 Win+Space로 OpenLess에 전환되지 않습니다. SendInput 및 클립보드 붙여넣기 삽입에는 영향 없습니다. 다시 켜면 목록에 복원됩니다.',
+      windowsShowOpenlessInKeyboardListError: '키보드 목록을 업데이트할 수 없습니다: 시스템이 OpenLess 언어 프로필 변경을 거부했습니다.',
       historyGroupTitle: '기록 및 컨텍스트',
       historyRetentionLabel: '기록 보관 기간(일)',
       historyRetentionDesc: '보관 기간을 초과한 기록은 새 항목 작성 시 정리됩니다. 0 = 시간 기반 정리 비활성화.',
@@ -1366,6 +1366,9 @@ export const ko: typeof zhCN = {
       certHint: '첫 접속 시 브라우저가 인증서를 신뢰할 수 없다고 경고합니다. 안내에 따라 "계속 진행"을 선택하세요.',
       certTrustWarning:
         '이 인증서는 이 PC의 원격 입력 서비스 전용입니다(다른 인증서를 발급할 수 없음). 출처를 알 수 없는 인증서는 신뢰하지 마세요. 더 이상 사용하지 않으면 휴대폰 설정에서 제거할 수 있습니다.',
+      waitingStart: '서비스가 아직 시작되지 않았습니다. 스위치를 끈 다음 다시 켜세요. 앱을 다시 시작하지 마세요.',
+      starting: '원격 입력 서비스를 시작하는 중입니다…',
+      urlsStale: '이 주소는 이전 실행에서 가져온 것으로 최신이 아닐 수 있습니다.',
     },
     about: {
       tagline: '자연스럽게 말하고, 정확하게 작성하세요',

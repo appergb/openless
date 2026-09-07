@@ -918,8 +918,8 @@ export const en: typeof zhCN = {
       windowsSendInputNewlineModeShiftEnter: 'Shift+Enter (chat input boxes)',
       windowsSendInputNewlineModeCrLf: 'CR+LF Unicode',
       windowsShowOpenlessInKeyboardListLabel: 'Show OpenLess in keyboard list',
-      windowsShowOpenlessInKeyboardListDesc: 'When off, Win+Space will not cycle to OpenLess. SendInput insertion is unaffected. Turn this back on to restore the entry.',
-      windowsShowOpenlessInKeyboardListError: 'Could not update the keyboard list: OpenLess TSF IME is not installed or the system rejected the change.',
+      windowsShowOpenlessInKeyboardListDesc: 'When off, Win+Space will not cycle to OpenLess. SendInput and clipboard-paste insertion are unaffected. Turn this back on to restore the entry.',
+      windowsShowOpenlessInKeyboardListError: 'Could not update the keyboard list: the system rejected changing the OpenLess language profile.',
       historyGroupTitle: 'History & context',
       historyRetentionLabel: 'History retention (days)',
       historyRetentionDesc: 'Entries older than this are pruned on new writes; 0 = no time-based pruning.',
@@ -1398,6 +1398,9 @@ export const en: typeof zhCN = {
       certHint: 'On first visit the browser warns the certificate is untrusted — choose "Proceed".',
       certTrustWarning:
         'The certificate is only used by this PC’s remote input service (it cannot issue other certificates). Never trust certificates from unknown sources; remove it from your phone’s settings when no longer needed.',
+      waitingStart: 'The service is not running yet. Turn the switch off, then on again. Do not restart the app.',
+      starting: 'Starting the remote input service…',
+      urlsStale: 'These addresses come from the previous run and may be out of date.',
     },
     about: {
       tagline: 'Speak naturally, write perfectly',

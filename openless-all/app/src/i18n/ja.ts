@@ -920,8 +920,8 @@ export const ja: typeof zhCN = {
       windowsSendInputNewlineModeShiftEnter: 'Shift+Enter（チャット入力）',
       windowsSendInputNewlineModeCrLf: 'CR+LF Unicode',
       windowsShowOpenlessInKeyboardListLabel: 'キーボード一覧に OpenLess を表示',
-      windowsShowOpenlessInKeyboardListDesc: 'オフにすると Win+Space で OpenLess に切り替わりません。SendInput 挿入には影響しません。オンに戻すと一覧に再表示されます。',
-      windowsShowOpenlessInKeyboardListError: 'キーボード一覧を更新できません：OpenLess TSF IME が未インストールか、システムが変更を拒否しました。',
+      windowsShowOpenlessInKeyboardListDesc: 'オフにすると Win+Space で OpenLess に切り替わりません。SendInput とクリップボード貼り付け挿入には影響しません。オンに戻すと一覧に再表示されます。',
+      windowsShowOpenlessInKeyboardListError: 'キーボード一覧を更新できません：システムが OpenLess 言語プロファイルの変更を拒否しました。',
       historyGroupTitle: '履歴とコンテキスト',
       historyRetentionLabel: '履歴保持期間（日）',
       historyRetentionDesc: '保持日数を超えた履歴は新規書き込み時に削除されます。0 = 時間で削除しない。',
@@ -1366,6 +1366,9 @@ export const ja: typeof zhCN = {
       certHint: '初回アクセス時、ブラウザが証明書は信頼されていないと警告します。案内に従って「続行」を選択してください。',
       certTrustWarning:
         'この証明書は本機のリモート入力サービス専用です（他の証明書を発行できません）。出所不明の証明書は信頼しないでください。不要になったらスマートフォンの設定から削除できます。',
+      waitingStart: 'サービスはまだ起動していません。スイッチを一度オフにしてからオンにしてください。アプリを再起動しないでください。',
+      starting: 'リモート入力サービスを起動しています…',
+      urlsStale: 'これらのアドレスは前回の起動時のもので、古くなっている可能性があります。',
     },
     about: {
       tagline: '自然に話し、きれいに書く',

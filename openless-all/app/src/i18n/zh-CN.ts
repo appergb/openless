@@ -916,8 +916,8 @@ export const zhCN = {
       windowsSendInputNewlineModeShiftEnter: 'Shift+Enter（聊天输入框）',
       windowsSendInputNewlineModeCrLf: 'CR+LF Unicode',
       windowsShowOpenlessInKeyboardListLabel: '在键盘列表中显示 OpenLess',
-      windowsShowOpenlessInKeyboardListDesc: '关闭后 Win+Space 切换输入法时不会出现 OpenLess；SendInput 插入不受影响。重新开启本项可恢复显示。',
-      windowsShowOpenlessInKeyboardListError: '无法更新键盘列表：OpenLess TSF 输入法未安装或系统拒绝操作。',
+      windowsShowOpenlessInKeyboardListDesc: '关闭后 Win+Space 切换输入法时不会出现 OpenLess；SendInput 与剪贴板粘贴插入不受影响。重新开启本项可恢复显示。',
+      windowsShowOpenlessInKeyboardListError: '无法更新键盘列表：系统拒绝更改 OpenLess 语言配置文件。',
       historyGroupTitle: '历史与上下文',
       historyRetentionLabel: '历史保留天数',
       historyRetentionDesc: '超过保留天数的历史在写入新条目时被清理；0 = 不按时间清理。',
@@ -1396,6 +1396,9 @@ export const zhCN = {
       certHint: '首次访问浏览器会提示证书不受信任，按提示选择"继续访问"。',
       certTrustWarning:
         '该证书仅用于本机远程输入服务（不能签发其他证书），请勿信任来源不明的证书；不再使用时可在手机系统设置中移除。',
+      waitingStart: '服务尚未启动。请关闭开关再打开一次，不要重启软件。',
+      starting: '正在启动远程输入服务…',
+      urlsStale: '这些地址来自上次运行，可能已经过期。',
     },
     about: {
       tagline: '自然说话，完美书写',
