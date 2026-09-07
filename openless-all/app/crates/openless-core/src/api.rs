@@ -3255,8 +3255,10 @@ impl OpenLessBackend {
         };
         let preferences = self.get_preferences();
         let mode = preferences.hotkey.mode;
-        let modifier_only =
-            crate::shortcut_types::legacy_modifier_trigger(&preferences.dictation_hotkey).is_some();
+        let modifier_only = crate::hotkey_interpreter::modifier_arbitration_required(
+            crate::shortcut_types::legacy_modifier_trigger(&preferences.dictation_hotkey),
+            mode,
+        );
         let (intent, reservation) = {
             let mut hotkey = self
                 .hotkey
