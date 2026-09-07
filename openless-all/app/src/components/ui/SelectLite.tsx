@@ -19,6 +19,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -82,6 +83,7 @@ export function SelectLite({
   onOpenChange,
 }: SelectLiteProps) {
   const [open, setOpen] = useState(false);
+  const listboxId = useId();
   // leaving 让 popover 在卸载前播完 exit keyframe（用户报"没有收缩动画"——之前直接 unmount）
   const [leaving, setLeaving] = useState(false);
   const [highlight, setHighlight] = useState<number>(-1);
@@ -277,6 +279,9 @@ export function SelectLite({
         role="combobox"
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-controls={open ? listboxId : undefined}
+        aria-owns={open ? listboxId : undefined}
+        aria-activedescendant={open && highlight >= 0 ? `${listboxId}-${highlight}` : undefined}
         aria-disabled={disabled}
         aria-label={ariaLabel}
         disabled={disabled}
@@ -305,7 +310,9 @@ export function SelectLite({
       {open && anchor && createPortal(
         <div
           ref={setPopoverRef}
+          id={listboxId}
           role="listbox"
+          aria-label={ariaLabel}
           style={{
             position: 'fixed',
             left: anchor.left,
@@ -337,6 +344,7 @@ export function SelectLite({
             return (
               <div
                 key={option.value || `__opt_${index}`}
+                id={`${listboxId}-${index}`}
                 data-option-index={index}
                 role="option"
                 aria-selected={isSelected}

@@ -18,6 +18,7 @@ import {
 import { useTranslation } from "react-i18next"
 import { restartApp } from "../../lib/ipc/permissions"
 import { isTauri } from "../../lib/ipc"
+import { useLayoutStack } from "../../lib/useMobileLayout"
 import {
     FOUNDRY_LOCAL_ASR_MODELS,
     SHERPA_ONNX_ASR_MODELS,
@@ -82,6 +83,7 @@ import { useHotkeySettings } from "../../state/HotkeySettingsContext"
 import { detectOS } from "../../components/WindowChrome"
 import { getPlatformCapabilities } from "../../lib/platform"
 import { SelectLite } from "../../components/ui/SelectLite"
+import { Icon } from "../../components/Icon"
 import { Btn, Card, Collapsible, PageHeader, Pill } from "../_atoms"
 import {
     formatBytes,
@@ -169,6 +171,7 @@ type RefreshGuard = () => boolean
 
 export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
     const { t } = useTranslation()
+    const stackLayout = useLayoutStack(1000)
     const { prefs, updatePrefs } = useHotkeySettings()
     const [settings, setSettings] = useState<LocalAsrSettings | null>(null)
     // 等待 native capability 查询完成，避免 Intel Mac 先闪现 MLX 渠道。
@@ -193,6 +196,7 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
     const [error, setError] = useState<string | null>(null)
     const [busyModelId, setBusyModelId] = useState<string | null>(null)
     const [storageBusy, setStorageBusy] = useState(false)
+    const [catalogRefreshing, setCatalogRefreshing] = useState(false)
     const [foundryStatus, setFoundryStatus] =
         useState<FoundryLocalAsrStatus | null>(null)
     const [foundryCatalog, setFoundryCatalog] = useState<
@@ -244,6 +248,7 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
     >({})
     const [engineStatus, setEngineStatus] =
         useState<LocalAsrEngineStatus | null>(null)
+    const catalogReloadRequestedRef = useRef(false)
     const downloadDialogOpenRef = useRef(downloadDialogOpen)
     const refreshGenerationRef = useRef(0)
     const refreshTimer = useRef<number | null>(null)
@@ -1765,10 +1770,10 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                     progress[m.id]?.phase === "progress")
             entries.push({
                 id: m.id,
-                name: m.id,
+                name: m.id.replace(/^qwen3-asr-/, "Qwen3-ASR ").replace(/^whisper-/, "Whisper "),
                 repo: m.hfRepo,
                 remoteBytes:
-                    remoteSizes[m.id]?.totalBytes || m.downloadedBytes || undefined,
+                    remoteSizes[m.id]?.totalBytes || (m.isDownloaded ? m.downloadedBytes : undefined),
                 isDownloaded: m.isDownloaded,
                 isDownloading,
                 percent: isDownloading
@@ -1776,7 +1781,7 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                         ? (progress[m.id]!.bytesDownloaded /
                               progress[m.id]!.bytesTotal) *
                           100
-                        : 0
+                        : null
                     : null,
                 isActive:
                     settings?.activeModel === m.id &&
@@ -1788,6 +1793,7 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                               "local-qwen3-c",
                           ].includes(prefs?.activeAsrProvider ?? "")),
                 engine: isWhisper ? "whisper" : "qwen3",
+                downloadError: progress[m.id]?.phase === "failed" ? progress[m.id]?.error || t("localAsr.failed") : null,
             })
         }
         // Windows：sherpa-onnx + foundry
@@ -1810,12 +1816,13 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                         ? (sherpaDownloadProgress[c.alias]!.bytesDownloaded /
                               sherpaDownloadProgress[c.alias]!.bytesTotal) *
                           100
-                        : 0
+                        : null
                     : null,
                 isActive:
                     sherpaStatus?.activeModel === c.alias &&
                     prefs?.activeAsrProvider === "sherpa-onnx-local",
                 engine: "sherpa",
+                downloadError: sherpaDownloadProgress[c.alias]?.phase === "failed" ? sherpaDownloadProgress[c.alias]?.error || t("localAsr.failed") : null,
             })
         }
         for (const c of foundryCatalog) {
@@ -1857,6 +1864,7 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
         foundryCatalog,
         foundryProgress,
         foundryStatus?.activeModel,
+        t,
     ])
 
     // 看板只展示已下载 / 下载中的模型（下载中必须有实时进度可见）。
@@ -1876,7 +1884,8 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
             allSidebarEntries.find((e) => !e.isDownloaded) ??
             allSidebarEntries[0] ??
             null
-        setSelectedModelId(fallback?.id ?? null)
+        const nextSelectedId = fallback?.id ?? null
+        if (nextSelectedId !== selectedModelId) setSelectedModelId(nextSelectedId)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [downloadDialogOpen, allSidebarEntries, selectedModelId])
 
@@ -1895,7 +1904,10 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
             sidebarEntries.some((e) => e.id === selectedModelId)
         if (stillExists) return
         const firstDownloaded = sidebarEntries.find((e) => e.isDownloaded)
-        setSelectedModelId(firstDownloaded?.id ?? sidebarEntries[0]?.id ?? null)
+        const nextSelectedId = firstDownloaded?.id ?? sidebarEntries[0]?.id ?? null
+        // Empty catalogs and metadata refreshes can leave the same selection.
+        // Do not schedule a layout-phase update when nothing has changed.
+        if (nextSelectedId !== selectedModelId) setSelectedModelId(nextSelectedId)
     }, [sidebarEntries, selectedModelId, downloadDialogOpen])
 
     // 从侧栏/看板分派引擎动作。不再有 setActive——激活 = 在 ASR 语音转写里
@@ -1960,12 +1972,24 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
             : selectedEntry?.engine === "sherpa"
               ? sherpaDownloadProgress[selectedEntry.id]
               : undefined
-    const selectedEntryPercent =
-        selectedEntryProgress && selectedEntryProgress.bytesTotal > 0
-            ? (selectedEntryProgress.bytesDownloaded /
-                  selectedEntryProgress.bytesTotal) *
-              100
-            : null
+    const reloadModels = async () => {
+        setCatalogRefreshing(true)
+        try {
+            await refresh()
+        } finally {
+            setCatalogRefreshing(false)
+        }
+    }
+    useEffect(() => {
+        if (downloadDialogOpen || !catalogReloadRequestedRef.current) return
+        // Run after the dialog poller's cleanup advances the refresh generation.
+        catalogReloadRequestedRef.current = false
+        void reloadModels()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [downloadDialogOpen])
+    const modelLoadPending = (settings === null && !error) || catalogRefreshing
+    const downloadDisabled = modelLoadPending || busyModelId !== null || sherpaBusy !== null || anyDownloadInFlight
+    const visibleError = error || allSidebarEntries.find(entry => entry.downloadError)?.downloadError
 
     return (
         <LocalAsrContentWrapper embedded={embedded}>
@@ -1986,7 +2010,7 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                 <Card
                     style={{
                         marginBottom: 16,
-                        background: "rgba(255, 215, 130, 0.18)",
+                        background: "var(--ol-surface-2)",
                     }}
                 >
                     <div
@@ -2003,24 +2027,21 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
 
             {/* Windows 已由下方 Foundry / sherpa 卡片完成模型管理；
                  macOS / Linux 仍需要该看板管理 Qwen3 / Whisper 模型。 */}
-            {!IS_WINDOWS && <Card style={{ marginBottom: 16 }}>
-                <div
-                    style={{
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: "var(--ol-ink)",
-                        marginBottom: 2,
-                    }}
-                >
-                    {t("localAsr.modelSelectTitle")}
+            {visibleError && (
+                <div className="ol-model-error" role="alert" style={{ marginBottom: 20 }}>{visibleError}</div>
+            )}
+            {!IS_WINDOWS && <section className="ol-model-manager">
+                {sidebarEntries.length > 0 ? <>
+                <div className="ol-model-manager-heading">
+                    <div>
+                        <h3>{t("localAsr.modelSelectTitle")}</h3>
+                        <p>{t("localAsr.modelSelectDesc")}</p>
+                    </div>
+                    <Btn variant="blue" disabled={downloadDisabled} onClick={() => setDownloadDialog(true)}>
+                        {t("localAsr.downloadNewModel")}
+                    </Btn>
                 </div>
-                <div
-                    style={{
-                        display: "grid",
-                        gridTemplateColumns: "minmax(0, 240px) minmax(0, 1fr)",
-                        gap: 16,
-                    }}
-                >
+                <div className={`ol-model-workspace${stackLayout ? " is-stacked" : ""}`}>
                     <ModelSidebar
                         entries={sidebarEntries}
                         selectedId={selectedModelId}
@@ -2030,19 +2051,8 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                             // 立刻反映到列表与详情，不等 3s 轮询。
                             void refresh()
                         }}
-                        onOpenDownload={() => setDownloadDialog(true)}
-                        downloadDisabled={
-                            busyModelId !== null ||
-                            sherpaBusy !== null ||
-                            anyDownloadInFlight
-                        }
-                    />                    <div
-                        style={{
-                            paddingLeft: 16,
-                            borderLeft: "0.5px solid var(--ol-line)",
-                            minWidth: 0,
-                        }}
-                    >
+                    />
+                    <div className="ol-model-selected-panel">
                         <ModelDetailPanel
                             entry={selectedEntry}
                             fileCount={selectedEntryRemote?.fileCount ?? null}
@@ -2056,9 +2066,8 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                       ? (settings?.mirror ?? "huggingface")
                                       : undefined
                             }
-                            downloading={selectedEntry ? Boolean(selectedEntryProgress) : false}
-                            progressPercent={selectedEntryPercent}
-                            busy={busyModelId !== null || sherpaBusy !== null}
+                            progress={selectedEntryProgress}
+                            busy={busyModelId !== null || sherpaBusy !== null || testingModelId !== null}
                             onDownload={() =>
                                 selectedEntry && dispatchEntryAction(selectedEntry, "download")
                             }
@@ -2110,24 +2119,36 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                         />
                     </div>
                 </div>
-            </Card>}
+                </> : (
+                    <div className="ol-model-empty" aria-busy={modelLoadPending}>
+                        <span className="ol-model-empty-icon"><Icon name="download" size={25} /></span>
+                        <h3>{modelLoadPending ? t("common.loading") : t("localAsr.libraryEmptyTitle")}</h3>
+                        <p className="ol-model-muted">{t("localAsr.libraryEmptyDesc")}</p>
+                        <div className="ol-model-actions">
+                            <Btn variant="blue" disabled={downloadDisabled} onClick={() => setDownloadDialog(true)}>{t("localAsr.downloadNewModel")}</Btn>
+                            <Btn variant="ghost" disabled={catalogRefreshing} onClick={() => void reloadModels()}>{t("localAsr.reloadCatalog")}</Btn>
+                        </div>
+                    </div>
+                )}
+            </section>}
 
             {/* ─── 收纳：下载与存储设置（镜像源 · 模型存储位置 · 内存引擎）——默认收起，
                  需要手动点开。日常的下载 / 管理 / 测试不依赖这些低频配置。 ─── */}
-            <div style={{ marginBottom: 16 }}>
+            <div className="ol-model-advanced">
                 <Collapsible
                     title={t("localAsr.downloadSettingsTitle")}
                     desc={t("localAsr.downloadSettingsDesc")}
                 >
                     {IS_QWEN_PLATFORM && (
                         <>
-                        <Card style={{ marginBottom: 16 }}>
+                        <div className="ol-model-setting-group">
                             <div
                                 style={{
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "space-between",
                                     gap: 16,
+                                    flexWrap: "wrap",
                                 }}
                             >
                                 <div>
@@ -2173,10 +2194,10 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                     </option>
                                 </select>
                             </div>
-                        </Card>
+                        </div>
                         {/* 运行时设置卡：内存中的引擎状态 + 多久释放 + 立即释放 */}
                         {engineAvailable && (
-                            <Card style={{ marginBottom: 16 }}>
+                            <div className="ol-model-setting-group">
                                 <div
                                     style={{
                                         display: "flex",
@@ -2310,11 +2331,11 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                         </select>
                                     </div>
                                 </div>
-                            </Card>
+                            </div>
                         )}
                         </>
                     )}
-                    <Card style={{ marginBottom: 16 }}>
+                    <div className="ol-model-setting-group">
                         <div
                             style={{
                                 display: "flex",
@@ -2416,7 +2437,7 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                 {t("localAsr.storageDesc")}
                             </div>
                         </div>
-                    </Card>
+                    </div>
                 </Collapsible>
             </div>
 {/* ─── 下载弹框：左侧模型选择 + 右侧详情，最下方开始下载。 ─── */}
@@ -2441,6 +2462,14 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                         return remote?.fileCount ?? null
                     }}
                     busy={busyModelId !== null || anyDownloadInFlight}
+                    loading={modelLoadPending}
+                    error={error}
+                    onRetryCatalog={() => {
+                        // Keep the dialog refresh-generation guard: close first, then query.
+                        catalogReloadRequestedRef.current = true
+                        setDownloadDialog(false)
+                    }}
+                    onRetryCard={(id) => void ensureHfCard(id, settings?.mirror ?? "huggingface")}
                     hfCardOf={(id) => {
                         const state = hfCards[id]
                         if (!state) return null
@@ -2460,9 +2489,9 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
             )}
 
             {/* ─── 分组：下载与管理（各引擎的模型获取/准备/下载） ─── */}
-            <LocalAsrGroupTitle>
+            {IS_WINDOWS && <LocalAsrGroupTitle>
                 {t("localAsr.groupDownload")}
-            </LocalAsrGroupTitle>
+            </LocalAsrGroupTitle>}
 
 
             {IS_WINDOWS && (
@@ -3286,7 +3315,7 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                 <Card
                     style={{
                         marginBottom: 16,
-                        background: "rgba(255, 235, 200, 0.4)",
+                        background: "var(--ol-surface-2)",
                     }}
                 >
                     <div
@@ -3300,18 +3329,6 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                 </Card>
             )}
 
-            {error && (
-                <Card
-                    style={{
-                        marginBottom: 16,
-                        background: "rgba(255, 220, 220, 0.5)",
-                    }}
-                >
-                    <div style={{ fontSize: 13, color: "#9b2c2c" }}>
-                        {error}
-                    </div>
-                </Card>
-            )}
         </LocalAsrContentWrapper>
     )
 }

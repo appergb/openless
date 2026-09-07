@@ -27,9 +27,10 @@ export function PageHeader({ kicker, title, desc, right, titleRight }: PageHeade
       justifyContent: 'space-between',
       gap: stackLayout ? 12 : mobile ? 12 : 24,
       marginBottom: stackLayout ? 16 : mobile ? 16 : 24,
-      flexWrap: stackLayout ? 'wrap' : 'nowrap',
+      flexWrap: 'wrap',
+      flexShrink: 0,
     }}>
-      <div style={{ minWidth: 0 }}>
+      <div style={{ minWidth: 0, flex: '1 1 240px' }}>
         {kicker && (
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--ol-ink-4)', marginBottom: 8 }}>{kicker}</div>
         )}
@@ -41,11 +42,11 @@ export function PageHeader({ kicker, title, desc, right, titleRight }: PageHeade
       </div>
       {right && (
         preferenceStack ? (
-          <div className="ol-flex-row ol-flex-split" style={{ width: '100%' }}>
+          <div className="ol-flex-row ol-flex-split ol-page-header-actions" style={{ width: '100%' }}>
             {right}
           </div>
         ) : (
-          right
+          <div className="ol-page-header-actions" style={{ maxWidth: '100%', minWidth: 0, display: 'flex', flexWrap: 'wrap', gap: 8 }}>{right}</div>
         )
       )}
     </div>

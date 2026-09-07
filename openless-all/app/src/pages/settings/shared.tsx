@@ -58,8 +58,7 @@ interface SettingRowProps {
     controlWidth?: number | string
 }
 
-// 页面瘦身后描述小字不再常驻展示；desc 改为悬停在标签文字上时以 Tooltip 弹出，
-// 布局保持紧凑的同时不牺牲可理解性。
+// 设置的用途和后果直接可读，触屏和键盘用户无需依赖悬停。
 export function SettingRow({
     label,
     desc,
@@ -87,15 +86,9 @@ export function SettingRow({
                 alignItems: "center",
             }}
         >
-            {/* display:flex 让 Tooltip 锚点收缩到文字宽度，提示贴着文字弹出。 */}
-            <div style={{ minWidth: 0, alignSelf: "center", display: "flex" }}>
-                {desc ? (
-                    <Tooltip content={desc} wrap placement="bottom" focusable>
-                        <span style={{ ...labelStyle, ...hintableTextStyle }}>{label}</span>
-                    </Tooltip>
-                ) : (
-                    <div style={labelStyle}>{label}</div>
-                )}
+            <div style={{ minWidth: 0, alignSelf: "center" }}>
+                <div style={labelStyle}>{label}</div>
+                {desc && <div style={{ fontSize: 12, color: "var(--ol-ink-3)", lineHeight: 1.55, marginTop: 5, overflowWrap: "anywhere" }}>{desc}</div>}
             </div>
             <div
                 className="ol-flex-row"

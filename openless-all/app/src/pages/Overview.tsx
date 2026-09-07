@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icon';
-import { formatComboLabel } from '../lib/hotkey';
+import { getHotkeyUsageHint } from '../lib/hotkey';
 import { getActivityStats, getCredentials, listHistory } from '../lib/ipc';
 import { Heatmap } from '../components/Heatmap';
 import { useMobileLayout } from '../lib/useMobileLayout';
 import { countCodePoints } from '../lib/unicode';
+import { isDesktop } from '../lib/platform';
+import { getOverviewSetup, type OverviewSettingsSection } from '../lib/overviewSetup';
 import {
   ACTIVITY_METRICS,
   ACTIVITY_PERIODS,
@@ -32,6 +34,7 @@ function useModeLabels(): Record<PolishMode, string> {
 
 interface OverviewProps {
   onOpenHistory?: () => void;
+  onOpenSettings?: (section: 'general' | 'services' | 'privacy' | 'shortcuts') => void;
 }
 
 // id → i18n nameKey；这里只保留展示文案，provider 行为来自 Core descriptor。
@@ -46,33 +49,30 @@ const LLM_NAME_KEY_BY_ID: Record<string, string> = {
   siliconflow: 'siliconflow',
   atlascloud: 'atlascloud',
   openai: 'openai',
+  gemini: 'gemini',
   codex_oauth: 'codexOAuth',
   mimo: 'mimo',
   cometapi: 'cometapi',
   openrouterFree: 'openrouterFree',
   alibabaCoding: 'alibabaCoding',
   codingPlanX: 'codingPlanX',
+  minimax: 'minimax',
+  stepfun: 'stepfun',
   custom: 'custom',
 };
 
-export function Overview({ onOpenHistory }: OverviewProps) {
+export function Overview({ onOpenHistory, onOpenSettings }: OverviewProps) {
   const { t } = useTranslation();
   const mobile = useMobileLayout();
   const modeLabel = useModeLabels();
   const [history, setHistory] = useState<DictationSession[]>([]);
   const [historyError, setHistoryError] = useState(false);
   const [credsError, setCredsError] = useState(false);
-  const [creds, setCreds] = useState<CredentialsStatus>({
-    activeAsrProvider: 'volcengine',
-    activeLlmProvider: 'ark',
-    pipelineMode: 'traditional',
-    asrConfigured: false,
-    llmConfigured: false,
-    omniConfigured: false,
-    volcengineConfigured: false,
-    arkConfigured: false,
-  });
-  const { prefs } = useHotkeySettings();
+  const [credsLoading, setCredsLoading] = useState(true);
+  const [creds, setCreds] = useState<CredentialsStatus | null>(null);
+  const { prefs, capability } = useHotkeySettings();
+  // A narrow desktop window still uses desktop shortcuts.
+  const desktop = isDesktop();
   const credentialsRequestSeq = useRef(0);
   const historyRequestSeq = useRef(0);
   const activityRequestSeq = useRef(0);
@@ -124,6 +124,7 @@ export function Overview({ onOpenHistory }: OverviewProps) {
     const requestSeq = credentialsRequestSeq.current + 1;
     credentialsRequestSeq.current = requestSeq;
     setCredsError(false);
+    setCredsLoading(true);
     getCredentials()
       .then(status => {
         if (requestSeq !== credentialsRequestSeq.current) return;
@@ -134,6 +135,9 @@ export function Overview({ onOpenHistory }: OverviewProps) {
         if (requestSeq !== credentialsRequestSeq.current) return;
         console.error('[overview] failed to load credentials status', error);
         setCredsError(true);
+      })
+      .finally(() => {
+        if (requestSeq === credentialsRequestSeq.current) setCredsLoading(false);
       });
   }, []);
 
@@ -143,7 +147,7 @@ export function Overview({ onOpenHistory }: OverviewProps) {
 
   useEffect(() => {
     refreshCredentials();
-  }, [refreshCredentials, prefs?.activeLlmProvider, prefs?.activeAsrProvider]);
+  }, [refreshCredentials, prefs?.activeLlmProvider, prefs?.activeAsrProvider, prefs?.pipelineMode, prefs?.activeOmniProvider]);
 
   // ⌘R / Ctrl+R 重新拉取本页的三份数据（历史、活动、凭据），与历史页同键同语义。
   // preventDefault 拦掉 webview 默认的整页 reload，避免整个前端重挂载。
@@ -216,60 +220,94 @@ export function Overview({ onOpenHistory }: OverviewProps) {
     [activity, period, metric],
   );
 
-  const asrProviderId = creds.activeAsrProvider || 'volcengine';
-  const llmProviderId = creds.activeLlmProvider || 'ark';
-  const asrNameKey = ASR_NAME_KEY_BY_ID[asrProviderId];
-  const llmNameKey = LLM_NAME_KEY_BY_ID[llmProviderId];
-  const asrProviderName = asrNameKey
-    ? t(`settings.providers.presets.${asrNameKey}`)
-    : asrProviderId;
-  const llmProviderName = llmNameKey
-    ? t(`settings.providers.presets.${llmNameKey}`)
-    : llmProviderId;
+  const setup = getOverviewSetup({
+    credentials: creds,
+    loading: credsLoading,
+    error: credsError,
+    omniProvider: prefs?.activeOmniProvider,
+    desktop,
+    hotkeyAvailable: prefs && capability ? capability.adapter !== 'unavailable' : null,
+    hasShortcut: Boolean(prefs?.dictationHotkey.primary.trim()),
+  });
+  const shortcutHint = prefs && desktop && prefs.dictationHotkey.primary.trim()
+    ? getHotkeyUsageHint(prefs.hotkey, undefined, prefs.dictationHotkey)
+    : null;
+  const openSettings = (section: OverviewSettingsSection) => onOpenSettings?.(section);
+  const guideDescription = setup.step === 'tryDictation'
+    ? t('overview.guide.tryDictationDesc', { shortcut: shortcutHint })
+    : t(`overview.guide.${setup.step}Desc`);
 
   return (
-    <>
-      <PageHeader title={t('overview.title')} />
+    // Own a natural-height column: the shell scrolls when the window is short.
+    <div style={{ display: 'flex', flexDirection: 'column', flex: '0 0 auto', minWidth: 0 }}>
+      <PageHeader
+        title={t('overview.title')}
+        right={<Btn size="sm" icon="refresh" onClick={refreshAll}>{t('overview.refresh')}</Btn>}
+      />
 
-      <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 18 }}>
-        <ProviderCard
-          kind={t('overview.asrKind')}
-          name={asrProviderName}
-          subname={asrProviderId}
-          status={credsError ? 'error' : creds.asrConfigured ? 'configured' : 'notConfigured'}
-        />
-        <ProviderCard
-          kind={t('overview.llmKind')}
-          name={llmProviderName}
-          subname={llmProviderId}
-          status={credsError ? 'error' : creds.llmConfigured ? 'configured' : 'notConfigured'}
-        />
+      <Card style={{ marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ flex: '1 1 240px', minWidth: 0 }} aria-live="polite" aria-busy={credsLoading}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ol-blue)', marginBottom: 6 }}>{t('overview.guide.nextStep')}</div>
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--ol-ink)', margin: 0 }}>{t(`overview.guide.${setup.step}Title`)}</h2>
+            <p style={{ fontSize: 13, color: 'var(--ol-ink-3)', lineHeight: 1.6, margin: '8px 0 0' }}>{guideDescription}</p>
+          </div>
+          {setup.action && (
+            <Btn
+              variant="blue"
+              icon={setup.action === 'refresh' ? 'refresh' : 'chevRight'}
+              disabled={setup.action !== 'refresh' && !onOpenSettings}
+              style={{ whiteSpace: 'normal', textAlign: 'start' }}
+              onClick={() => setup.action === 'refresh' ? refreshCredentials() : setup.action && openSettings(setup.action)}
+            >
+              {t(`overview.actions.${setup.action}`)}
+            </Btn>
+          )}
+        </div>
+        <div style={{ borderTop: '0.5px solid var(--ol-line)', marginTop: 16, paddingTop: 14, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {setup.action !== 'general' && <Btn size="sm" icon="mic" disabled={!onOpenSettings} onClick={() => openSettings('general')}>{t('overview.actions.general')}</Btn>}
+          {desktop && setup.action !== 'shortcuts' && <Btn size="sm" icon="cmd" disabled={!onOpenSettings} onClick={() => openSettings('shortcuts')}>{t('overview.actions.shortcuts')}</Btn>}
+          {setup.action !== 'privacy' && <Btn size="sm" icon="shield" disabled={!onOpenSettings} onClick={() => openSettings('privacy')}>{t('overview.actions.privacy')}</Btn>}
+        </div>
+        <p style={{ margin: '10px 0 0', color: 'var(--ol-ink-4)', fontSize: 11.5, lineHeight: 1.5 }}>{t('overview.guide.permissionsHint')}</p>
+      </Card>
+
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+        <h2 style={{ fontSize: 12, fontWeight: 600, color: 'var(--ol-ink-2)', margin: 0 }}>{t('overview.servicesTitle')}</h2>
+        <Btn size="sm" variant="soft" disabled={!onOpenSettings} onClick={() => openSettings('services')}>{t('overview.actions.services')}</Btn>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: mobile || setup.providers.length < 2 ? 'minmax(0, 1fr)' : 'repeat(2, minmax(0, 1fr))', gap: 12, marginBottom: 18 }}>
+        {setup.providers.map(provider => {
+          const nameKey = provider.id && (provider.kind === 'asr' ? ASR_NAME_KEY_BY_ID : LLM_NAME_KEY_BY_ID)[provider.id];
+          const name = nameKey ? t(`settings.providers.presets.${nameKey}`) : provider.id || t(provider.kind === 'omni' ? 'overview.omniName' : 'overview.statusUnknown');
+          return (
+            <ProviderCard
+              key={provider.kind}
+              kind={provider.kind}
+              name={name}
+              status={provider.configured ? 'configured' : 'notConfigured'}
+              onConfigure={onOpenSettings ? () => openSettings('services') : undefined}
+            />
+          );
+        })}
+        {setup.providers.length === 0 && (
+          <Card padding={16}>
+            <div role="status" style={{ fontSize: 12, color: 'var(--ol-ink-3)' }}>{t(credsLoading ? 'overview.statusLoading' : 'overview.credentialsLoadError')}</div>
+          </Card>
+        )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: mobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 12, marginBottom: 18 }}>
+      <h2 style={{ fontSize: 12, fontWeight: 600, color: 'var(--ol-ink-3)', margin: '0 0 10px' }}>{t('overview.statsTitle')}</h2>
+
+      <div style={{ display: 'grid', gridTemplateColumns: mobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, minmax(0, 1fr))', gap: 12, marginBottom: 18 }}>
         <Metric icon="hash" label={t('overview.metricChars')} value={historyError ? '—' : metrics.charsToday.toLocaleString()} trend={historyError ? t('overview.historyLoadError') : t('overview.metricSegments', { count: metrics.segmentsToday })} />
         <Metric icon="mic" label={t('overview.metricDuration')} value={historyError ? '—' : formatDuration(metrics.totalDurationMs, t)} trend={historyError ? t('overview.historyLoadError') : ''} />
         <Metric icon="clock" label={t('overview.metricAvg')} value={historyError ? '—' : formatDuration(metrics.avgLatencyMs, t)} trend={historyError ? t('overview.historyLoadError') : metrics.segmentsToday > 0 ? t('overview.metricAvgTrend') : t('overview.metricNoData')} />
-        <Metric icon="bolt" label={t('overview.metricTotal')} value={historyError ? '—' : String(history.length)} trend={historyError ? t('overview.historyLoadError') : t('overview.metricTotalTrend')} accent />
+        <Metric icon="bolt" label={t('overview.metricTotal')} value={historyError ? '—' : String(history.length)} trend={historyError ? t('overview.historyLoadError') : t('overview.metricTotalTrend')} />
       </div>
 
-      {/* 年度活动热力图（8starlabs Heatmap 规格）：过去一年每日听写次数。
-          数据来自独立的 activity 计数存储，与历史保留策略解耦；
-          可在设置 → 通用 → 外观 里单独关闭。
-          移动端（useMobileLayout）不渲染，避免窄屏横向溢出（issue #861）。 */}
-      {!mobile &&
-        prefs?.showOverviewActivityHeatmap !== false &&
-        activity &&
-        activity.length > 0 && (
-          <ActivityHeatmapCard activity={activity} />
-        )}
-
-      {/* 底部一行 = flex:1 撑满剩余高度（父 wrapper 是 display:flex/column）。
-          只有「最近识别」内部允许滚动；其他卡片按内容自然高度，不破裂底部圆角。
-          issue #243 follow-up：去掉外层 overflow 后底部圆角被裁的视觉问题。 */}
-      <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1.4fr', gap: 12, flex: mobile ? undefined : 1, minHeight: mobile ? undefined : 0 }}>
-        {/* overflow:hidden：窗口过小时这一行 flex:1 会被压到比内容还矮，柱状图（固定高）
-            原本会溢出卡片圆角外（issue #782）。裁进卡片内，与右侧「最近识别」卡片一致。 */}
+      {/* Both cards keep their content height; overflow belongs to the shell. */}
+      <div style={{ display: 'grid', gridTemplateColumns: mobile ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) minmax(0, 1.4fr)', gap: 12, marginBottom: 18 }}>
         <PeriodMetricsCard
           series={series}
           period={period}
@@ -277,14 +315,15 @@ export function Overview({ onOpenHistory }: OverviewProps) {
           onPeriodChange={setPeriod}
           onMetricChange={setMetric}
           loadError={activityError}
+          onRetry={refreshActivity}
         />
 
-        <Card padding={0} style={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+        <Card padding={0} style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
           <div style={{ padding: '14px 18px', borderBottom: '0.5px solid var(--ol-line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ol-ink-2)' }}>{t('overview.recentTitle')}</span>
-            <Btn size="sm" variant="ghost" onClick={onOpenHistory}>{t('overview.recentAll')}</Btn>
+            <Btn size="sm" variant="ghost" disabled={!onOpenHistory} onClick={onOpenHistory}>{t('overview.recentAll')}</Btn>
           </div>
-          <div className="ol-thinscroll" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+          <div>
             {historyError ? (
               <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: 'var(--ol-ink-4)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
                 <span>{t('overview.recentLoadFailed')}</span>
@@ -294,7 +333,7 @@ export function Overview({ onOpenHistory }: OverviewProps) {
               <>
                 {history.length === 0 && (
                   <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: 'var(--ol-ink-4)' }}>
-                    {t('overview.recentEmpty', { trigger: prefs ? formatComboLabel(prefs.dictationHotkey) : '' })}
+                    {t('overview.recentEmptyHint')}
                   </div>
                 )}
                 {history.slice(0, 5).map(s => (
@@ -305,53 +344,57 @@ export function Overview({ onOpenHistory }: OverviewProps) {
           </div>
         </Card>
       </div>
-    </>
+      {/* Independent activity storage survives history clearing; keep the existing visibility preference. */}
+      {!mobile && prefs?.showOverviewActivityHeatmap !== false && activity && activity.length > 0 && (
+        <ActivityHeatmapCard activity={activity} />
+      )}
+    </div>
   );
 }
 
 interface ProviderCardProps {
-  kind: string;
+  kind: 'asr' | 'llm' | 'omni';
   name: string;
-  subname: string;
-  status: 'configured' | 'notConfigured' | 'error';
+  status: 'configured' | 'notConfigured';
+  onConfigure?: () => void;
 }
 
-function ProviderCard({ kind, name, subname, status }: ProviderCardProps) {
+function ProviderCard({ kind, name, status, onConfigure }: ProviderCardProps) {
   const { t } = useTranslation();
-  // ASR 卡用 mic 图标，其他用 sparkle —— 通过比较译文判断会随语言改变，故改用本地化无关的字面量比较。
-  const isAsr = kind === t('overview.asrKind');
   return (
-    <Card padding={16} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-      <div
-        style={{
-          width: 38, height: 38, borderRadius: 10,
-          background: 'var(--ol-blue-soft)',
-          color: 'var(--ol-blue)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
-      >
-        <Icon name={isAsr ? 'mic' : 'sparkle'} size={18} />
+    <Card padding={16} style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div
+          style={{
+            width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+            background: 'var(--ol-blue-soft)',
+            color: 'var(--ol-blue)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <Icon name={kind === 'asr' ? 'mic' : 'sparkle'} size={18} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontSize: 11, color: 'var(--ol-ink-4)', fontWeight: 600 }}>{t(`overview.${kind}Kind`)}</span>
+            {status === 'configured' && (
+              <Pill tone="ok" size="sm">
+                <span style={{ width: 5, height: 5, borderRadius: 999, background: 'var(--ol-ok)' }} />
+                {t('overview.statusConfigured')}
+              </Pill>
+            )}
+            {status === 'notConfigured' && (
+              <Pill tone="outline" size="sm">{t('overview.statusNotConfigured')}</Pill>
+            )}
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ol-ink)', overflowWrap: 'anywhere' }}>{name}</div>
+        </div>
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-          <span style={{ fontSize: 11, color: 'var(--ol-ink-4)', fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase' }}>{kind}</span>
-          {status === 'configured' && (
-            <Pill tone="ok" size="sm">
-              <span style={{ width: 5, height: 5, borderRadius: 999, background: 'var(--ol-ok)' }} />
-              {t('overview.statusConfigured')}
-            </Pill>
-          )}
-          {status === 'notConfigured' && (
-            <Pill tone="outline" size="sm">{t('overview.statusNotConfigured')}</Pill>
-          )}
-          {status === 'error' && (
-            <Pill tone="outline" size="sm" style={{ color: 'var(--ol-red, #ef4444)', borderColor: 'rgba(239,68,68,0.24)' }}>{t('overview.statusUnknown')}</Pill>
-          )}
-        </div>
-        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ol-ink)' }}>{name}</div>
-        <div style={{ fontSize: 11.5, color: status === 'error' ? 'var(--ol-red, #ef4444)' : 'var(--ol-ink-3)', marginTop: 1, fontFamily: status === 'error' ? undefined : 'var(--ol-font-mono)' }}>
-          {status === 'error' ? t('overview.credentialsLoadError') : subname}
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <span style={{ flex: '1 1 160px', fontSize: 11.5, color: 'var(--ol-ink-3)', lineHeight: 1.5 }}>{t(`overview.providerHelp.${kind}`)}</span>
+        <Btn size="sm" icon="chevRight" disabled={!onConfigure} onClick={onConfigure}>
+          {t(status === 'configured' ? 'overview.manageProvider' : 'overview.configureProvider')}
+        </Btn>
       </div>
     </Card>
   );
@@ -385,9 +428,7 @@ function ActivityHeatmapCard({ activity }: { activity: ActivityDay[] }) {
     };
   }, [activity, i18n.language]);
   return (
-    // marginBottom 与上方 provider / metrics 两行的 18px 节奏保持一致：否则「年度活动」
-    // 会直接贴住下面「近 7 天 / 最近识别」那一行，中间没有间隔（issue #781）。
-    <Card padding={18} style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 18 }}>
+    <Card padding={18} style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
       <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ol-ink-2)' }}>
         {t('overview.activityTitle')}
       </span>
@@ -409,17 +450,16 @@ interface MetricProps {
   label: string;
   value: string;
   trend: string;
-  accent?: boolean;
 }
 
-function Metric({ icon, label, value, trend, accent }: MetricProps) {
+function Metric({ icon, label, value, trend }: MetricProps) {
   return (
-    <Card padding={16}>
+    <Card padding={14} style={{ minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, color: 'var(--ol-ink-3)' }}>
         <Icon name={icon} size={13} />
         <span style={{ fontSize: 11.5 }}>{label}</span>
       </div>
-      <div style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', color: accent ? 'var(--ol-blue)' : 'var(--ol-ink)', lineHeight: 1.1 }}>{value}</div>
+      <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em', color: 'var(--ol-ink)', lineHeight: 1.2, overflowWrap: 'anywhere' }}>{value}</div>
       <div style={{ fontSize: 11, color: 'var(--ol-ink-4)', marginTop: 6 }}>{trend || ' '}</div>
     </Card>
   );
@@ -493,6 +533,7 @@ function PeriodMetricsCard({
   onPeriodChange,
   onMetricChange,
   loadError,
+  onRetry,
 }: {
   series: ReturnType<typeof buildPeriodSeries>;
   period: ActivityPeriod;
@@ -500,6 +541,7 @@ function PeriodMetricsCard({
   onPeriodChange: (next: ActivityPeriod) => void;
   onMetricChange: (next: ActivityMetric) => void;
   loadError: boolean;
+  onRetry: () => void;
 }) {
   const { t } = useTranslation();
   const periodOptions = ACTIVITY_PERIODS.map(days => ({
@@ -512,7 +554,7 @@ function PeriodMetricsCard({
   }));
 
   return (
-    <Card padding={18} style={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+    <Card padding={18} style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
       {/* flexWrap：卡片在 1fr 列里较窄，两组切换器放不下时换行而不是压扁按钮。 */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         <SegmentedToggle
@@ -530,8 +572,9 @@ function PeriodMetricsCard({
       </div>
 
       {loadError ? (
-        <div style={{ height: 132, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', fontSize: 12, color: 'var(--ol-ink-4)' }}>
+        <div style={{ minHeight: 132, display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', justifyContent: 'center', textAlign: 'center', fontSize: 12, color: 'var(--ol-ink-4)' }}>
           {t('overview.activityLoadError')}
+          <Btn size="sm" onClick={onRetry}>{t('overview.historyRetry')}</Btn>
         </div>
       ) : (
         <>

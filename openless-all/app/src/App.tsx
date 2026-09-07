@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Capsule } from './components/Capsule';
+import { CoreStartupScreen } from './components/CoreStartupScreen';
 import { GlobalDownloadProgress } from './components/GlobalDownloadProgress';
 import { detectOS, type OS } from './components/WindowChrome';
 import {
@@ -86,10 +87,10 @@ export function App(props: AppProps) {
   }, []);
 
   if (error) {
-    return <div role="alert">OpenLess Core 无法启动或版本不兼容。 {error}</div>;
+    return <CoreStartupScreen error={error} compact={props.isCapsule || props.isLessComputerGlow} />;
   }
   if (!ready) {
-    return <div role="status">正在检查 OpenLess Core 兼容性…</div>;
+    return <CoreStartupScreen compact={props.isCapsule || props.isLessComputerGlow} />;
   }
   return <ReadyApp {...props} />;
 }
@@ -342,14 +343,10 @@ function ReadyApp({ isCapsule, isQa, isSelectionPolishPreview, isSelectionVoiceI
   }, [os]);
 
   if (gate === 'checking') {
-    return <div role="status">正在检查 OpenLess Core 兼容性…</div>;
+    return <CoreStartupScreen />;
   }
   if (gate === 'incompatible') {
-    return (
-      <div role="alert">
-        OpenLess Core 无法启动或版本不兼容。{startupError ? ` ${startupError}` : ''}
-      </div>
-    );
+    return <CoreStartupScreen error={startupError ?? 'Core startup failed'} />;
   }
 
   return (

@@ -89,7 +89,7 @@ export function Translation() {
   if (!prefs) {
     return (
       <>
-        <PageHeader title={t('translation.title')} />
+        <PageHeader title={t('translation.title')} desc={t('translation.desc')} />
         <Card>
           {error ? (
             <div role="alert" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -160,7 +160,7 @@ export function Translation() {
 
   return (
     <>
-      <PageHeader title={t('translation.title')} />
+      <PageHeader title={t('translation.title')} desc={t('translation.desc')} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {error && (

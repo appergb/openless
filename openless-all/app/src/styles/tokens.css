@@ -125,10 +125,10 @@
   --ol-sidebar-settings-active-bg: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.48));
   --ol-nav-hover-bg: rgba(0, 0, 0, 0.04);
 
-  --ol-settings-rail-bg: linear-gradient(180deg, rgba(252,252,253,0.96), rgba(250,250,250,0.96));
+  --ol-settings-rail-bg: #fafafa;
   --ol-settings-rail-border: rgba(255,255,255,0.52);
   --ol-settings-links-border: rgba(255,255,255,0.46);
-  --ol-settings-content-bg: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(252,252,253,0.96));
+  --ol-settings-content-bg: #ffffff;
   --ol-settings-close-bg: rgba(255,255,255,0.38);
   --ol-settings-close-hover-bg: rgba(255,255,255,0.72);
 
@@ -292,10 +292,10 @@
   --ol-sidebar-settings-active-bg: linear-gradient(180deg, rgba(63, 63, 70, 0.86), rgba(39, 39, 42, 0.86));
   --ol-nav-hover-bg: rgba(116,183,255,0.10);
 
-  --ol-settings-rail-bg: linear-gradient(180deg, rgba(20, 20, 23, 0.98), rgba(13, 13, 15, 0.98));
+  --ol-settings-rail-bg: #141417;
   --ol-settings-rail-border: rgba(226,232,240,0.09);
   --ol-settings-links-border: rgba(226,232,240,0.08);
-  --ol-settings-content-bg: linear-gradient(180deg, rgba(24, 24, 27, 0.98), rgba(20, 20, 23, 0.98));
+  --ol-settings-content-bg: #18181b;
   --ol-settings-close-bg: rgba(255,255,255,0.05);
   --ol-settings-close-hover-bg: rgba(116,183,255,0.14);
 

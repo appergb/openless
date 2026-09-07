@@ -2,7 +2,7 @@
 // 真正的逻辑都在各 *Section 文件里，这里只负责"哪些 section 归到哪个 tab"。
 
 import { useTranslation } from 'react-i18next';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { RecordingInputSection } from './RecordingInputSection';
 import { RemoteInputSection } from './RemoteInputSection';
 import { ShortcutsSection } from './ShortcutsSection';
@@ -26,6 +26,8 @@ import { AboutSection } from './AboutSection';
 import { detectOS } from '../../components/WindowChrome';
 import { getPlatformCapabilities } from '../../lib/platform';
 import type { PlatformCapabilities } from '../../lib/types';
+import { useHotkeySettings } from '../../state/HotkeySettingsContext';
+import { availableServiceViews, resolveServiceView, type ServiceViewId } from './navigation';
 
 // 各 tab 共用的平台能力查询（决定桌面/移动、是否支持热键与自动更新等 gating）。
 function usePlatformCaps(): PlatformCapabilities | null {
@@ -38,38 +40,60 @@ function usePlatformCaps(): PlatformCapabilities | null {
   return platformCaps;
 }
 
-// 通用：录音与输入 · 远程输入 · 快捷键 · 主题 · 语言。
+// 录音与输入：从录音到落字，以及手机输入。
 export function GeneralTab() {
   const platformCaps = usePlatformCaps();
-  const showDesktopShortcuts = platformCaps?.supportsDesktopHotkey === true;
   const showRemoteInput = platformCaps?.platform === 'desktop';
 
   return (
     <>
       <RecordingInputSection />
-      <LayoutSection />
       {showRemoteInput && <RemoteInputSection />}
-      <SelectionWorkspaceSection />
-      {showDesktopShortcuts && <ShortcutsSection />}
-      <ThemeSection />
-      <LanguageSection />
     </>
   );
+}
+
+export function ShortcutsTab() {
+  const platformCaps = usePlatformCaps();
+  if (!platformCaps?.supportsDesktopHotkey) return null;
+  return <><ShortcutsSection /><SelectionWorkspaceSection /></>;
+}
+
+export function AppearanceTab() {
+  return <><ThemeSection /><LayoutSection /><LanguageSection /></>;
 }
 
 // 服务：AI 提供商 · 本地模型 · 扩展市场。
 // 本地模型是「语音识别由谁提供」的一种答案，和云端提供商属同一决策，
 // 不再藏进「高级」。
 export function ServicesTab() {
+  const { t } = useTranslation();
+  const { prefs } = useHotkeySettings();
   const platformCaps = usePlatformCaps();
-  const showLocalModel = platformCaps?.platform === 'desktop';
+  const showLocalModel = platformCaps?.supportsLocalAsr === true;
+  const multimodal = prefs?.multimodalPipelineEnabled === true && prefs.pipelineMode === 'multimodal';
+  const [view, setView] = useState<ServiceViewId>('llm');
+  const views = availableServiceViews(multimodal, showLocalModel);
+  const selectedView = resolveServiceView(view, views);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    contentRef.current?.closest('.ol-thinscroll')?.scrollTo({ top: 0 });
+  }, [selectedView]);
 
   return (
     <>
-      <ProvidersSection />
-      <NetworkSection />
-      {showLocalModel && <LocalModelSection />}
-      <MarketplaceSection />
+      <div role="group" aria-label={t('modal.serviceViews.label')} className="ol-service-views ol-thinscroll">
+        {views.map(id => <button key={id} type="button" aria-pressed={selectedView === id} onClick={() => setView(id)}>{t(`modal.serviceViews.${id}`)}</button>)}
+      </div>
+      <div key={selectedView} ref={contentRef} className="ol-service-content">
+        {selectedView === 'llm' && <ProvidersSection kind="llm" />}
+        {selectedView === 'asr' && <ProvidersSection kind="asr" />}
+        {selectedView === 'omni' && <ProvidersSection />}
+        {selectedView === 'models' && <LocalModelSection />}
+        {selectedView === 'connections' && <><NetworkSection /><MarketplaceSection /></>}
+        {(selectedView === 'llm' || selectedView === 'asr') && <p className="ol-service-storage-note">{t('settings.providers.credentialStorageNotice')}</p>}
+      </div>
     </>
   );
 }

@@ -9,14 +9,11 @@ import { useEffect, useState } from 'react';
 import type { PlatformCapabilities } from '../../lib/types';
 import { useTranslation } from 'react-i18next';
 import { LocalAsr } from '../LocalAsr';
-import { detectOS } from '../../components/WindowChrome';
 import { getPlatformCapabilities } from '../../lib/platform';
-import { Card } from '../_atoms';
+import '../LocalAsr/local-asr.css';
 
 export function LocalModelSection() {
   const { t } = useTranslation();
-  const os = detectOS();
-  const isWin = os === 'win';
   const [platformCaps, setPlatformCaps] = useState<PlatformCapabilities | null>(null);
 
   useEffect(() => {
@@ -26,39 +23,19 @@ export function LocalModelSection() {
   const platformSupported = platformCaps?.supportsLocalAsr === true;
 
   return (
-    <Card>
-      {/* 标题 + 右上角 inline 警告小字（实验性标记保留）。
-          Windows：标题区整体灰显 —— 本地 ASR 在 Win 上走 Foundry / sherpa 独立路径。 */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
-        <div style={{ minWidth: 0, opacity: isWin ? 0.45 : 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>{t('settings.advanced.localAsrTitle')}</div>
+    <section className="ol-local-model-section">
+      <header className="ol-local-model-heading">
+        <div>
+          <h2>{t('modal.serviceViews.models')}</h2>
+          <p>{t('localAsr.performanceWarning')}</p>
         </div>
-        <div style={{
-          fontSize: 11,
-          color: '#A04500',
-          fontWeight: 500,
-          lineHeight: 1.4,
-          textAlign: 'right',
-          flexShrink: 0,
-          maxWidth: '52%',
-          paddingTop: 2,
-          opacity: isWin ? 0.45 : 1,
-        }}>
-          ⚠️ {t('settings.advanced.localAsrWarningShort')}
-        </div>
-      </div>
-
-      {!platformSupported ? (
-        <div style={{ fontSize: 12.5, color: 'var(--ol-ink-3)', lineHeight: 1.6, padding: '8px 0' }}>
-          {t('settings.advanced.platformNotSupported')}
-        </div>
-      ) : (
-        /* 模型下载 / 管理看板（模型选择 · 下载 · 删除 · 测试 · 镜像源收纳）——
-           较大的内嵌框。启用入口在「AI 提供商 → ASR 语音转写」选择本地供应商。 */
-        <div style={{ marginTop: 16, borderTop: '0.5px solid var(--ol-line)', paddingTop: 16 }}>
-          <LocalAsr embedded />
-        </div>
-      )}
-    </Card>
+        <span className="ol-model-status">{t('localAsr.qwenExperimentalBadge')}</span>
+      </header>
+      {platformCaps === null ? (
+        <p className="ol-model-muted" role="status">{t('common.loading')}</p>
+      ) : !platformSupported ? (
+        <p className="ol-model-muted">{t('settings.advanced.platformNotSupported')}</p>
+      ) : <LocalAsr embedded />}
+    </section>
   );
 }
