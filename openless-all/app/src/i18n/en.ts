@@ -1395,9 +1395,9 @@ export const en: typeof zhCN = {
       portInUse: 'Port {{port}} is in use, please change it',
       startError: 'Failed to start the remote input service: {{reason}}',
       securityHint: 'Reachable only on the same LAN and requires the pairing code; turn it off when not in use.',
-      certHint: 'On first visit the browser warns the certificate is untrusted — choose "Proceed".',
-      certTrustWarning:
-        'The certificate is only used by this PC’s remote input service (it cannot issue other certificates). Never trust certificates from unknown sources; remove it from your phone’s settings when no longer needed.',
+      certHint: "Open “First-time setup: trust this computer” on the phone to install and trust the certificate. Older versions require one-time setup; subsequent restarts and IP changes preserve trust.",
+      certTrustWarning: "Only install the OpenLess root certificate from your own computer. It can issue certificates and its private key stays on that computer; remove it from your phone when no longer needed.",
+      certSetupLink: "Copy iPhone certificate link",
       waitingStart: 'The service is not running yet. Turn the switch off, then on again. Do not restart the app.',
       starting: 'Starting the remote input service…',
       urlsStale: 'These addresses come from the previous run and may be out of date.',

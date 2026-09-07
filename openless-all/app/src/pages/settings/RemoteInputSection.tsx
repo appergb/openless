@@ -205,7 +205,7 @@ export function RemoteInputSection() {
                 {status.urls.map((u) => (
                   <div
                     key={u}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                    style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}
                   >
                     <span
                       style={{
@@ -223,6 +223,17 @@ export function RemoteInputSection() {
                       style={smallBtn}
                     >
                       {copied === u ? '✓' : '⧉'}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const link = `${u}/cert.mobileconfig`;
+                        await copyText(link);
+                        setCopied(link);
+                        window.setTimeout(() => setCopied((c) => c === link ? null : c), 1500);
+                      }}
+                      style={smallBtn}
+                    >
+                      {copied === `${u}/cert.mobileconfig` ? '✓' : t('settings.remoteInput.certSetupLink')}
                     </button>
                   </div>
                 ))}
