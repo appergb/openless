@@ -109,4 +109,4 @@ cargo test -p openless-linux-egui --bin openless-linux-egui --locked
 
 ### 官方资料
 
-来源、版本、获取日期和有效期统一记录在[Linux 环境引导知识记录](../knowledge/2026-09-06-linux-setup.md)。
+来源、版本、获取日期和有效期以各官方项目发布页为准。

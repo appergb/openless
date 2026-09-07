@@ -1,0 +1,42 @@
+export const WIDTH = 1920;
+export const HEIGHT = 1080;
+export const FPS = 60;
+export const DURATION_FRAMES = 4680;
+
+export const BEATS = {
+  opening: { from: 0, duration: 480 },
+  logoRewrite: { from: 480, duration: 420 },
+  demoOverview: { from: 900, duration: 1260 },
+  demoLive: { from: 2160, duration: 1260 },
+  compare: { from: 3420, duration: 600 },
+  contract: { from: 4020, duration: 360 },
+  outro: { from: 4380, duration: 300 },
+} as const;
+
+export const COLORS = {
+  paper: "#FAFAFC",
+  white: "#FFFFFF",
+  ink: "#0A0A0A",
+  muted: "#687082",
+  hairline: "rgba(10, 10, 10, 0.1)",
+  blue: "#0B2A66",
+  blue2: "#1E3A8A",
+  accentBlue: "#2563EB",
+  paleBlue: "#EFF6FF",
+  glowBlue: "rgba(30, 58, 138, 0.16)",
+  glowAccent: "rgba(37, 99, 235, 0.14)",
+  glass: "rgba(255, 255, 255, 0.78)",
+};
+
+export const FONT = {
+  sans:
+    '"DM Sans", "Plus Jakarta Sans", "Sora", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif',
+  zh:
+    '"Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif',
+};
+
+export const SHADOW = {
+  soft: "0 28px 90px rgba(18, 24, 40, 0.12)",
+  media: "0 34px 120px rgba(16, 24, 40, 0.18)",
+  lift: "0 18px 50px rgba(11, 42, 102, 0.18)",
+};

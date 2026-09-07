@@ -1,0 +1,95 @@
+import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
+import { Backdrop } from "../components/Backdrop";
+import { AssetImage, MediaSurface } from "../components/MediaSurface";
+import { LightBand } from "../components/SvgMotion";
+import { TypedLines } from "../components/TextMotion";
+import { COLORS, FONT } from "../design/tokens";
+import { softIn } from "../design/motion";
+
+export const CompareScene = () => {
+  const frame = useCurrentFrame();
+  const split = interpolate(frame, [80, 190], [0.44, 0.5], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const titleIn = softIn(frame, 0, 44);
+
+  return (
+    <AbsoluteFill>
+      <Backdrop intensity={0.68} drift={0.5} />
+      <LightBand delay={62} opacity={0.52} />
+      <div
+        style={{
+          position: "absolute",
+          top: 76,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          fontFamily: `${FONT.zh}, ${FONT.sans}`,
+          opacity: titleIn,
+          transform: `translateY(${(1 - titleIn) * 24}px)`,
+        }}
+      >
+        <div style={{ fontSize: 62, lineHeight: 1.08, color: COLORS.ink, fontWeight: 860 }}>从“想法”到“提示词”</div>
+        <div style={{ marginTop: 16, color: COLORS.muted, fontSize: 26 }}>保留原意，再补齐结构、语气和上下文。</div>
+      </div>
+      <div style={{ position: "absolute", left: 104, top: 238 }}>
+        <MediaSurface width={804} height={604} delay={28} radius={34}>
+          <AssetImage src="assets/screenshot-2.png" fit="cover" opacity={0.2} />
+          <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.72)", zIndex: 2 }} />
+          <div style={{ position: "absolute", inset: "86px 70px", zIndex: 3, fontFamily: `${FONT.zh}, ${FONT.sans}` }}>
+            <div style={{ fontSize: 23, color: COLORS.blue, fontWeight: 820, letterSpacing: 1.6 }}>我说出的口语</div>
+            <div style={{ marginTop: 34 }}>
+              <TypedLines
+                delay={70}
+                size={30}
+                lines={[
+                  "嗯……帮我把这个想法讲清楚。",
+                  "就是别太硬，要让 AI 明白我要什么。",
+                  "顺便把重点和格式也整理一下。",
+                ]}
+              />
+            </div>
+          </div>
+        </MediaSurface>
+      </div>
+      <div style={{ position: "absolute", right: 104, top: 238 }}>
+        <MediaSurface width={804} height={604} delay={52} radius={34}>
+          <AssetImage src="assets/screenshot-4.png" fit="cover" opacity={0.16} />
+          <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.78)", zIndex: 2 }} />
+          <div style={{ position: "absolute", inset: "76px 68px", zIndex: 3, fontFamily: `${FONT.zh}, ${FONT.sans}` }}>
+            <div style={{ fontSize: 23, color: COLORS.accentBlue, fontWeight: 820, letterSpacing: 1.6 }}>OpenLess 落下的提示词</div>
+            <div style={{ marginTop: 30 }}>
+              <TypedLines
+                delay={136}
+                size={27}
+                lines={[
+                  "请基于以下目标生成一份结构化方案：",
+                  "1. 先概括核心意图，避免遗漏原始想法。",
+                  "2. 给出清晰步骤、输出格式和判断标准。",
+                  "3. 语气自然、具体、可直接交给 AI 执行。",
+                ]}
+              />
+            </div>
+          </div>
+        </MediaSurface>
+      </div>
+      <svg width="1920" height="1080" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        <line
+          x1={1920 * split}
+          y1="300"
+          x2={1920 * split}
+          y2="840"
+          stroke="rgba(10,10,10,0.08)"
+          strokeWidth="2"
+        />
+        <path
+          d={`M914 545 C 960 515, 1008 515, 1054 545`}
+          fill="none"
+          stroke={COLORS.blue2}
+          strokeWidth="4"
+          strokeLinecap="round"
+          opacity="0.55"
+        />
+        <path d="M1044 531 L1062 545 L1044 559" fill="none" stroke={COLORS.blue2} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" opacity="0.55" />
+      </svg>
+    </AbsoluteFill>
+  );
+};

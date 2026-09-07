@@ -1,0 +1,26 @@
+{
+  "name": "promo-openless",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OpenLess product promo video built with Remotion.",
+  "scripts": {
+    "start": "remotion studio",
+    "studio": "remotion studio",
+    "build": "remotion render OpenLessPromo out/openless-promo.mp4 --codec=h264",
+    "render": "remotion render OpenLessPromo out/openless-promo.mp4 --codec=h264",
+    "render:hq": "remotion render OpenLessPromo out/openless-promo.mp4 --codec=h264 --crf=16",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.376",
+    "@remotion/google-fonts": "^4.0.376",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.376"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.20",
+    "@types/react-dom": "^18.3.5",
+    "typescript": "^5.8.3"
+  }
+}

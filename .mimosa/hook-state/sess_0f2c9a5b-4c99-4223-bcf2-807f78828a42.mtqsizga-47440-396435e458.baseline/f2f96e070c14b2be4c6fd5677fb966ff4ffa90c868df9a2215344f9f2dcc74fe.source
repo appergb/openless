@@ -1,0 +1,132 @@
+import { Img, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { COLORS } from "../design/tokens";
+import { springIn } from "../design/motion";
+
+export const Waveform = ({ compact = false }: { compact?: boolean }) => {
+  const frame = useCurrentFrame();
+  const bars = compact ? 18 : 34;
+  const width = compact ? 280 : 520;
+  const height = compact ? 70 : 120;
+  const gap = width / bars;
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ overflow: "visible" }}>
+      <defs>
+        <linearGradient id={`wave-gradient-${compact ? "c" : "w"}`} x1="0%" x2="100%">
+          <stop offset="0%" stopColor={COLORS.blue} />
+          <stop offset="58%" stopColor={COLORS.accentBlue} />
+          <stop offset="100%" stopColor={COLORS.blue2} />
+        </linearGradient>
+      </defs>
+      {Array.from({ length: bars }).map((_, index) => {
+        const cycle = Math.sin(frame / 9 + index * 0.72);
+        const pulse = interpolate(cycle, [-1, 1], [0.2, 1]);
+        const h = interpolate(pulse, [0, 1], [height * 0.18, height * 0.82]);
+        const x = index * gap + gap * 0.34;
+        return (
+          <rect
+            key={index}
+            x={x}
+            y={(height - h) / 2}
+            width={compact ? 5 : 7}
+            height={h}
+            rx={4}
+            fill={`url(#wave-gradient-${compact ? "c" : "w"})`}
+            opacity={0.24 + pulse * 0.62}
+          />
+        );
+      })}
+    </svg>
+  );
+};
+
+export const MenuBarPill = ({ label = "OpenLess", delay = 0 }: { label?: string; delay?: number }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const s = springIn(frame, fps, delay);
+
+  return (
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "12px 18px",
+        borderRadius: 999,
+        background: "rgba(255,255,255,0.82)",
+        border: `1px solid ${COLORS.hairline}`,
+        boxShadow: "0 16px 46px rgba(11,42,102,0.12)",
+        transform: `scale(${0.92 + s * 0.08}) translateY(${(1 - s) * 18}px)`,
+      }}
+    >
+      <Img
+        src={staticFile("assets/app-icon.png")}
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: 6,
+          objectFit: "cover",
+          boxShadow: "0 2px 8px rgba(11,42,102,0.12)",
+        }}
+      />
+      <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: 0, color: COLORS.ink }}>{label}</span>
+    </div>
+  );
+};
+
+export const KeyCaps = ({ keys }: { keys: string[] }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      {keys.map((key, index) => {
+        const s = springIn(frame, fps, index * 5);
+        return (
+          <div
+            key={key}
+            style={{
+              width: key.length > 1 ? 92 : 54,
+              height: 54,
+              borderRadius: 14,
+              display: "grid",
+              placeItems: "center",
+              background: "linear-gradient(180deg, #FFFFFF 0%, #F1F4FA 100%)",
+              border: "1px solid rgba(10,10,10,0.1)",
+              boxShadow: "inset 0 -4px 0 rgba(10,10,10,0.06), 0 12px 28px rgba(11,42,102,0.12)",
+              color: COLORS.ink,
+              fontSize: 18,
+              fontWeight: 800,
+              transform: `translateY(${(1 - s) * 18}px) scale(${0.96 + s * 0.04})`,
+            }}
+          >
+            {key}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+export const LightBand = ({ delay = 0, opacity = 1 }: { delay?: number; opacity?: number }) => {
+  const frame = useCurrentFrame();
+  const x = interpolate(frame - delay, [0, 70], [-520, 2320], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: -260,
+        left: x,
+        width: 260,
+        height: 1600,
+        transform: "rotate(18deg)",
+        background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.92) 45%, rgba(37,99,235,0.14) 55%, transparent 100%)",
+        filter: "blur(8px)",
+        opacity,
+      }}
+    />
+  );
+};

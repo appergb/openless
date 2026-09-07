@@ -389,7 +389,7 @@ React UI ── Tauri Adapter (macOS/Windows/Android) ──┐
 egui UI  ── Linux Adapter (no Tauri/WebKitGTK) ────┘
 ```
 
-`openless-core` owns the stable DTOs, errors, semantic events, repositories, credentials contract, and host-facing use-case Interface. Host-only concerns—IPC, windows, tray, permissions, updater, keyring, fcitx5, and package resource paths—are implemented by Adapters. Legacy React command/event names stay in the Tauri compatibility Adapter; Linux calls the typed Rust Interface in process. See [`docs/linux-egui-backend-contract.md`](docs/linux-egui-backend-contract.md) and the [full migration plan](docs/linux-egui-shared-backend-plan.md).
+`openless-core` owns the stable DTOs, errors, semantic events, repositories, credentials contract, and host-facing use-case Interface. Host-only concerns—IPC, windows, tray, permissions, updater, keyring, fcitx5, and package resource paths—are implemented by Adapters. Legacy React command/event names stay in the Tauri compatibility Adapter; Linux calls the typed Rust Interface in process. See [`docs/linux-egui-backend-contract.md`](docs/linux-egui-backend-contract.md).
 
 The `v<version>-tauri` / `v<version>-Beta.N-tauri` workflows publish the macOS, Windows, and Android hosts. Linux deb/rpm/AppImage assets are built by `release-linux-egui.yml` with an independent manifest; automatic release remains gated on successful artifacts and real Ubuntu install/runtime/upgrade/rollback evidence.
 

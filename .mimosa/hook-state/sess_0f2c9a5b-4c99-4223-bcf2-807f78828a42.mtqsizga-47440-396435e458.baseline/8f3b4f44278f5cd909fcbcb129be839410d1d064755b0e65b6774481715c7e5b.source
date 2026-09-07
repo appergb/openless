@@ -1,0 +1,67 @@
+import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
+import { Backdrop } from "../components/Backdrop";
+import { DemoVideo, MediaSurface } from "../components/MediaSurface";
+import { LightBand } from "../components/SvgMotion";
+import { KineticTitle } from "../components/TextMotion";
+import { COLORS, FONT, SHADOW } from "../design/tokens";
+import { progress, softIn } from "../design/motion";
+
+const captions = [
+  { at: 90, label: "完整效果", body: "直接进入说完之后的结果段" },
+  { at: 320, label: "自动整理中", body: "OpenLess 保留原意并重新组织" },
+  { at: 590, label: "提示词落下", body: "结构、重点、语气一起补齐" },
+  { at: 880, label: "回到光标处", body: "不用切窗口，不用反复复制粘贴" },
+];
+
+export const DemoOverviewScene = () => {
+  const frame = useCurrentFrame();
+  const parallax = interpolate(frame, [0, 1260], [0, -54], { extrapolateRight: "clamp" });
+
+  return (
+    <AbsoluteFill>
+      <Backdrop intensity={0.62} drift={0.36} />
+      <LightBand delay={112} opacity={0.42} />
+      <div style={{ position: "absolute", top: 70, left: 96, width: 470, transform: `translateY(${parallax * 0.22}px)` }}>
+        <KineticTitle
+          align="left"
+          eyebrow="REAL DEMO"
+          title={"口语进去。\n提示词出来。"}
+          subtitle={"OpenLess 在菜单栏常驻。\n全局热键唤起，说完即写完。"}
+          delay={0}
+          titleSize={74}
+          subtitleSize={25}
+        />
+      </div>
+      <div style={{ position: "absolute", left: 610, top: 255, transform: `translateY(${parallax}px)` }}>
+        <MediaSurface width={1180} height={664} delay={28} radius={36}>
+          <DemoVideo src="assets/demo-overview.mp4" startFrom={1970} endAt={3230} playbackRate={1} />
+        </MediaSurface>
+      </div>
+      <div style={{ position: "absolute", left: 96, bottom: 108, display: "grid", gap: 16 }}>
+        {captions.map((caption, index) => {
+          const active = progress(frame, caption.at, caption.at + 80) * (1 - progress(frame, caption.at + 150, caption.at + 210));
+          const visible = softIn(frame, caption.at, caption.at + 34);
+          return (
+            <div
+              key={caption.label}
+              style={{
+                width: 345,
+                padding: "18px 20px",
+                borderRadius: 24,
+                background: active > 0.3 ? "rgba(255,255,255,0.94)" : "rgba(255,255,255,0.62)",
+                border: `1px solid ${active > 0.3 ? "rgba(37,99,235,0.28)" : COLORS.hairline}`,
+                boxShadow: active > 0.3 ? SHADOW.lift : "none",
+                fontFamily: `${FONT.zh}, ${FONT.sans}`,
+                opacity: visible,
+                transform: `translateX(${(1 - visible) * -28}px)`,
+              }}
+            >
+              <div style={{ color: active > 0.3 ? COLORS.blue : COLORS.ink, fontSize: 24, fontWeight: 820 }}>{caption.label}</div>
+              <div style={{ marginTop: 6, color: COLORS.muted, fontSize: 19, lineHeight: 1.45 }}>{caption.body}</div>
+            </div>
+          );
+        })}
+      </div>
+    </AbsoluteFill>
+  );
+};

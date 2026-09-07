@@ -1,0 +1,32 @@
+import { Easing, interpolate, spring } from "remotion";
+
+export const clamp = (value: number, min = 0, max = 1) =>
+  Math.min(max, Math.max(min, value));
+
+export const progress = (frame: number, start: number, end: number) =>
+  clamp(interpolate(frame, [start, end], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
+
+export const softIn = (frame: number, start: number, end: number) =>
+  interpolate(frame, [start, end], [0, 1], {
+    easing: Easing.bezier(0.16, 1, 0.3, 1),
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+export const softOut = (frame: number, start: number, end: number) =>
+  interpolate(frame, [start, end], [1, 0], {
+    easing: Easing.bezier(0.7, 0, 0.84, 0),
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+export const springIn = (frame: number, fps: number, delay = 0) =>
+  spring({
+    frame: Math.max(0, frame - delay),
+    fps,
+    config: {
+      damping: 22,
+      stiffness: 92,
+      mass: 0.72,
+    },
+  });

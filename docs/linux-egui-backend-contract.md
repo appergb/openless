@@ -12,7 +12,6 @@
 > 自动 contract 不替代真实平台证据：Ubuntu/Windows/macOS/Android 的设备、安装、升级和签名
 > 结果仍须单独记录，当前责任与门槛按[桌面验收](./2.0-desktop-acceptance.md)和[Linux验收](./linux-egui-handoff/07-acceptance.md)区分；以下旧日期状态不能证明Linux无剩余缺口。
 >
-> 2026-09-05 复核补充：最新生产行为修复见 [`pr1019-2.0-final-review.md`](./pr1019-2.0-final-review.md)。
 > 原生预加载必须使用请求的 target/provider type；平台无法准备流式时以 `supports_streaming=false`
 > 保留一次性落字。Remote stop 保持可取消的 session，socket 下行只转发本连接所属 session 的事件。
 

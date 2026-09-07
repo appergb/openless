@@ -1,0 +1,16 @@
+import { Composition } from "remotion";
+import { OpenLessPromo } from "./Composition";
+import { DURATION_FRAMES, FPS, HEIGHT, WIDTH } from "./design/tokens";
+
+export const Root = () => {
+  return (
+    <Composition
+      id="OpenLessPromo"
+      component={OpenLessPromo}
+      durationInFrames={DURATION_FRAMES}
+      fps={FPS}
+      width={WIDTH}
+      height={HEIGHT}
+    />
+  );
+};

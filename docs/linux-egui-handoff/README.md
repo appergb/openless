@@ -32,6 +32,5 @@
 - [LinuxHost facade](../../openless-all/app/linux-egui/src/lib.rs)
 - [现有egui主循环/UI](../../openless-all/app/linux-egui/src/main.rs)
 - [headless示例](../../openless-all/app/linux-egui/examples/headless_host.rs)
-- [历史修复证据](../pr1019-2.0-final-review.md)
 
-旧的[长接口文档](../linux-egui-backend-contract.md)与[阶段计划](../linux-egui-shared-backend-plan.md)保留历史参考；范围冲突以新需求和本目录为准。
+旧的[长接口文档](../linux-egui-backend-contract.md)保留历史参考；范围冲突以新需求和本目录为准。

@@ -46,4 +46,4 @@ UI/热键发起 → Core 获取会话及真实目标 → Host 录音与识别 �
 
 ## 验证入口
 
-`npm test` 会先构建 React，再跑前端与源码合同；其中 `check-hotkey-injection.mjs` 还会运行 Core 的实际快捷键测试。Core 全量验证使用 `cargo test -p openless-core --locked`；Linux 使用 `cargo test -p openless-linux-egui --locked`，原生目标验证遵循 [Linux 验收](linux-egui-handoff/07-acceptance.md)。本次实际执行结果在 [体验梳理](2.0-ux-review.md)，不要将列出的命令视作已经执行。
+`npm test` 会先构建 React，再跑前端与源码合同；其中 `check-hotkey-injection.mjs` 还会运行 Core 的实际快捷键测试。Core 全量验证使用 `cargo test -p openless-core --locked`；Linux 使用 `cargo test -p openless-linux-egui --locked`，原生目标验证遵循 [Linux 验收](linux-egui-handoff/07-acceptance.md)。所列命令不代表已执行；验证结论以当次运行输出为准。

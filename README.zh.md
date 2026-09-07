@@ -394,7 +394,7 @@ React UI ── Tauri Adapter（macOS/Windows/Android）──┐
 egui UI  ── Linux Adapter（无 Tauri/WebKitGTK）───┘
 ```
 
-`openless-core` 负责稳定 DTO、错误、语义事件、repository、凭据契约和面向宿主的 use-case Interface。IPC、窗口、托盘、权限、更新、keyring、fcitx5 与打包资源路径等宿主能力由 Adapter 实现。旧 React command/event 名称只保留在 Tauri 兼容 Adapter；Linux 与 core 同进程，通过类型化 Rust Interface 调用。详细契约见 [`docs/linux-egui-backend-contract.md`](docs/linux-egui-backend-contract.md) 与[完整迁移计划](docs/linux-egui-shared-backend-plan.md)。
+`openless-core` 负责稳定 DTO、错误、语义事件、repository、凭据契约和面向宿主的 use-case Interface。IPC、窗口、托盘、权限、更新、keyring、fcitx5 与打包资源路径等宿主能力由 Adapter 实现。旧 React command/event 名称只保留在 Tauri 兼容 Adapter；Linux 与 core 同进程，通过类型化 Rust Interface 调用。详细契约见 [`docs/linux-egui-backend-contract.md`](docs/linux-egui-backend-contract.md)。
 
 `v<version>-tauri` / `v<version>-Beta.N-tauri` 工作流发布 macOS、Windows 与 Android 宿主。Linux deb/rpm/AppImage 由 `release-linux-egui.yml` 使用独立 manifest 构建；自动发布仍以产物成功和 Ubuntu 真实安装、运行、升级、回滚证据为门禁。
 

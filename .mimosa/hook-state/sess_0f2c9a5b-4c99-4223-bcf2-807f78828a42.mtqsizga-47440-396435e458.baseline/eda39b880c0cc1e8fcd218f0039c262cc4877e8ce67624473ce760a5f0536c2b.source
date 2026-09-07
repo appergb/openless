@@ -1,0 +1,10 @@
+[package]
+name = "openless-backend-tests"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+publish = false
+
+[dependencies]
+openless-core = { path = "../../crates/openless-core" }
+tokio = { version = "1", features = ["rt-multi-thread"] }

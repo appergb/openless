@@ -344,6 +344,5 @@ npm run tauri:android:build
 ## 9. 相关参考
 
 - Tauri Android：https://v2.tauri.app/develop/mobile/
-- 桌面 Windows ASR 规划风格：`docs/windows-sherpa-onnx-asr-plan.md`
 - 主听写链路：`openless-all/app/src-tauri/src/coordinator/dictation.rs`
 - Windows IME unavailable 模式：`openless-all/app/src-tauri/src/windows_ime_profile.rs`

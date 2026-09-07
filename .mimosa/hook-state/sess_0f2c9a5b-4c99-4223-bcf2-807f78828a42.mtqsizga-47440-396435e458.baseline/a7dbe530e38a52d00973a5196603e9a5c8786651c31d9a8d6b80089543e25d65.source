@@ -1,0 +1,37 @@
+import { AbsoluteFill, Sequence } from "remotion";
+import { BEATS } from "./design/tokens";
+import { OpeningScene } from "./scenes/OpeningScene";
+import { LogoRewriteScene } from "./scenes/LogoRewriteScene";
+import { DemoOverviewScene } from "./scenes/DemoOverviewScene";
+import { DemoLiveScene } from "./scenes/DemoLiveScene";
+import { CompareScene } from "./scenes/CompareScene";
+import { ContractScene } from "./scenes/ContractScene";
+import { OutroScene } from "./scenes/OutroScene";
+
+export const OpenLessPromo = () => {
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#FAFAFC" }}>
+      <Sequence from={BEATS.opening.from} durationInFrames={BEATS.opening.duration}>
+        <OpeningScene />
+      </Sequence>
+      <Sequence from={BEATS.logoRewrite.from} durationInFrames={BEATS.logoRewrite.duration}>
+        <LogoRewriteScene />
+      </Sequence>
+      <Sequence from={BEATS.demoOverview.from} durationInFrames={BEATS.demoOverview.duration}>
+        <DemoOverviewScene />
+      </Sequence>
+      <Sequence from={BEATS.demoLive.from} durationInFrames={BEATS.demoLive.duration}>
+        <DemoLiveScene />
+      </Sequence>
+      <Sequence from={BEATS.compare.from} durationInFrames={BEATS.compare.duration}>
+        <CompareScene />
+      </Sequence>
+      <Sequence from={BEATS.contract.from} durationInFrames={BEATS.contract.duration}>
+        <ContractScene />
+      </Sequence>
+      <Sequence from={BEATS.outro.from} durationInFrames={BEATS.outro.duration}>
+        <OutroScene />
+      </Sequence>
+    </AbsoluteFill>
+  );
+};

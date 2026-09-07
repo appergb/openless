@@ -1,0 +1,156 @@
+import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import { COLORS, FONT } from "../design/tokens";
+import { progress, springIn } from "../design/motion";
+
+export const KineticTitle = ({
+  eyebrow,
+  title,
+  subtitle,
+  align = "center",
+  delay = 0,
+  titleSize = 86,
+  subtitleSize = 30,
+}: {
+  eyebrow?: string;
+  title: string;
+  subtitle?: string;
+  align?: "left" | "center";
+  delay?: number;
+  titleSize?: number;
+  subtitleSize?: number;
+}) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const s = springIn(frame, fps, delay);
+
+  return (
+    <div
+      style={{
+        textAlign: align,
+        fontFamily: `${FONT.sans}, ${FONT.zh}`,
+        transform: `translateY(${(1 - s) * 28}px)`,
+        opacity: s,
+      }}
+    >
+      {eyebrow ? (
+        <div
+          style={{
+            fontSize: 18,
+            fontWeight: 700,
+            letterSpacing: 3,
+            textTransform: "uppercase",
+            color: COLORS.blue,
+            marginBottom: 20,
+          }}
+        >
+          {eyebrow}
+        </div>
+      ) : null}
+      <div
+        style={{
+          fontSize: titleSize,
+          lineHeight: 1.03,
+          fontWeight: 840,
+          letterSpacing: 0,
+          color: COLORS.ink,
+          whiteSpace: "pre-line",
+        }}
+      >
+        {title}
+      </div>
+      {subtitle ? (
+        <div
+          style={{
+            marginTop: 24,
+            fontSize: subtitleSize,
+            lineHeight: 1.45,
+            fontWeight: 500,
+            color: COLORS.muted,
+            whiteSpace: "pre-line",
+          }}
+        >
+          {subtitle}
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
+export const ParticleText = ({ text, delay = 0 }: { text: string; delay?: number }) => {
+  const frame = useCurrentFrame();
+  const chars = text.split("");
+
+  return (
+    <div style={{ display: "flex", justifyContent: "center", gap: 4 }}>
+      {chars.map((char, index) => {
+        const p = progress(frame, delay + index * 3, delay + index * 3 + 34);
+        const y = interpolate(p, [0, 1], [36 + (index % 3) * 12, 0]);
+        const blur = interpolate(p, [0, 1], [14, 0]);
+        const scale = interpolate(p, [0, 1], [0.75, 1]);
+        const opacity = interpolate(p, [0, 0.25, 1], [0, 0.5, 1]);
+        return (
+          <span
+            key={`${char}-${index}`}
+            style={{
+              display: "inline-block",
+              minWidth: char === " " ? 18 : undefined,
+              fontFamily: FONT.sans,
+              fontSize: 118,
+              lineHeight: 1,
+              fontWeight: 850,
+              color: COLORS.ink,
+              opacity,
+              filter: `blur(${blur}px)`,
+              transform: `translateY(${y}px) scale(${scale})`,
+            }}
+          >
+            {char}
+          </span>
+        );
+      })}
+    </div>
+  );
+};
+
+export const TypedLines = ({
+  lines,
+  delay = 0,
+  size = 28,
+  color = COLORS.ink,
+}: {
+  lines: string[];
+  delay?: number;
+  size?: number;
+  color?: string;
+}) => {
+  const frame = useCurrentFrame();
+
+  return (
+    <div style={{ fontFamily: `${FONT.zh}, ${FONT.sans}`, color }}>
+      {lines.map((line, lineIndex) => {
+        const lineDelay = delay + lineIndex * 22;
+        const count = Math.floor(interpolate(frame, [lineDelay, lineDelay + 36], [0, line.length], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        }));
+        const visible = line.slice(0, Math.max(0, count));
+        return (
+          <div
+            key={line}
+            style={{
+              minHeight: size * 1.45,
+              fontSize: size,
+              lineHeight: 1.45,
+              fontWeight: lineIndex === 0 ? 760 : 520,
+              letterSpacing: 0,
+              opacity: progress(frame, lineDelay - 6, lineDelay + 12),
+            }}
+          >
+            {visible}
+            {frame > lineDelay && frame < lineDelay + 42 ? <span style={{ color: COLORS.accentBlue }}>▌</span> : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+};

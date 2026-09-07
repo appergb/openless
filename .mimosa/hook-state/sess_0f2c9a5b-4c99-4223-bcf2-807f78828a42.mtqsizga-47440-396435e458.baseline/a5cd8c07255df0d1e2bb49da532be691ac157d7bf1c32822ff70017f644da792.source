@@ -1,0 +1,54 @@
+import { AbsoluteFill, Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { Backdrop } from "../components/Backdrop";
+import { LightBand, Waveform } from "../components/SvgMotion";
+import { COLORS, FONT } from "../design/tokens";
+import { springIn } from "../design/motion";
+
+export const OutroScene = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const logoIn = springIn(frame, fps, 10);
+  const textIn = springIn(frame, fps, 46);
+
+  return (
+    <AbsoluteFill>
+      <Backdrop intensity={0.86} drift={0.3} />
+      <LightBand delay={40} opacity={0.55} />
+      <div
+        style={{
+          position: "absolute",
+          top: 138,
+          left: "50%",
+          width: 340,
+          height: 340,
+          transform: `translateX(-50%) scale(${0.86 + logoIn * 0.14})`,
+          opacity: logoIn,
+          filter: "drop-shadow(0 30px 80px rgba(11,42,102,0.15))",
+        }}
+      >
+        <Img
+          src={staticFile("assets/app-icon.png")}
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+        />
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          top: 552,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          opacity: textIn,
+          transform: `translateY(${(1 - textIn) * 24}px)`,
+          fontFamily: `${FONT.sans}, ${FONT.zh}`,
+        }}
+      >
+        <div style={{ fontSize: 78, fontWeight: 880, color: COLORS.ink, letterSpacing: 0 }}>OpenLess</div>
+        <div style={{ marginTop: 22, fontSize: 36, fontWeight: 620, color: COLORS.muted }}>让语言直接说话。</div>
+      </div>
+      <div style={{ position: "absolute", bottom: 148, left: "50%", transform: "translateX(-50%)" }}>
+        <Waveform compact />
+      </div>
+    </AbsoluteFill>
+  );
+};
