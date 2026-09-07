@@ -12,12 +12,14 @@ use std::time::{Duration, Instant};
 use futures_util::{SinkExt, StreamExt};
 use parking_lot::Mutex as ParkingMutex;
 use serde_json::{json, Value};
-use tokio::net::TcpStream;
+use tokio::net::{lookup_host, TcpStream};
 use tokio::sync::{mpsc, oneshot, Mutex as AsyncMutex, Notify};
+use tokio_tungstenite::client_async_tls;
 use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tokio_tungstenite::tungstenite::http::header::HeaderValue;
+use tokio_tungstenite::tungstenite::Error as WsError;
 use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 use uuid::Uuid;
 
 use crate::config::{TaskSpawner, TokioTaskSpawner};
@@ -38,6 +40,54 @@ const FINAL_RESULT_TIMEOUT: Duration = Duration::from_secs(12);
 /// 等，而 `open_session` 是在串行的 hotkey bridge 线程上 `block_on` 等的 —— 卡住就意味着
 /// 热键彻底失灵（开不了也停不了，只能退出重开）。详见 stepfun_realtime.rs 同名常量。
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+/// 单个候选地址的 TCP 上限。IPv6 黑洞时不能把整段 5s 耗在第一个 AAAA 上。
+const PER_ADDR_TCP_TIMEOUT: Duration = Duration::from_millis(1500);
+
+fn order_connect_addrs(mut addrs: Vec<std::net::SocketAddr>) -> Vec<std::net::SocketAddr> {
+    addrs.sort_by_key(|addr| u8::from(!addr.ip().is_ipv4()));
+    addrs
+}
+
+async fn connect_ws_prefer_ipv4(
+    request: tokio_tungstenite::tungstenite::http::Request<()>,
+) -> Result<(WsStream, tokio_tungstenite::tungstenite::http::Response<Option<Vec<u8>>>), WsError> {
+    let host = request.uri().host().unwrap_or("").to_string();
+    let port = request.uri().port_u16().unwrap_or(443);
+    let addrs = order_connect_addrs(
+        lookup_host((host.as_str(), port))
+            .await
+            .map_err(WsError::Io)?
+            .collect(),
+    );
+    if addrs.is_empty() {
+        return Err(WsError::Io(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            format!("no addresses for {host}"),
+        )));
+    }
+
+    let mut last_err = None;
+    for addr in addrs {
+        match tokio::time::timeout(PER_ADDR_TCP_TIMEOUT, TcpStream::connect(addr)).await {
+            Ok(Ok(stream)) => {
+                return client_async_tls(request, stream).await;
+            }
+            Ok(Err(e)) => last_err = Some(e),
+            Err(_) => {
+                last_err = Some(std::io::Error::new(
+                    std::io::ErrorKind::TimedOut,
+                    format!(
+                        "tcp connect timeout ({})",
+                        if addr.ip().is_ipv4() { "v4" } else { "v6" }
+                    ),
+                ));
+            }
+        }
+    }
+    Err(WsError::Io(last_err.unwrap_or_else(|| {
+        std::io::Error::new(std::io::ErrorKind::NotConnected, "no tcp candidate")
+    })))
+}
 
 type WsStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
 type WsSink = futures_util::stream::SplitSink<WsStream, Message>;
@@ -171,7 +221,7 @@ impl BailianRealtimeASR {
                 .map_err(|e| BailianASRError::ConnectionFailed(e.to_string()))?,
         );
 
-        let (ws, _resp) = tokio::time::timeout(CONNECT_TIMEOUT, connect_async(request))
+        let (ws, _resp) = tokio::time::timeout(CONNECT_TIMEOUT, connect_ws_prefer_ipv4(request))
             .await
             .map_err(|_| {
                 BailianASRError::ConnectionFailed(format!(
@@ -763,6 +813,15 @@ mod tests {
             model: String::new(),
             vocabulary_id: None,
         })
+    }
+
+    #[test]
+    fn order_connect_addrs_puts_ipv4_first() {
+        let v6: std::net::SocketAddr = "[2408:400a::1]:443".parse().unwrap();
+        let v4: std::net::SocketAddr = "8.152.159.24:443".parse().unwrap();
+        let ordered = order_connect_addrs(vec![v6, v4]);
+        assert!(ordered[0].ip().is_ipv4());
+        assert!(ordered[1].ip().is_ipv6());
     }
 
     // ---- merge_segments ----
