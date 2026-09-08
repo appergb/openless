@@ -19,6 +19,7 @@ import {
   logClientError,
   openExternal,
   restartApp,
+  setUpdateChannel,
   type AppUpdateMetadata,
   type UpdateChannel,
 } from '../lib/ipc';
@@ -208,12 +209,18 @@ export function useAutoUpdate(): UseAutoUpdate {
   };
 
   const installUpdate = async () => {
+    const persistStableChannelSwitch = () =>
+      isStableChannelSwitch(currentVersion, version)
+        ? setUpdateChannel('stable')
+        : Promise.resolve();
+
     if (isAndroid()) {
       const payload = androidUpdateRef.current;
       if (!payload) return;
       resetProgress();
       setStatus('downloading');
       try {
+        await persistStableChannelSwitch();
         await appDownloadAndInstallAndroidUpdate(payload);
         androidUpdateRef.current = null;
         setStatus('downloaded');
@@ -232,6 +239,7 @@ export function useAutoUpdate(): UseAutoUpdate {
     resetProgress();
     setStatus('downloading');
     try {
+      await persistStableChannelSwitch();
       await update.download((event: DownloadEvent) => {
         if (event.event === 'Started') {
           resetProgress();

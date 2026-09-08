@@ -145,8 +145,10 @@ impl openless_core::SettingsRuntime for TauriSettingsRuntime<'_> {
     }
 }
 
-pub(crate) fn persist_settings(coord: &Coordinator, prefs: UserPreferences) -> Result<(), String> {
-    let _host_guard = coord.lock_settings_host();
+fn persist_settings_with_host_lock_held(
+    coord: &Coordinator,
+    prefs: UserPreferences,
+) -> Result<(), String> {
     coord
         .backend()
         .update_settings(
@@ -165,11 +167,22 @@ pub(crate) fn persist_settings(coord: &Coordinator, prefs: UserPreferences) -> R
         .map_err(|error| error.to_string())
 }
 
-pub(crate) fn persist_strict_settings(
+fn persist_settings_preserving_update_channel(
     coord: &Coordinator,
-    prefs: UserPreferences,
+    mut prefs: UserPreferences,
 ) -> Result<(), String> {
     let _host_guard = coord.lock_settings_host();
+    // 在同一把写锁内读取并回填，避免并发渠道切换被旧设置快照覆盖。
+    preserve_update_channel_preferences(&mut prefs, &coord.backend().get_preferences());
+    persist_settings_with_host_lock_held(coord, prefs)
+}
+
+pub(crate) fn persist_strict_settings(
+    coord: &Coordinator,
+    mut prefs: UserPreferences,
+) -> Result<(), String> {
+    let _host_guard = coord.lock_settings_host();
+    preserve_update_channel_preferences(&mut prefs, &coord.backend().get_preferences());
     coord
         .backend()
         .update_settings(
@@ -191,7 +204,6 @@ pub async fn set_settings(
 ) -> Result<(), String> {
     // 捕获旧值用于远程输入服务的 diff（persist 后端口/开关变化时启停/重启）。
     let remote_prev = coord.backend().get_preferences();
-    preserve_update_channel_preferences(&mut prefs, &remote_prev);
     let packs = coord
         .backend()
         .list_style_packs(&prefs.active_style_pack_id)
@@ -201,7 +213,7 @@ pub async fn set_settings(
     // 广播给所有 webview。issue #205：QaPanel 跑在独立 webview，
     // 没有 HotkeySettingsContext，必须靠事件感知录音键变化，否则面板可见时
     // 用户改键会让浮窗里的 "{recordHotkey}" 文案一直停留在旧值。
-    persist_settings(&*coord, prefs)?;
+    persist_settings_preserving_update_channel(&*coord, prefs)?;
     let prefs = coord.backend().get_preferences();
     // 保存即同步胶囊样式原子：下一次录音的入场帧就携带新样式，不依赖 emit_capsule
     // 主线程闭包的 ~30Hz 同步（Windows 主线程拥塞时闭包延迟 → 整场显示旧样式）。
@@ -254,14 +266,13 @@ pub async fn set_settings(
 #[tauri::command]
 pub fn set_settings(coord: CoordinatorState<'_>, mut prefs: UserPreferences) -> Result<(), String> {
     let previous = coord.backend().get_preferences();
-    preserve_update_channel_preferences(&mut prefs, &previous);
     let packs = coord
         .backend()
         .list_style_packs(&prefs.active_style_pack_id)
         .map_err(|e| e.to_string())?;
     sync_style_pack_preferences(&mut prefs, &packs);
     prefs.android_overlay_trigger = prefs.android_overlay_trigger.normalized();
-    persist_settings(&*coord, prefs)?;
+    persist_settings_preserving_update_channel(&*coord, prefs)?;
     let prefs = coord.backend().get_preferences();
     // 保存即同步胶囊样式原子（Android 通知胶囊 payload 同源，见 emit_capsule）。
     coord.sync_capsule_style_from_preferences();
@@ -335,6 +346,9 @@ mod tests {
             UpdateChannel::Stable
         );
         assert!(!select_update_channel(&mut prefs, UpdateChannel::Stable));
+        assert!(select_update_channel(&mut prefs, UpdateChannel::Beta));
+        assert_eq!(prefs.update_channel, UpdateChannel::Beta);
+        assert!(prefs.update_channel_explicit);
     }
 
     #[test]
@@ -409,11 +423,13 @@ pub fn set_update_channel(
     coord: CoordinatorState<'_>,
     channel: UpdateChannel,
 ) -> Result<(), String> {
+    // 渠道读取和持久化必须同属一个写临界区，避免反向覆盖并发常规设置。
+    let _host_guard = coord.lock_settings_host();
     let mut prefs = coord.backend().get_preferences();
     if !select_update_channel(&mut prefs, channel) {
         return Ok(());
     }
-    persist_settings(&*coord, prefs)?;
+    persist_settings_with_host_lock_held(&*coord, prefs)?;
     Ok(())
 }
 
