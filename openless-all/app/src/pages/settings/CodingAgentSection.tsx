@@ -23,7 +23,7 @@ import type { CodingAgentPermissionMode, CodingAgentProviderId } from '../../lib
 import { useHotkeySettings } from '../../state/HotkeySettingsContext'
 import { SelectLite } from '../../components/ui/SelectLite'
 import { Card } from '../_atoms'
-import { SectionDesc, SectionTitle, SettingRow, Toggle, inputStyle } from './shared'
+import { SettingRow, Toggle, inputStyle } from './shared'
 
 const PERMISSION_MODES: CodingAgentPermissionMode[] = [
   'acceptEdits',
@@ -186,9 +186,6 @@ export function CodingAgentSection() {
 
   return (
     <Card>
-      <SectionTitle hint={t('settings.codingAgent.desc')}>{t('settings.codingAgent.title')}</SectionTitle>
-      <SectionDesc>{t('settings.codingAgent.desc')}</SectionDesc>
-
       <SettingRow label={t('settings.codingAgent.enable')} desc={t('settings.codingAgent.hotkeyHint')}>
         <Toggle
           on={enabled}

@@ -1,3 +1,4 @@
+import { Icon } from './Icon';
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 export type OS = 'mac' | 'win' | 'linux' | 'android';
@@ -207,34 +208,17 @@ const ctrlBtn: CSSProperties = {
 };
 
 function MinimizeSvg() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={svgWrap}>
-      <rect x="2" y="5.5" width="8" height="1" rx="0.5" fill="currentColor" />
-    </svg>
-  );
+  return <Icon name="minimize" size={12} strokeWidth={1.75} style={svgWrap} />;
 }
 
 function MaximizeSvg() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={svgWrap}>
-      <rect x="2" y="2" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.1" />
-    </svg>
-  );
+  return <Icon name="maximize" size={12} strokeWidth={1.75} style={svgWrap} />;
 }
 
 function RestoreSvg() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={svgWrap}>
-      <rect x="3.6" y="0.6" width="7.2" height="7.2" rx="1.3" stroke="currentColor" strokeWidth="1.1" />
-      <rect x="0.6" y="3.6" width="7.2" height="7.2" rx="1.3" fill="var(--ol-surface, #fff)" stroke="currentColor" strokeWidth="1.1" />
-    </svg>
-  );
+  return <Icon name="restore" size={12} strokeWidth={1.75} style={svgWrap} />;
 }
 
 function CloseSvg() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={svgWrap}>
-      <path d="M2.8 2.8l6.4 6.4M9.2 2.8l-6.4 6.4" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
-    </svg>
-  );
+  return <Icon name="close" size={12} strokeWidth={1.75} style={svgWrap} />;
 }

@@ -6,7 +6,7 @@
 import { useTranslation } from 'react-i18next';
 import { useHotkeySettings } from '../../state/HotkeySettingsContext';
 import { Card } from '../_atoms';
-import { SettingRow, SectionTitle, Toggle } from './shared';
+import { SettingRow, Toggle } from './shared';
 
 export function MultimodalPipelineSection() {
   const { t } = useTranslation();
@@ -28,9 +28,6 @@ export function MultimodalPipelineSection() {
 
   return (
     <Card>
-      <SectionTitle hint={t('settings.advanced.multimodalPipelineTitleHint')}>
-        {t('settings.advanced.multimodalPipelineTitle')}
-      </SectionTitle>
       <SettingRow
         label={t('settings.advanced.multimodalPipelineLabel')}
         desc={t('settings.advanced.multimodalPipelineHint')}

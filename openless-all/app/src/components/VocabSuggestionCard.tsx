@@ -10,6 +10,7 @@
 // ——真机上自动收进词汇表的 5 条里只有 1 条是对的。逐条看一眼是这里唯一可靠的判据，
 // 所以不提供任何批量入口。
 
+import { Icon } from './Icon';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -194,27 +195,7 @@ function CardButton({
           'background 0.16s var(--ol-motion-quick), transform 0.12s var(--ol-motion-quick)',
       }}
     >
-      {kind === 'accept' ? (
-        <svg width="13" height="13" viewBox="0 0 13 13">
-          <path
-            d="M2 6.5l3.2 3.5L11 3.5"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      ) : (
-        <svg width="11" height="11" viewBox="0 0 11 11">
-          <path
-            d="M1.5 1.5l8 8M9.5 1.5l-8 8"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-        </svg>
-      )}
+      <Icon name={kind === 'accept' ? "check" : "close"} size={13} strokeWidth={2.2} />
     </button>
   );
 }

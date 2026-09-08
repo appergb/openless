@@ -3944,6 +3944,20 @@ impl OpenLessBackend {
         Ok(pack)
     }
 
+    pub fn set_style_pack_icon(
+        &self,
+        id: &str,
+        png: Option<&[u8]>,
+    ) -> Result<StylePack, BackendError> {
+        let pack = self.style_packs.update_icon(id, png)?;
+        self.publish_style_packs_changed();
+        Ok(pack)
+    }
+
+    pub fn read_style_pack_icon(&self, id: &str) -> Result<Option<String>, BackendError> {
+        self.style_packs.icon_data_url(id)
+    }
+
     pub fn set_style_pack_enabled(
         &self,
         id: &str,

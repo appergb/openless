@@ -1,4 +1,26 @@
+import type { OS } from '../../components/WindowChrome';
+import type { PlatformKind } from '../../lib/types';
+
 export type SettingsSectionId = 'general' | 'shortcuts' | 'appearance' | 'services' | 'privacy' | 'advanced' | 'about';
+
+export const ADVANCED_PAGES = [
+  { id: 'lessComputer', icon: 'mac', titleKey: 'settings.codingAgent.title' },
+  { id: 'claudeConsole', icon: 'chevLR', titleKey: 'settings.codingConsole.title' },
+  { id: 'multimodal', icon: 'sparkle', titleKey: 'settings.advanced.multimodalPipelineTitle' },
+  { id: 'debug', icon: 'bolt', titleKey: 'settings.debug.title' },
+] as const;
+
+export type AdvancedPage = typeof ADVANCED_PAGES[number];
+export type AdvancedPageId = AdvancedPage['id'];
+
+export function visibleAdvancedPages(platform: PlatformKind | undefined, os: OS): AdvancedPage[] {
+  return ADVANCED_PAGES.filter(page => {
+    if (page.id === 'lessComputer') return platform === 'desktop' && (os === 'mac' || os === 'win');
+    if (page.id === 'claudeConsole') return platform === 'desktop' && os === 'mac';
+    if (page.id === 'debug') return platform === 'desktop' || platform === 'android';
+    return true;
+  });
+}
 
 export interface SettingsNavigationItem {
   id: SettingsSectionId;

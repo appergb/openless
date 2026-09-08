@@ -345,16 +345,14 @@ function FloatingShellBody({ os, initialTab, initialSettings }: { os: OS; initia
                   >
                     <Icon name={node.icon} size={16} />
                     <span style={{ flex: 1 }}>{t(`nav.group.${node.key}`)}</span>
-                    <svg
-                      width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden
+                    <Icon
+                      name="chevRight" size={12}
                       style={{
                         color: 'var(--ol-ink-4)', flexShrink: 0,
                         transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
                         transition: 'transform 0.20s var(--ol-motion-spring)',
                       }}
-                    >
-                      <path d="M6 3.5 10.5 8 6 12.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    />
                   </button>
                   {/* 子项：grid-rows 0fr↔1fr 过渡实现无高度硬编码的展开动画。 */}
                   <div
@@ -480,9 +478,19 @@ function FloatingShellBody({ os, initialTab, initialSettings }: { os: OS; initia
               ) : (
                 <div
                   className={conservative ? 'ol-conservative-scope' : undefined}
-                  style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    // 保留使用指南的内容高度，让外层滚动区的底部导航留白生效。
+                    flex: displayTab === 'selectionAsk' ? '1 0 auto' : 1,
+                    minHeight: 0,
+                  }}
                 >
-                  <Page />
+                  {displayTab === 'selectionAsk' ? (
+                    <SelectionAsk onOpenShortcuts={() => openSettings('shortcuts')} />
+                  ) : (
+                    <Page />
+                  )}
                 </div>
               )}
             </div>

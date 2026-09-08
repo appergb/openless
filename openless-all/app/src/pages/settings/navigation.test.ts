@@ -1,4 +1,4 @@
-import { searchSettingsSections, visibleSettingsSections, availableServiceViews, resolveServiceView } from './navigation';
+import { searchSettingsSections, visibleSettingsSections, availableServiceViews, resolveServiceView, visibleAdvancedPages } from './navigation';
 
 const assert = {
   deepEqual(actual: unknown, expected: unknown, message: string) {
@@ -22,6 +22,9 @@ assert.deepEqual(searchSettingsSections(sections, '不存在'), [], 'unknown que
 assert.deepEqual(searchSettingsSections(sections, '  '), sections, 'clearing a query restores all categories');
 assert.equal(visibleSettingsSections(false).some(item => item.id === 'shortcuts'), false, 'mobile cannot reach an empty desktop-only category');
 assert.equal(visibleSettingsSections(true).some(item => item.id === 'shortcuts'), true, 'desktop retains shortcuts');
+assert.equal(visibleAdvancedPages('desktop', 'win').some(item => item.id === 'lessComputer'), true, 'Windows retains Less Computer configuration');
+assert.equal(visibleAdvancedPages('desktop', 'win').some(item => item.id === 'claudeConsole'), false, 'the macOS Claude console is not exposed on Windows');
+assert.deepEqual(visibleAdvancedPages('android', 'android').map(item => item.id), ['multimodal', 'debug'], 'Android keeps its experimental switch and diagnostics without desktop agents');
 console.log('settings navigation tests passed');
 
 const omniViews = availableServiceViews(true, true);

@@ -1,4 +1,4 @@
-// Settings keeps one navigation level; every category reuses the existing settings consumers.
+// Settings categories reuse the existing consumers; complex experiments open in the right pane.
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
@@ -9,7 +9,8 @@ import { getPlatformCapabilities, getCachedPlatformCapabilities } from '../lib/p
 import { useMobileLayout, useConservativeLayout } from '../lib/useMobileLayout';
 import type { OS } from './WindowChrome';
 import { AboutTab, GeneralTab, ServicesTab, PrivacyTab, AdvancedTab, ShortcutsTab, AppearanceTab } from '../pages/settings/tabs';
-import { searchSettingsSections, visibleSettingsSections, type SettingsSectionId } from '../pages/settings/navigation';
+import { searchSettingsSections, visibleSettingsSections, visibleAdvancedPages, type AdvancedPageId, type SettingsSectionId } from '../pages/settings/navigation';
+import { ChannelEditorHostContext } from '../pages/settings/ChannelEditorHostContext';
 
 export type { SettingsSectionId } from '../pages/settings/navigation';
 
@@ -32,6 +33,7 @@ export function SettingsModal({ os, onClose, initialSettingsSection, closing = f
   const mobile = useMobileLayout();
   const conservative = useConservativeLayout();
   const [section, setSection] = useState<SettingsSectionId>(initialSettingsSection ?? 'general');
+  const [advancedPage, setAdvancedPage] = useState<AdvancedPageId | null>(null);
   const [query, setQuery] = useState('');
   const [platformCaps, setPlatformCaps] = useState(getCachedPlatformCapabilities);
   const savedToast = useSavedToastListener();
@@ -42,6 +44,13 @@ export function SettingsModal({ os, onClose, initialSettingsSection, closing = f
   const closeRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const mountedRef = useRef(false);
+  const [channelContainer, setChannelContainer] = useState<HTMLDivElement | null>(null);
+  const [channelBackground, setChannelBackground] = useState<HTMLDivElement | null>(null);
+  const channelCloseRef = useRef<(() => void) | null>(null);
+  const closeSettings = () => {
+    channelCloseRef.current?.();
+    onClose();
+  };
   const supportsShortcuts = platformCaps?.supportsDesktopHotkey ?? os !== 'android';
   const sections = visibleSettingsSections(supportsShortcuts).map(item => ({
     ...item,
@@ -51,6 +60,14 @@ export function SettingsModal({ os, onClose, initialSettingsSection, closing = f
   }));
   const searching = query.trim().length > 0;
   const results = searchSettingsSections(sections, query);
+  const advancedPages = visibleAdvancedPages(platformCaps?.platform, os);
+  const activeAdvancedPage = section === 'advanced' && !searching
+    ? advancedPages.find(page => page.id === advancedPage)
+    : undefined;
+  const contentTitle = searching ? t('modal.searchResults')
+    : activeAdvancedPage ? t(activeAdvancedPage.titleKey) : t(`modal.sections.${section}`);
+  const contentDescription = searching ? t('modal.searchCount', { count: results.length })
+    : activeAdvancedPage ? t(`modal.advancedPages.${activeAdvancedPage.id}`) : t(`modal.descriptions.${section}`);
 
   // 2.0 UI 走查：桌面端设置侧栏的选中蓝框改为滑动指示块——切换分类时蓝框沿
   // 列表平滑移动到目标项（spring 曲线），而不是生硬地瞬间换底色。
@@ -92,10 +109,29 @@ export function SettingsModal({ os, onClose, initialSettingsSection, closing = f
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
-  }, [section, searching]);
+  }, [section, searching, advancedPage]);
+
+  useEffect(() => {
+    if (advancedPage && !advancedPages.some(page => page.id === advancedPage)) setAdvancedPage(null);
+  }, [advancedPage, platformCaps, os]);
+
+  const openAdvancedPage = (page: AdvancedPageId) => {
+    setAdvancedPage(page);
+    window.requestAnimationFrame(() => headingRef.current?.focus());
+  };
+
+  const backToAdvanced = () => {
+    const previousPage = advancedPage;
+    setAdvancedPage(null);
+    window.requestAnimationFrame(() => {
+      surfaceRef.current?.querySelector<HTMLElement>(`[data-ol-advanced-entry="${previousPage}"]`)?.focus();
+    });
+  };
 
   const selectSection = (next: SettingsSectionId, fromSearch = false) => {
+    channelCloseRef.current?.();
     setSection(next);
+    setAdvancedPage(null);
     setQuery('');
     if (fromSearch) window.requestAnimationFrame(() => headingRef.current?.focus());
   };
@@ -110,7 +146,8 @@ export function SettingsModal({ os, onClose, initialSettingsSection, closing = f
       event.preventDefault();
       event.stopPropagation();
       if (query) { setQuery(''); searchRef.current?.focus(); }
-      else onClose();
+      else if (activeAdvancedPage) backToAdvanced();
+      else closeSettings();
     }
     if (event.key === 'Tab') {
       const focusable = Array.from(surfaceRef.current?.querySelectorAll<HTMLElement>(
@@ -131,14 +168,14 @@ export function SettingsModal({ os, onClose, initialSettingsSection, closing = f
   const searchBox = (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8, border: '0.5px solid var(--ol-line-strong)', background: 'var(--ol-surface)', minWidth: 0 }}>
       <Icon name="search" size={15} />
-      <input ref={searchRef} type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('modal.searchPlaceholder')} aria-label={t('modal.searchPlaceholder')} style={{ width: '100%', minWidth: 0, border: 0, outline: 'none', background: 'transparent', color: 'var(--ol-ink)', font: 'inherit', fontSize: 14 }} />
+      <input ref={searchRef} type="search" value={query} onChange={event => { channelCloseRef.current?.(); setQuery(event.target.value); }} placeholder={t('modal.searchPlaceholder')} aria-label={t('modal.searchPlaceholder')} style={{ width: '100%', minWidth: 0, border: 0, outline: 'none', background: 'transparent', color: 'var(--ol-ink)', font: 'inherit', fontSize: 14 }} />
       {query && <button type="button" aria-label={t('modal.clearSearch')} onClick={() => { setQuery(''); searchRef.current?.focus(); }} style={{ ...iconButtonStyle, width: 22, height: 22 }}><Icon name="close" size={12} /></button>}
     </div>
   );
 
   return (
     <div
-      onClick={mobile ? undefined : onClose}
+      onClick={mobile ? undefined : closeSettings}
       // 打开动画：遮罩淡入 + 面板弹入（global.css ol-modal-* keyframes，纯
       // opacity/transform，合成器友好）。2.0 UI 走查：此前设置面板是瞬间出现的。
       style={{ position: mobile ? 'fixed' : 'absolute', inset: 0, background: mobile ? 'var(--ol-surface)' : 'var(--ol-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: mobile ? 0 : 20, zIndex: mobile ? 70 : 50, animation: mobile ? undefined : closing ? 'ol-modal-backdrop-in 0.18s var(--ol-motion-soft) reverse both' : 'ol-modal-backdrop-in 0.2s var(--ol-motion-soft) both' }}
@@ -163,7 +200,7 @@ export function SettingsModal({ os, onClose, initialSettingsSection, closing = f
         {mobile && (
           <header style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: 'calc(12px + env(safe-area-inset-top, 0px)) 16px 12px', borderBottom: '0.5px solid var(--ol-line-soft)', flexShrink: 0 }}>
             <div style={{ flex: 1, order: 0, fontSize: 17, fontWeight: 650 }}>{t('shell.footer.settings')}</div>
-            <button ref={closeRef} type="button" onClick={onClose} aria-label={t('common.close')} style={{ ...iconButtonStyle, order: 1 }}><Icon name="close" size={17} /></button>
+            <button ref={closeRef} type="button" onClick={closeSettings} aria-label={t('common.close')} style={{ ...iconButtonStyle, order: 1 }}><Icon name="close" size={17} /></button>
             <div style={{ order: 2, flex: '1 0 100%', minWidth: 0 }}>{searchBox}</div>
           </header>
         )}
@@ -209,20 +246,25 @@ export function SettingsModal({ os, onClose, initialSettingsSection, closing = f
             </nav>
             {!mobile && <HelpLinks />}
           </aside>
-          <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+          <div ref={setChannelContainer} className="ol-settings-content-pane" data-ol-advanced={section === 'advanced' && !searching ? 'true' : undefined} style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+            <ChannelEditorHostContext.Provider value={{ container: channelContainer, background: channelBackground, registerClose: close => { channelCloseRef.current = close; } }}>
+            <div ref={setChannelBackground} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
             <SavedToast saveState={savedToast.state} message={savedToast.message} slideFrom="top" offsetStyle={{ position: 'absolute', top: 12, right: 16 }} />
             {/* 桌面端：分类标题 + 自动保存提示 + 关闭按钮组成右栏自己的顶栏
                 （仿系统设置：工具条只属于内容区，不再横跨左栏）。 */}
-            {!mobile && (
+            {(!mobile || activeAdvancedPage) && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 24px 0', flexShrink: 0 }}>
-                <h2 ref={headingRef} tabIndex={-1} style={{ margin: 0, flex: 1, minWidth: 0, fontSize: 21, fontWeight: 650, letterSpacing: '-0.025em', outline: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{searching ? t('modal.searchResults') : t(`modal.sections.${section}`)}</h2>
-                <span style={{ color: 'var(--ol-ink-3)', fontSize: 12, flexShrink: 0 }}>{t('modal.autoSaveHint')}</span>
-                <button ref={closeRef} type="button" onClick={onClose} aria-label={t('common.close')} style={iconButtonStyle}><Icon name="close" size={17} /></button>
+                {activeAdvancedPage && <button type="button" className="ol-settings-back" onClick={backToAdvanced} aria-label={t('modal.backToAdvanced')} title={t('modal.backToAdvanced')}><Icon name="chevLeft" size={19} /></button>}
+                <h2 ref={headingRef} tabIndex={-1} style={{ margin: 0, flex: 1, minWidth: 0, fontSize: 21, fontWeight: 650, letterSpacing: '-0.025em', outline: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{contentTitle}</h2>
+                {!mobile && <>
+                  <span style={{ color: 'var(--ol-ink-3)', fontSize: 12, flexShrink: 0 }}>{t('modal.autoSaveHint')}</span>
+                  <button ref={closeRef} type="button" onClick={closeSettings} aria-label={t('common.close')} style={iconButtonStyle}><Icon name="close" size={17} /></button>
+                </>}
               </div>
             )}
             <div style={{ padding: mobile ? '18px 16px 12px' : '8px 28px 12px', flexShrink: 0 }}>
-              {mobile && <h2 ref={headingRef} tabIndex={-1} style={{ margin: 0, fontSize: 20, fontWeight: 650, letterSpacing: '-0.025em', outline: 'none' }}>{searching ? t('modal.searchResults') : t(`modal.sections.${section}`)}</h2>}
-              <p style={{ margin: mobile ? '7px 0 0' : 0, fontSize: 13, lineHeight: 1.6, color: 'var(--ol-ink-3)' }} aria-live="polite">{searching ? t('modal.searchCount', { count: results.length }) : t(`modal.descriptions.${section}`)}</p>
+              {mobile && !activeAdvancedPage && <h2 ref={headingRef} tabIndex={-1} style={{ margin: 0, fontSize: 20, fontWeight: 650, letterSpacing: '-0.025em', outline: 'none' }}>{contentTitle}</h2>}
+              <p style={{ margin: mobile && !activeAdvancedPage ? '7px 0 0' : 0, fontSize: 13, lineHeight: 1.6, color: 'var(--ol-ink-3)' }} aria-live="polite">{contentDescription}</p>
             </div>
             <div ref={scrollRef} className={['ol-thinscroll', conservative ? 'ol-conservative-scope' : ''].join(' ')} style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: mobile ? '0 16px calc(20px + env(safe-area-inset-bottom, 0px))' : '0 28px 28px' }}>
               {searching && <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -241,11 +283,13 @@ export function SettingsModal({ os, onClose, initialSettingsSection, closing = f
                 {section === 'appearance' && <AppearanceTab />}
                 {section === 'services' && <ServicesTab />}
                 {section === 'privacy' && <PrivacyTab />}
-                {section === 'advanced' && <AdvancedTab />}
+                {section === 'advanced' && <AdvancedTab pages={advancedPages} page={advancedPage} onOpenPage={openAdvancedPage} />}
                 {section === 'about' && <AboutTab />}
               </div>
               {mobile && !searching && <HelpLinks />}
             </div>
+            </div>
+            </ChannelEditorHostContext.Provider>
           </div>
         </div>
       </div>

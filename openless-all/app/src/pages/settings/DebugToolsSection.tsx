@@ -9,7 +9,7 @@ import { useMobileLayout } from '../../lib/useMobileLayout';
 import type { HostDocumentReadResult } from '../../lib/types';
 import { useHotkeySettings } from '../../state/HotkeySettingsContext';
 import { Btn, Card } from '../_atoms';
-import { SettingRow, Toggle, SectionTitle, inputStyle } from './shared';
+import { SettingRow, Toggle, inputStyle } from './shared';
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
@@ -101,7 +101,6 @@ export function DebugToolsSection() {
 
   return (
     <Card>
-      <SectionTitle>{t('settings.debug.title')}</SectionTitle>
       <SettingRow label={t('settings.recording.recordAudioForDebugLabel')}>
         <Toggle on={prefs.recordAudioForDebug} onToggle={onRecordAudioForDebugChange} />
       </SettingRow>

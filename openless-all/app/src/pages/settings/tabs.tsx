@@ -3,6 +3,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { useEffect, useRef, useState } from 'react';
+import { Icon } from '../../components/Icon';
 import { RecordingInputSection } from './RecordingInputSection';
 import { RemoteInputSection } from './RemoteInputSection';
 import { ShortcutsSection } from './ShortcutsSection';
@@ -23,12 +24,11 @@ import { ClaudeConsoleSection } from './ClaudeConsoleSection';
 import { BetaChannelSection } from './BetaChannelSection';
 import { AutoUpdateSection } from './AutoUpdateSection';
 import { AboutSection } from './AboutSection';
-import { detectOS } from '../../components/WindowChrome';
 import { getPlatformCapabilities } from '../../lib/platform';
 import { listChannels } from '../../lib/ipc';
 import type { PlatformCapabilities } from '../../lib/types';
 import { useHotkeySettings } from '../../state/HotkeySettingsContext';
-import { availableServiceViews, resolveServiceView, type ServiceViewId } from './navigation';
+import { availableServiceViews, resolveServiceView, type ServiceViewId, type AdvancedPage, type AdvancedPageId } from './navigation';
 
 // 各 tab 共用的平台能力查询（决定桌面/移动、是否支持热键与自动更新等 gating）。
 function usePlatformCaps(): PlatformCapabilities | null {
@@ -165,24 +165,43 @@ export function PrivacyTab() {
   );
 }
 
-// 高级：只留真正的实验性/开发者功能 —— Less Computer · Claude 控制台 · 调试工具。
-// （本地模型移入「服务」、更新相关移入「关于」，这个 tab 不再是杂物抽屉。）
-// 调试工具本身是跨端的：Android 复用同一份 prefs / 录音导出入口；
-// 这里只做平台 gating，不把桌面特有能力耦合进移动端运行时。
-export function AdvancedTab() {
-  const os = detectOS();
-  const platformCaps = usePlatformCaps();
-  const showDesktopAdvanced = platformCaps?.platform === 'desktop';
-  const showDebugTools =
-    platformCaps?.platform === 'desktop' || platformCaps?.platform === 'android';
-
+// 实验功能在右栏各有一个子页；往返保留控制台草稿、检测状态和流式输出。
+export function AdvancedTab({ pages, page, onOpenPage }: {
+  pages: AdvancedPage[];
+  page: AdvancedPageId | null;
+  onOpenPage: (page: AdvancedPageId) => void;
+}) {
+  const { t } = useTranslation();
   return (
     <>
-      {/* Less Computer 在 Windows/macOS 交付；Claude 控制台保留原有平台范围。 */}
-      {showDesktopAdvanced && (os === 'mac' || os === 'win') && <CodingAgentSection />}
-      {showDesktopAdvanced && os === 'mac' && <ClaudeConsoleSection />}
-      <MultimodalPipelineSection />
-      {showDebugTools && <DebugToolsSection />}
+      <div hidden={page !== null}>
+        <div className="ol-advanced-settings-list">
+          {pages.map(item => (
+            <button
+              key={item.id}
+              type="button"
+              className="ol-advanced-settings-entry"
+              data-ol-advanced-entry={item.id}
+              onClick={() => onOpenPage(item.id)}
+            >
+              <span className="ol-advanced-entry-icon"><Icon name={item.icon} size={19} /></span>
+              <span className="ol-advanced-entry-copy">
+                <span className="ol-advanced-entry-title">{t(item.titleKey)}</span>
+                <span className="ol-advanced-entry-description">{t(`modal.advancedPages.${item.id}`)}</span>
+              </span>
+              <Icon name="chevRight" size={17} className="ol-advanced-entry-arrow" />
+            </button>
+          ))}
+        </div>
+      </div>
+      {pages.map(item => (
+        <section key={item.id} hidden={page !== item.id} className="ol-advanced-settings-detail" aria-label={t(item.titleKey)} data-ol-advanced-page={item.id}>
+          {item.id === 'lessComputer' && <CodingAgentSection />}
+          {item.id === 'claudeConsole' && <ClaudeConsoleSection />}
+          {item.id === 'multimodal' && <MultimodalPipelineSection />}
+          {item.id === 'debug' && <DebugToolsSection />}
+        </section>
+      ))}
     </>
   );
 }

@@ -44,6 +44,24 @@ export function saveStylePack(stylePack: StylePack): Promise<StylePack> {
     )
 }
 
+export function readStylePackIcon(id: string): Promise<string | null> {
+    return invokeOrMock("read_style_pack_icon", { id }, () => localStorage.getItem(`ol.stylePackIcon.${id}`))
+}
+
+export function setStylePackIcon(id: string, png: number[] | null): Promise<StylePack> {
+    return invokeOrMock("set_style_pack_icon", { id, png }, () => {
+        const pack = cloneMockStylePacks().find(pack => pack.id === id)
+        if (!pack) throw new Error("Style pack not found")
+        if (png) {
+            const encoded = btoa(png.map(byte => String.fromCharCode(byte)).join(""))
+            localStorage.setItem(`ol.stylePackIcon.${id}`, `data:image/png;base64,${encoded}`)
+        } else {
+            localStorage.removeItem(`ol.stylePackIcon.${id}`)
+        }
+        return mockSaveStylePack({ ...pack, iconPath: png ? `preview:${id}` : null, updatedAt: new Date().toISOString() })
+    })
+}
+
 export function createStylePackFromTemplate(
     template: StylePack,
 ): Promise<StylePack> {

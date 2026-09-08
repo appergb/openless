@@ -103,6 +103,8 @@ export {
     setStyleEnabled,
     listStylePacks,
     saveStylePack,
+    setStylePackIcon,
+    readStylePackIcon,
     createStylePackFromTemplate,
     previewStylePackRuntime,
     setActiveStylePack,

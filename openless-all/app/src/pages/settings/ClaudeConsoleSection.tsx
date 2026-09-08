@@ -14,10 +14,9 @@ import {
   type CodingAgentEvent,
   type CodingAgentPermissionMode,
 } from '../../lib/ipc'
-import { Tooltip } from '../../components/Tooltip'
 import { SelectLite } from '../../components/ui/SelectLite'
 import { Btn, Card } from '../_atoms'
-import { SectionDesc, SectionTitle, SettingRow, inputStyle } from './shared'
+import { SettingRow, inputStyle } from './shared'
 
 const PERMISSION_MODES: CodingAgentPermissionMode[] = [
   'acceptEdits',
@@ -55,8 +54,6 @@ export function ClaudeConsoleSection() {
   const [output, setOutput] = useState('')
   const [summary, setSummary] = useState<string | null>(null)
   const [risk, setRisk] = useState<string | null>(null)
-  // 控制台默认折叠：测试用的重型 UI（检测/输入/输出）平时不展开，保持设置页清爽。
-  const [expanded, setExpanded] = useState(false)
   const outRef = useRef<HTMLPreElement | null>(null)
 
   async function runDetect() {
@@ -152,21 +149,6 @@ export function ClaudeConsoleSection() {
 
   return (
     <Card>
-      <Tooltip content={t('settings.codingConsole.desc')} wrap placement="bottom">
-        <button
-        onClick={() => setExpanded(v => !v)}
-        style={{ all: 'unset', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}
-      >
-        <SectionTitle>{t('settings.codingConsole.title')}</SectionTitle>
-        <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--ol-ink-4)' }}>
-          {expanded ? `${t('common.hide')} ▴` : `${t('common.show')} ▾`}
-        </span>
-        </button>
-      </Tooltip>
-      <SectionDesc>{t('settings.codingConsole.desc')}</SectionDesc>
-
-      {expanded && (
-        <>
       <SettingRow label={t('settings.codingConsole.status')} desc={t('settings.codingConsole.guardNote')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -286,8 +268,6 @@ export function ClaudeConsoleSection() {
           {output || t('settings.codingConsole.outputPlaceholder')}
         </pre>
       </div>
-        </>
-      )}
     </Card>
   )
 }

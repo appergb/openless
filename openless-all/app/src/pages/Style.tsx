@@ -19,6 +19,7 @@ import { useHotkeySettings } from '../state/HotkeySettingsContext';
 import type { PolishMode, StylePack, StylePackExample, StylePackRuntimeDiagnostics } from '../lib/types';
 import { Btn, Card, PageHeader, Pill } from './_atoms';
 import { Icon } from '../components/Icon';
+import { StylePackIconPicker } from '../components/StylePackIconPicker';
 import { SavedToast, type SaveToastState } from '../components/SavedToast';
 import { pickStylePackZipTargetPath, stylePackZipFileName } from '../lib/stylePackZip';
 import { useMobileLayout, useLayoutStack, useConservativeLayout } from '../lib/useMobileLayout';
@@ -123,10 +124,7 @@ function blankExample(): StylePackExample {
 }
 
 function modeTone(mode: PolishMode): 'default' | 'blue' | 'ok' | 'outline' | 'dark' {
-  if (mode === 'raw') return 'outline';
-  if (mode === 'light') return 'blue';
-  if (mode === 'structured') return 'ok';
-  return 'dark';
+  return mode === 'raw' ? 'outline' : 'default';
 }
 
 export function Style() {
@@ -660,9 +658,9 @@ export function Style() {
                       padding: '6px 12px',
                       borderRadius: 999,
                       border: '0.5px solid',
-                      borderColor: rawPack.active ? 'var(--ol-blue)' : 'var(--ol-line-strong)',
-                      background: rawPack.active ? 'var(--ol-blue-soft)' : 'transparent',
-                      color: rawPack.active ? 'var(--ol-blue)' : 'var(--ol-ink-2)',
+                      borderColor: 'var(--ol-line-strong)',
+                      background: rawPack.active ? 'var(--ol-style-card-bg-active)' : 'transparent',
+                      color: 'var(--ol-ink-2)',
                       fontSize: 12.5,
                       fontWeight: rawPack.active ? 600 : 500,
                       whiteSpace: 'nowrap',
@@ -682,7 +680,7 @@ export function Style() {
                     ['selection', t('style.pack.selectionTab')],
                   ] as const).map(([value, label]) => {
                     const active = workflowView === value;
-                    return <button key={value} onClick={() => setWorkflowView(value)} style={{ padding: '6px 10px', borderRadius: 6, background: active ? 'var(--ol-blue)' : 'transparent', color: active ? '#fff' : 'var(--ol-ink-3)', fontSize: 12, fontWeight: active ? 600 : 500 }}>{label}</button>;
+                    return <button key={value} type="button" aria-pressed={active} onClick={() => setWorkflowView(value)} style={{ padding: '6px 10px', borderRadius: 6, border: 0, background: active ? 'var(--ol-surface)' : 'transparent', color: active ? 'var(--ol-ink)' : 'var(--ol-ink-3)', boxShadow: active ? 'var(--ol-shadow-sm)' : 'none', fontSize: 12, fontWeight: active ? 600 : 500 }}>{label}</button>;
                   })}
                 </div>
                 <Pill tone="outline">{t('style.pack.listCount', { count: packs.length })}</Pill>
@@ -700,6 +698,8 @@ export function Style() {
               return (
                 <motion.div
                   key={pack.id}
+                  data-ol-style-pack={pack.id}
+                  data-active={isCurrentForView ? 'true' : undefined}
                   {...(!stackLayout ? { layout: true, layoutDependency: bodyPacks.length } : {})}
                   initial={{ opacity: 0, scale: 0.85 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -721,7 +721,7 @@ export function Style() {
                       : 'var(--ol-style-card-bg)',
                     borderRadius: 18,
                     padding: 16,
-                    boxShadow: isCurrentForView ? '0 0 0 3px var(--ol-blue-ring)' : 'none',
+                    boxShadow: 'none',
                     cursor: 'default',
                     minHeight: 204,
                   }}
@@ -729,10 +729,10 @@ export function Style() {
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ol-style-card-ink)' }}>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ol-style-card-ink)' }}>
                           {pack.name}
                         </div>
-                        <Pill tone={isBuiltin ? 'outline' : 'blue'} size="sm">
+                        <Pill tone="outline" size="sm">
                           {isBuiltin ? t('style.pack.builtin') : t('style.pack.imported')}
                         </Pill>
                         {pack.originAuthorLogin
@@ -756,50 +756,20 @@ export function Style() {
                           minHeight: 60,
                         }}
                       >
-                        {workflowView === 'selection'
-                          ? (pack.selectionPrompt.trim() || t('style.pack.selectionPromptFallback'))
-                          : (pack.prompt.trim() || pack.description)}
+                        {pack.description.trim() || pack.name}
                       </div>
                     </div>
-                    {isBuiltin ? (
-                      <div
-                        aria-hidden
-                        style={{
-                          width: 36, height: 36, borderRadius: 12,
-                          display: 'grid', placeItems: 'center',
-                          background: isCurrentForView ? 'rgba(37,99,235,0.12)' : 'var(--ol-surface-2)',
-                          color: isCurrentForView ? 'var(--ol-blue)' : 'var(--ol-ink-3)',
-                          flexShrink: 0,
-                        }}
-                      >
-                        <Icon name="sparkle" size={16} />
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => void handleDeleteImportedPack(pack)}
-                        disabled={busy === 'deleting'}
-                        aria-label={t('style.pack.deleteImported')}
-                        title={t('style.pack.deleteImported')}
-                        style={{
-                          width: 36, height: 36, borderRadius: 12,
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                          flexShrink: 0,
-                          border: '0.5px solid rgba(239,68,68,0.32)',
-                          background: 'rgba(254,242,242,0.6)',
-                          color: 'var(--ol-red, #ef4444)',
-                          cursor: busy === 'deleting' ? 'wait' : 'pointer',
-                          opacity: busy === 'deleting' ? 0.55 : 1,
-                          transition: 'background 0.16s var(--ol-motion-quick), border-color 0.16s var(--ol-motion-quick)',
-                        }}
-                      >
-                        <Icon name="trash" size={15} />
-                      </button>
-                    )}
+                    <StylePackIconPicker
+                      pack={pack}
+                      onSaved={saved => setPacks(current => current.map(item => item.id === saved.id
+                        ? { ...item, iconPath: saved.iconPath, updatedAt: saved.updatedAt }
+                        : item))}
+                      onStatus={(failed, message) => showSaveStatus(failed ? 'failed' : 'saved', message, true)}
+                    />
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minHeight: 24, marginBottom: 12 }}>
-                    <Pill tone={workflowView === 'selection' ? 'blue' : modeTone(pack.baseMode)} size="sm">
+                    <Pill tone="default" size="sm">
                       {workflowView === 'selection' ? t('style.pack.writtenPolish') : t(`style.modes.${pack.baseMode}.name`)}
                     </Pill>
                     {pack.tags.slice(0, 1).map(tag => (
@@ -828,12 +798,13 @@ export function Style() {
                     <Btn
                       size="sm"
                       variant="ghost"
-                      icon="expand"
+                      icon="pencil"
                       disabled={isBuiltin}
                       onClick={() => openEditorForPack(pack)}
                     >
                       {t('style.pack.edit')}
                     </Btn>
+                    {!isBuiltin && <button type="button" className="ol-style-pack-delete" onClick={() => void handleDeleteImportedPack(pack)} disabled={busy === 'deleting'} aria-label={t('style.pack.deleteImported')} title={t('style.pack.deleteImported')}><Icon name="trash" size={14} /></button>}
                   </div>
                 </motion.div>
               );

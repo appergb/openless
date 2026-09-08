@@ -1,3 +1,4 @@
+import { Icon } from './Icon';
 import {
   memo,
   useCallback,
@@ -432,15 +433,7 @@ const CircleButton = memo(function CircleButton({ variant, enabled, onClick }: C
         transition: 'opacity 0.18s var(--ol-motion-soft), background 0.16s var(--ol-motion-quick), transform 0.12s var(--ol-motion-quick)',
       }}
     >
-      {isCancel ? (
-        <svg width="11" height="11" viewBox="0 0 11 11">
-          <path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      ) : (
-        <svg width="13" height="13" viewBox="0 0 13 13">
-          <path d="M2 6.5l3.2 3.5L11 3.5" stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      )}
+      <Icon name={isCancel ? "close" : "check"} size={13} strokeWidth={2.2} />
     </button>
   );
 });

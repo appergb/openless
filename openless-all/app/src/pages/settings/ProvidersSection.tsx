@@ -58,17 +58,17 @@ export function ChannelFormRow({ label, htmlFor, children }: { label: string; ht
   const stack = useLayoutStack();
   const conservative = useConservativeLayout();
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: stack || conservative ? 'minmax(0, 1fr)' : '140px minmax(0, 1fr)', gap: '8px 20px', alignItems: 'start', padding: '10px 0' }}>
-      <label htmlFor={htmlFor} style={{ paddingTop: stack || conservative ? 0 : 9, color: 'var(--ol-ink-2)', fontSize: 12.5, lineHeight: 1.6 }}>{label}</label>
+    <div className="ol-channel-form-row" data-stacked={stack || conservative ? 'true' : undefined}>
+      <label htmlFor={htmlFor}>{label}</label>
       <div style={{ minWidth: 0, width: '100%' }}>{children}</div>
     </div>
   );
 }
 
-export function ChannelSectionHeading({ title, description }: { title: string; description?: string }) {
+export function ChannelSectionHeading({ title, description, icon }: { title: string; description?: string; icon?: string }) {
   return (
-    <div style={{ marginBottom: 6 }}>
-      <h3 style={{ margin: 0, fontSize: 14, color: 'var(--ol-ink)', fontWeight: 600 }}>{title}</h3>
+    <div className="ol-channel-section-heading" style={{ marginBottom: 6 }}>
+      <h3 style={{ margin: 0, fontSize: 14, color: 'var(--ol-ink)', fontWeight: 600 }}>{icon && <Icon name={icon} size={15} />}{title}</h3>
       {description && <p style={{ margin: '6px 0 0', color: 'var(--ol-ink-3)', fontSize: 12, lineHeight: 1.65 }}>{description}</p>}
     </div>
   );
@@ -224,7 +224,7 @@ export function ChannelCredentialFields({
             )}
           </>
         )}
-        <div style={channelSectionStyle}><ChannelSectionHeading title={t('settings.channels.modelTitle')} /></div>
+        <div style={channelSectionStyle}><ChannelSectionHeading icon="settings" title={t('settings.channels.modelTitle')} description={t('settings.channels.modelHint')} /></div>
         <CredentialField key={`${channelId}:model:${llmModelRevision}`} label={t('settings.providers.modelLabel')}
           account="ark.model_id" provider={channelId}
           placeholder={defaultModel || 'model-name'} mono
@@ -299,7 +299,7 @@ export function ChannelCredentialFields({
           <CredentialField key={`${channelId}:api_key`} label={t('settings.providers.volcengineApiKeyLabel')}
             account="volcengine.api_key" provider={channelId} mono mask onUserMutation={onUserMutation} />
         )}
-        <div style={channelSectionStyle}><ChannelSectionHeading title={t('settings.channels.modelTitle')} /></div>
+        <div style={channelSectionStyle}><ChannelSectionHeading icon="settings" title={t('settings.channels.modelTitle')} /></div>
         <CredentialField
           key={`${channelId}:resource_id`}
           label={t('settings.providers.volcengineResourceIdLabel')}
@@ -356,7 +356,7 @@ export function ChannelCredentialFields({
         account="asr.endpoint" provider={channelId}
         placeholder={defaultEndpoint || 'https://your-endpoint/v1'}
         defaultValue={defaultEndpoint || undefined} onUserMutation={onUserMutation} />
-      <div style={channelSectionStyle}><ChannelSectionHeading title={t('settings.channels.modelTitle')} /></div>
+      <div style={channelSectionStyle}><ChannelSectionHeading icon="settings" title={t('settings.channels.modelTitle')} description={t('settings.channels.modelHint')} /></div>
       <CredentialField key={`${channelId}:model:${asrModelRevision}`} label={t('settings.providers.modelLabel')}
         account="asr.model" provider={channelId}
         placeholder={defaultModel || 'model-name'}
@@ -631,8 +631,6 @@ function ProviderTools({ kind, modelAccount, provider, onModelSelected, onTested
   const validate = async () => {
     onUserMutation?.();
     setOperation('validate');
-    setModels([]);
-    setSelectedModel('');
     setResult('loading', t('settings.providers.validating'));
     const started = performance.now();
     try {
@@ -694,8 +692,9 @@ function ProviderTools({ kind, modelAccount, provider, onModelSelected, onTested
   };
 
   const resultMessage = message && (
-    <div role="status" style={{ fontSize: 12, color: status === 'error' ? 'var(--ol-warn)' : status === 'success' ? 'var(--ol-ok)' : 'var(--ol-ink-3)', lineHeight: 1.65, overflowWrap: 'anywhere', marginTop: 10 }}>
-      {message}
+    <div className="ol-provider-result" data-status={status} role="status" style={{ fontSize: 12, color: status === 'error' ? 'var(--ol-warn)' : status === 'success' ? 'var(--ol-ok)' : 'var(--ol-ink-3)', lineHeight: 1.65, overflowWrap: 'anywhere', marginTop: 10 }}>
+      <Icon name={status === 'success' ? 'check' : status === 'loading' ? 'refresh' : 'info'} size={15} />
+      <span>{message}</span>
     </div>
   );
 
@@ -703,8 +702,11 @@ function ProviderTools({ kind, modelAccount, provider, onModelSelected, onTested
     <>
       {showFetchModels && (
         <ChannelFormRow label={t('settings.channels.availableModels')}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10, minWidth: 0 }}>
-            <button type="button" onClick={loadModels} style={miniBtnStyle} disabled={status === 'loading'}>{t('settings.providers.fetchModels')}</button>
+          <div className="ol-channel-model-tools" data-populated={models.length > 0 ? 'true' : undefined} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10, minWidth: 0 }}>
+            <button className="ol-channel-fetch-models" type="button" onClick={loadModels} style={miniBtnStyle} disabled={status === 'loading'}>
+              <Icon name="refresh" size={14} />
+              {status === 'loading' && operation === 'models' ? t('settings.providers.loadingModels') : t('settings.providers.fetchModels')}
+            </button>
             {models.length > 0 && (
               <SelectLite
                 value={selectedModel}
@@ -720,9 +722,14 @@ function ProviderTools({ kind, modelAccount, provider, onModelSelected, onTested
           {operation === 'models' && resultMessage}
         </ChannelFormRow>
       )}
-      <section style={channelSectionStyle}>
-        <ChannelSectionHeading title={t('settings.channels.validationTitle')} description={t('settings.channels.validationHint')} />
-        <button type="button" onClick={validate} style={{ ...miniBtnStyle, marginTop: 12, color: 'var(--ol-blue)', borderColor: 'var(--ol-blue)' }} disabled={status === 'loading'}>{t('settings.channels.verify')}</button>
+      <section className="ol-channel-validation" style={channelSectionStyle}>
+        <div className="ol-channel-validation-heading">
+          <ChannelSectionHeading icon="bolt" title={t('settings.channels.validationTitle')} description={t('settings.channels.validationHint')} />
+          <button className="ol-channel-verify" type="button" onClick={validate} style={{ ...miniBtnStyle, marginTop: 12, color: 'var(--ol-blue)', borderColor: 'var(--ol-blue)' }} disabled={status === 'loading'}>
+            <Icon name="play" size={13} />
+            {status === 'loading' && operation === 'validate' ? t('settings.channels.verifying') : t('settings.channels.verify')}
+          </button>
+        </div>
         {operation === 'validate' && resultMessage}
       </section>
     </>

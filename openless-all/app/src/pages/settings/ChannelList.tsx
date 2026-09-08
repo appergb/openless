@@ -7,7 +7,8 @@
 // 卡片解决的两件事：同一家厂商可以存多把 key；key 之间切换只是拖一下顺序，
 // 而不是把旧 key 覆盖掉。
 
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { Modal } from '../../components/ui/Modal';
@@ -44,6 +45,7 @@ import {
   OmniChannelSection,
 } from './ProvidersSection';
 import { ASR_LABELS, inputStyle } from './shared';
+import { ChannelEditorHostContext } from './ChannelEditorHostContext';
 
 type ChannelKind = 'llm' | 'asr';
 
@@ -516,7 +518,7 @@ export function ChannelList({
           <h2 style={{ margin: 0, color: 'var(--ol-ink)', fontSize: 17, fontWeight: 600 }}>{t(`settings.channels.${kind}Title`)}</h2>
           <p style={{ margin: '7px 0 0', fontSize: 12, color: 'var(--ol-ink-3)', lineHeight: 1.65 }}>{t('settings.channels.orderHint')}</p>
         </div>
-        <Btn variant="blue" icon="plus" disabled={creatingBusy} onClick={() => void startCreate()}>
+        <Btn variant="blue" icon="plus" disabled={creatingBusy || presets.length === 0} onClick={() => void startCreate()}>
           {creatingBusy ? t('common.loading') : t('settings.channels.add')}
         </Btn>
       </div>
@@ -601,7 +603,9 @@ export function ChannelList({
                   </span>
                   {t('settings.channels.enabled')}
                 </button>
-                <Btn size="sm" variant="soft" icon="chevRight" onClick={() => setEditingId(channel.id)}>{t('settings.channels.edit')}</Btn>
+                <button type="button" className="ol-channel-edit-button" onClick={() => setEditingId(channel.id)}>
+                  <Icon name="pencil" size={14} />{t('settings.channels.edit')}<Icon name="chevRight" size={14} />
+                </button>
               </div>
             </div>
           );
@@ -729,18 +733,30 @@ function ChannelModal({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const nameId = useId();
+  const editorHost = useContext(ChannelEditorHostContext);
+  const embedded = Boolean(editorHost?.container && editorHost.background);
+  const closeRequestedRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const requestClose = () => {
+    if (closeRequestedRef.current) return;
+    closeRequestedRef.current = true;
+    onCloseRef.current();
+  };
 
   useEffect(() => {
     const opener = document.activeElement;
     const dialog = dialogRef.current;
     const parentDialog = opener instanceof HTMLElement ? opener.closest<HTMLElement>('[role="dialog"]') : null;
-    const background = parentDialog !== dialog ? parentDialog : null;
+    const background = embedded ? editorHost?.background : parentDialog !== dialog ? parentDialog : null;
     const wasInert = background?.inert ?? false;
     (dialog?.querySelector<HTMLElement>('[role="combobox"], input:not([disabled])') ?? dialog)?.focus();
     // Keep body-portaled provider menus accessible while disabling the covered
     // settings surface. aria-modal would hide those existing sibling portals.
     if (background) background.inert = true;
+    if (embedded) editorHost?.registerClose(requestClose);
     return () => {
+      if (embedded) editorHost?.registerClose(null);
       if (background) background.inert = wasInert;
       if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
     };
@@ -755,7 +771,7 @@ function ChannelModal({
       if (dialog.querySelector('[role="combobox"][aria-expanded="true"]')) return;
       event.preventDefault();
       event.stopPropagation();
-      onClose();
+      requestClose();
     } else if (event.key === 'Tab') {
       const controls = Array.from(dialog.querySelectorAll<HTMLElement>(
         'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
@@ -826,7 +842,7 @@ function ChannelModal({
     try {
       await deleteChannel(kind, channel.id);
       emitSaved('saved', t('common.saved'));
-      onClose();
+      requestClose();
     } catch (error) {
       console.error('[channels] delete failed', error);
       emitSaved('failed', t('common.operationFailed'));
@@ -836,51 +852,33 @@ function ChannelModal({
   const descriptor = presets.find(item => item.id === providerType);
   const isLocalEngine = descriptor?.authRequirement === 'none';
 
-  return (
-    <Modal onClose={onClose} zIndex={1000} closing={closing} width={mobile ? '100%' : 'min(780px, 100%)'}>
-      <div ref={dialogRef} className="ol-channel-dialog" role="dialog" aria-label={t(isDraft ? 'settings.channels.createTitle' : 'settings.channels.editTitle')} tabIndex={-1} onKeyDown={onDialogKeyDown} style={{ minWidth: 0, outline: 'none' }}>
-        <style>{`.ol-channel-dialog :is(input, button, [role="combobox"]):focus-visible { outline: 2px solid var(--ol-blue); outline-offset: 3px; }`}</style>
-        {/* 关闭按钮钉在弹窗右上角（2.0 UI 走查）：Modal 卡片本身就是滚动容器，
-            header 用 sticky 吸顶；负 margin + 等量 padding 让不透明底铺到卡片边缘，
-            顶部圆角与卡片一致，内容从 header 下面滚过去。 */}
-        <header style={{
-          position: 'sticky', top: 0, zIndex: 3,
-          margin: '-22px -22px 24px', padding: '22px 22px 0',
-          background: 'var(--ol-surface)', borderRadius: '16px 16px 0 0',
-          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16,
-        }}>
-          <div>
-          <h2 style={{ margin: 0, fontSize: 21, fontWeight: 600, color: 'var(--ol-ink)' }}>{t(isDraft ? 'settings.channels.createTitle' : 'settings.channels.editTitle')}</h2>
-          <p style={{ margin: '8px 0 0', fontSize: 12, lineHeight: 1.6, color: 'var(--ol-ink-3)' }}>{t('settings.channels.autoSaveHint')}</p>
+  const content = (
+      <div ref={dialogRef} className={`ol-channel-dialog${embedded ? ' ol-channel-dialog-embedded' : ''}`} data-closing={closing ? 'true' : undefined} role="dialog" aria-label={t(isDraft ? 'settings.channels.createTitle' : 'settings.channels.editTitle')} tabIndex={-1} onKeyDown={onDialogKeyDown}>
+        <header className="ol-channel-dialog-header">
+          {embedded ? <button type="button" className="ol-settings-back" onClick={requestClose} aria-label={t('settings.channels.backToList')} title={t('settings.channels.backToList')}><Icon name="chevLeft" size={19} /></button>
+            : <span className="ol-channel-dialog-icon"><Icon name={kind === 'llm' ? 'style' : 'mic'} size={22} /></span>}
+          <div className="ol-channel-dialog-heading">
+            <div className="ol-channel-dialog-title">
+              <h2>{t(isDraft ? 'settings.channels.createTitle' : 'settings.channels.editTitle')}</h2>
+              <span>{t(`settings.channels.${kind}Title`)}</span>
+            </div>
+            <p>{t('settings.channels.autoSaveHint')}</p>
           </div>
-          <button type="button" onClick={onClose} aria-label={t('common.close')} style={{ display: 'grid', placeItems: 'center', flexShrink: 0, width: 32, height: 32, padding: 0, border: 0, borderRadius: 8, color: 'var(--ol-ink-2)', background: 'var(--ol-surface-2)', cursor: 'pointer' }}><Icon name="close" size={17} /></button>
+          {!embedded && <button type="button" className="ol-channel-dialog-close" onClick={requestClose} aria-label={t('common.close')}><Icon name="close" size={18} /></button>}
         </header>
 
-        <ChannelSectionHeading title={t('settings.channels.connectionTitle')} />
-        <ChannelFormRow label={t('settings.channels.providerLabel')}>
-          <SelectLite
-            value={providerType}
-            onChange={next => void changeProvider(next)}
-            options={presets.map(p => ({ value: p.id, label: t(`settings.providers.presets.${p.nameKey}`) }))}
-            ariaLabel={t('settings.channels.providerLabel')}
-            style={{ ...inputStyle, width: '100%', maxWidth: '100%', height: 38 }}
-          />
-        </ChannelFormRow>
-
-        {/* Provider changes remount the existing, channel-scoped credential fields. */}
-        <ChannelCredentialFields
-          key={`${channel.id}:${providerType}`}
-          kind={kind}
-          providerType={providerType}
-          channelId={channel.id}
-          descriptor={descriptor}
-          onTested={() => void onChanged()}
-          onUserMutation={onUserMutation}
-        />
-
-        {isLocalEngine && <p style={{ fontSize: 12, color: 'var(--ol-ink-3)', lineHeight: 1.6 }}>{t('settings.channels.localEngineModelHint')}</p>}
-
-        <div style={{ borderTop: '1px solid var(--ol-line)', marginTop: 24, paddingTop: 12 }}>
+        <div className="ol-channel-dialog-body ol-thinscroll">
+          <div className="ol-channel-form-sheet">
+          <ChannelSectionHeading icon="cloud" title={t('settings.channels.connectionTitle')} />
+          <ChannelFormRow label={t('settings.channels.providerLabel')}>
+            <SelectLite
+              value={providerType}
+              onChange={next => void changeProvider(next)}
+              options={presets.map(p => ({ value: p.id, label: t(`settings.providers.presets.${p.nameKey}`) }))}
+              ariaLabel={t('settings.channels.providerLabel')}
+              style={{ ...inputStyle, width: '100%', maxWidth: '100%', height: 38 }}
+            />
+          </ChannelFormRow>
           <ChannelFormRow label={t('settings.channels.nameLabel')} htmlFor={nameId}>
             <input
               id={nameId}
@@ -890,23 +888,43 @@ function ChannelModal({
               placeholder={t('settings.channels.namePlaceholder')}
               style={{ ...inputStyle, width: '100%', maxWidth: '100%', height: 38 }}
             />
+            <p className="ol-channel-name-hint">{t('settings.channels.nameHint')}</p>
           </ChannelFormRow>
-          <p style={{ margin: '0 0 4px', fontSize: 11.5, color: 'var(--ol-ink-4)', lineHeight: 1.6 }}>{t('settings.channels.nameHint')}</p>
+
+          {/* 模型列表、供应商特有字段与验证结果都留在同一个滚动区。 */}
+          <ChannelCredentialFields
+            key={`${channel.id}:${providerType}`}
+            kind={kind}
+            providerType={providerType}
+            channelId={channel.id}
+            descriptor={descriptor}
+            onTested={() => void onChanged()}
+            onUserMutation={onUserMutation}
+          />
+          {isLocalEngine && <p className="ol-channel-local-hint">{t('settings.channels.localEngineModelHint')}</p>}
+          </div>
         </div>
 
-        <footer style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between', marginTop: 24, paddingTop: 18, borderTop: '1px solid var(--ol-line)', alignItems: 'center' }}>
+        <footer className="ol-channel-dialog-footer">
           {confirmDelete ? (
-            <div role="group" aria-label={t('settings.channels.delete')} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', flex: '1 1 260px' }}>
-              <span style={{ width: '100%', fontSize: 12, color: 'var(--ol-warn)', lineHeight: 1.6 }}>{t('settings.channels.deleteConfirm')}</span>
-              <button type="button" onClick={() => void remove()} style={dangerBtn}>{t('settings.channels.confirmDelete')}</button>
+            <div className="ol-channel-delete-confirm" role="group" aria-label={t('settings.channels.delete')}>
+              <p>{t('settings.channels.deleteConfirm')}</p>
+              <button type="button" autoFocus className="ol-channel-delete-button" onClick={() => void remove()}><Icon name="trash" size={15} />{t('settings.channels.confirmDelete')}</button>
               <button type="button" onClick={() => setConfirmDelete(false)} style={ghostBtn}>{t('common.cancel')}</button>
             </div>
           ) : (
-            <button type="button" onClick={() => setConfirmDelete(true)} style={{ ...ghostBtn, color: 'var(--ol-warn)', borderColor: 'transparent' }}>{t('settings.channels.delete')}</button>
+            <button type="button" className="ol-channel-delete-button" onClick={() => setConfirmDelete(true)}><Icon name="trash" size={15} />{t('settings.channels.delete')}</button>
           )}
-          <Btn variant="blue" onClick={onClose}>{t('common.close')}</Btn>
+          <div className="ol-channel-dialog-footer-end">
+            <span className="ol-channel-autosave-hint">{t('modal.autoSaveHint')}</span>
+            <Btn variant={embedded ? 'primary' : 'blue'} onClick={requestClose}>{t(embedded ? 'settings.channels.done' : 'common.close')}</Btn>
+          </div>
         </footer>
       </div>
+  );
+  return embedded ? createPortal(content, editorHost!.container!) : (
+    <Modal onClose={requestClose} zIndex={1000} closing={closing} width={mobile ? '100%' : 'min(840px, 100%)'} style={{ padding: 0, overflow: 'hidden', maxHeight: 'calc(100dvh - 40px)' }}>
+      {content}
     </Modal>
   );
 }
@@ -927,10 +945,4 @@ const ghostBtn: CSSProperties = {
   cursor: 'pointer',
   fontSize: 12.5,
   fontWeight: 500,
-};
-
-const dangerBtn: CSSProperties = {
-  ...ghostBtn,
-  borderColor: 'var(--ol-warn)',
-  color: 'var(--ol-warn)',
 };
