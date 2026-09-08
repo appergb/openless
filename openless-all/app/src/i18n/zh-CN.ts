@@ -1,5 +1,5 @@
 // 简体中文资源 — 与产品当前文案保持一致。
-// 添加新 key 时，必须同步更新 en.ts，否则首次切换到 English 会回落到中文残留。
+// 五个语言文件共享同一结构；新增或删除 key 时同步更新全部语言。
 
 export const zhCN = {
   app: {
@@ -726,23 +726,9 @@ export const zhCN = {
     },
   },
   selectionAsk: {
-    kicker: 'SELECTION ASK',
     title: '划词追问',
     desc: '选中文字后语音提问，支持多轮追问。',
     shortcutSettings: '快捷键设置',
-    intro: {
-      eyebrow: '在文字与理解之间',
-      title: '选中一段文字，\n把问题说出来。',
-      desc: '解释概念、提炼要点，或继续深入。答案会出现在独立浮窗里。',
-    },
-    example: {
-      title: '对话示例',
-      selection: '选中的文字',
-      term: '费曼学习法',
-      context: '：通过向他人讲解，发现自己理解中的空白。',
-      question: '用更简单的话解释一下。',
-      answer: '就像给朋友讲课：讲得越明白，你就理解得越透彻。',
-    },
     guide: {
       openTitle: '打开追问浮窗',
       openDesc: '按 <key>{{hotkey}}</key>，开始一轮对话。',
@@ -753,17 +739,10 @@ export const zhCN = {
       followup: '继续使用录音快捷键，即可多轮追问。',
       dismiss: '关闭浮窗，结束本次对话',
     },
-    statusEnabled: '已启用',
-    statusDisabled: '未启用',
     hotkey: {
       title: '弹出浮窗的快捷键',
-      desc: '控制浮窗开关。浮窗内录音用 {{recordHotkey}}。',
-      optionDisabled: '不启用',
-      chordWarning: '',
     },
     save: {
-      hotkeyRegisterFailed: '划词追问快捷键注册失败，未继续保存。',
-      hotkeySaveFailed: '划词追问快捷键保存失败，请重试。',
       historySaveFailed: 'Q&A 历史保存设置保存失败，请重试。',
     },
     history: {
@@ -772,15 +751,7 @@ export const zhCN = {
     },
     howto: {
       title: '使用方法',
-      step1: '按 {{hotkey}} 打开浮窗。',
       step2: '在任意 app 选中文字。',
-      step3: '按 {{recordHotkey}} 录音，再按一次提交。',
-      step4: '可继续按 {{recordHotkey}} 多轮追问。',
-      step5: '按 Esc 关闭浮窗并清空历史。',
-      windowTitle: '浮窗操作',
-      windowDesc: '浮窗可拖动，位置自动记忆。钉住可保持窗口不关。',
-      privacyTitle: '隐私',
-      privacyDesc: '选中文本仅存于内存，关闭浮窗即销毁。超 4000 字符自动截断。',
     },
   },
   settings: {

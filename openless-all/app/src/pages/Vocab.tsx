@@ -1,4 +1,4 @@
-// Vocab.tsx — 「词典」页（2.0 UI 走查：由词汇表改版）。
+// Vocab.tsx — 「词典」页。
 // 结构：
 //   - 顶部：标题 + 右上「新词」入口（弹窗：直接输入 或 从预设模板批量导入）
 //   - 工具行：所有 / 自动添加 / 手动添加 分段筛选 + 右侧圆形搜索（点击向左展开）
@@ -61,7 +61,7 @@ export function Vocab() {
   const editMount = useExitMount(editingEntry !== null);
   const newWordMount = useExitMount(newWordOpen);
 
-  // 词条网格 FLIP（2.0 UI 走查）：增删/筛选让行位移时，从旧位置滑到新位置；
+  // 词条网格 FLIP：增删/筛选让行位移时，从旧位置滑到新位置；
   // 新卡片入场走 .ol-word-card 的 CSS 动画，删除走 onRemove 里的退场动画。
   const cardRefs = useRef(new Map<string, HTMLDivElement>());
   const prevCardTops = useRef(new Map<string, number>());
@@ -410,7 +410,7 @@ export function Vocab() {
           ))}
         </div>
         <div style={{ flex: 1 }} />
-        {/* 2.0 UI 走查：圆形控件原地展开成搜索框 —— 放大镜固定在右缘不动，
+        {/* 圆形控件原地展开成搜索框 —— 放大镜固定在右缘不动，
             占位文字「搜索」在框内；收起走同一条 width 过渡（从哪来回到哪去）。 */}
         <div className={searchOpen ? 'ol-search ol-search-open' : 'ol-search'}>
           <input
@@ -483,7 +483,7 @@ export function Vocab() {
         </div>
       )}
 
-      {/* 独立滚动区（2.0 UI 走查）：词条多时只有这一格在滚，底部面板固定在视口
+      {/* 独立滚动区：词条多时只有这一格在滚，底部面板固定在视口
           底缘、白底天然遮挡滚过去的内容；之前网格作为页根 flex item 被压扁、内容
           溢出到下方区块背后的穿帮也从根上消除。 */}
       <div

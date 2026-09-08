@@ -12,7 +12,7 @@ interface PageHeaderProps {
   desc?: string;
   right?: ReactNode;
   titleRight?: ReactNode;
-  /** 概览等单屏页用：收紧标题与下方内容的间距（2.0 UI 走查：上方留白过多）。 */
+  /** 概览等单屏页用：收紧标题与下方内容的间距。 */
   compact?: boolean;
 }
 

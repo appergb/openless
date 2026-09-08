@@ -1,6 +1,4 @@
-// 通用 → 录音与输入：录音快捷键 / 方式 / 麦克风 / 胶囊 / 静音，
-// 外加「插入与剪贴板」「启动」两个折叠组。流式输入也并到这里（属于插入行为）。
-// 自 Settings.tsx 的 RecordingSection 拆出，录音相关逻辑零改动。
+// 录音与输入设置：录音方式、提示音、输入行为及平台专属选项。
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -344,7 +342,7 @@ export function RecordingInputSection() {
               label={t('settings.recording.silenceAutoStopLabel')}
               desc={t('settings.recording.silenceAutoStopDesc')}
             >
-              {/* 开关行只放 Toggle：秒数下拉移出本行，避免开关时行内内容变宽导致抽搐。 */}
+              {/* 开关行只放 Toggle：秒数下拉移出本行，避免开关时行内内容变宽导致抖动。 */}
               <Toggle
                 on={prefs.silenceAutoStopEnabled}
                 onToggle={next => savePrefs({ ...prefs, silenceAutoStopEnabled: next })}

@@ -1,5 +1,4 @@
-// SelectLite — 三平台统一的自定义下拉，替代 native <select>，避开 Win32 ComboBox
-// 直角丑框（issue #418）以及 WKWebView 上原生 NSPopUpButton 的视觉割裂。
+// SelectLite 在各平台提供一致的下拉交互、键盘操作和浮层定位。
 //
 // 设计：
 // - 触发器是 button（chevron + 当前值），样式可被 `style` 覆盖

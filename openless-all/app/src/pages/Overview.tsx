@@ -229,14 +229,14 @@ export function Overview({ onOpenHistory, onOpenSettings }: OverviewProps) {
     hasShortcut: Boolean(prefs?.dictationHotkey.primary.trim()),
   });
   const openSettings = (section: OverviewSettingsSection) => onOpenSettings?.(section);
-  // 2.0 UI 走查：已配置完成的服务商卡不再常驻（没有信息价值），只展示仍待配置的
+  // 已配置完成的服务商卡不再常驻（没有信息价值），只展示仍待配置的
   // 卡作为提醒；全部配置完成后整组「当前语音服务」隐藏。凭据加载中/拉取失败
   // （providers 为空）时保留占位卡，避免页面闪空。
   const pendingProviders = setup.providers.filter(p => !p.configured);
   const showProvidersSection = setup.providers.length === 0 || pendingProviders.length > 0;
 
   return (
-    // 单屏固定页（2.0 UI 走查）：不滚动，撑满外壳给定的高度，所有仪表盘在一屏内
+    // 单屏固定页：不滚动，撑满外壳给定的高度，所有仪表盘在一屏内
     // 弹性分配；窗口压到很矮时由底部行内部收缩（最近识别列表内滚），页面本身不出滚动条。
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, gap: 14 }}>
       <PageHeader
@@ -383,7 +383,7 @@ function ProviderCard({ kind, name, status, onConfigure }: ProviderCardProps) {
 function ActivityHeatmapCard({ activity }: { activity: ActivityDay[] }) {
   const { t, i18n } = useTranslation();
   const { endDate, startDate, data, labels } = useMemo(() => {
-    // 2.0 UI 走查：年历按日历年铺满——1 月 1 日起、12 月 31 日止，从最左排到最右；
+    // 年历按日历年铺满——1 月 1 日起、12 月 31 日止，从最左排到最右；
     // 此前的滚动 365 天窗口会让月份标号从年中开始、右侧留空，观感像「缺数据」。
     const now = new Date();
     const year = now.getFullYear();
@@ -414,10 +414,10 @@ function ActivityHeatmapCard({ activity }: { activity: ActivityDay[] }) {
       <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ol-ink-2)', flexShrink: 0 }}>
         {t('overview.activityTitle')}
       </span>
-      {/* 格子不再封顶：53 列随卡片宽度铺满到右缘（2.0 UI 走查：长度要排到最右侧）。
+      {/* 格子不再封顶：53 列随卡片宽度铺满到右缘。
           卡片高度收紧为内容高度（flex 默认 0 1 auto：不拉伸、窗口压矮时才收缩），
           四边 padding 一致；腾出的高度全部让给上方周期/最近识别行，热力图整体沉底
-          （2.0 UI 走查：消除卡片底部大片留白、上方两卡拉高）。 */}
+          。 */}
       <Heatmap
         data={data}
         startDate={startDate}

@@ -730,23 +730,9 @@ export const ko: typeof zhCN = {
     },
   },
   selectionAsk: {
-    kicker: 'SELECTION ASK',
     title: '선택 질문',
     desc: '텍스트 선택 후 음성으로 질문. 다중 라운드 후속 질문 지원.',
     shortcutSettings: '단축키 설정',
-    intro: {
-      eyebrow: '읽기에서 이해로',
-      title: '궁금한 글을 선택하고,\n말로 질문하세요.',
-      desc: '개념을 이해하고, 핵심을 정리하거나 더 깊이 알아보세요. 답변은 플로팅 패널에 표시됩니다.',
-    },
-    example: {
-      title: '대화 예시',
-      selection: '선택한 텍스트',
-      term: '파인만 학습법',
-      context: '은 다른 사람에게 설명하면서 이해가 부족한 부분을 찾는 방법입니다.',
-      question: '더 쉬운 말로 설명해 줘.',
-      answer: '친구에게 가르친다고 생각해 보세요. 명확하게 설명할수록 더 깊이 이해한 것입니다.',
-    },
     guide: {
       openTitle: '질문 패널 열기',
       openDesc: '<key>{{hotkey}}</key>로 대화를 시작하세요.',
@@ -757,17 +743,10 @@ export const ko: typeof zhCN = {
       followup: '녹음 단축키를 다시 눌러 후속 질문을 할 수 있어요.',
       dismiss: '패널을 닫고 이번 대화 종료',
     },
-    statusEnabled: '활성화됨',
-    statusDisabled: '비활성화됨',
     hotkey: {
       title: '플로팅 창 단축키',
-      desc: '패널 열기/닫기 제어. 패널 내 녹음은 {{recordHotkey}} 사용.',
-      optionDisabled: '비활성화',
-      chordWarning: '',
     },
     save: {
-      hotkeyRegisterFailed: '선택 질문 단축키 등록에 실패했습니다. 설정은 저장되지 않았습니다.',
-      hotkeySaveFailed: '선택 질문 단축키 저장에 실패했습니다. 다시 시도하세요.',
       historySaveFailed: 'Q&A 기록 설정 저장에 실패했습니다. 다시 시도하세요.',
     },
     history: {
@@ -776,15 +755,7 @@ export const ko: typeof zhCN = {
     },
     howto: {
       title: '사용 방법',
-      step1: '{{hotkey}} 로 패널 열기.',
       step2: '아무 앱에서 텍스트 선택.',
-      step3: '{{recordHotkey}} 로 녹음, 다시 눌러 제출.',
-      step4: '{{recordHotkey}} 로 계속 후속 질문 가능.',
-      step5: 'Esc 로 패널 닫기 및 기록 삭제.',
-      windowTitle: '창 위치 + 드래그 + 고정',
-      windowDesc: '패널은 드래그 가능하며 위치를 기억합니다. 고정하면 열린 상태 유지.',
-      privacyTitle: '프라이버시 계약',
-      privacyDesc: '선택 텍스트는 메모리에만 존재하며 패널 닫으면 삭제. 4000 자 초과 시 자동 축소.',
     },
   },
   settings: {

@@ -64,9 +64,7 @@ export function AppearanceTab() {
   return <><ThemeSection /><LayoutSection /><LanguageSection /></>;
 }
 
-// 服务：AI 提供商 · 本地模型 · 扩展市场。
-// 本地模型是「语音识别由谁提供」的一种答案，和云端提供商属同一决策，
-// 不再藏进「高级」。
+// AI 服务与模型：按当前管线和平台能力组织渠道、本地模型及网络设置。
 export function ServicesTab() {
   const { t } = useTranslation();
   const { prefs } = useHotkeySettings();
@@ -79,7 +77,7 @@ export function ServicesTab() {
   const contentRef = useRef<HTMLDivElement>(null);
 
   // 语言模型 / 语音识别是必配项：tab 上挂状态点 —— 未配置红、已配置黄
-  // （2.0 UI 走查）。任何渠道增删改/启停后 ChannelList 会广播
+  // 。任何渠道增删改/启停后 ChannelList 会广播
   // ol-channels-changed，这里即时重算。
   const [requiredConfigured, setRequiredConfigured] = useState<{ llm: boolean; asr: boolean }>({ llm: false, asr: false });
   useEffect(() => {

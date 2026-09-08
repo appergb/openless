@@ -730,23 +730,9 @@ export const ja: typeof zhCN = {
     },
   },
   selectionAsk: {
-    kicker: 'SELECTION ASK',
     title: '選択追問',
     desc: 'テキストを選択して音声で質問。複数ターンの追問対応。',
     shortcutSettings: 'ショートカット設定',
-    intro: {
-      eyebrow: '読むことから、理解することへ',
-      title: '気になる文章を選んで、\n声で質問。',
-      desc: '概念の説明や要点の整理、さらに深い質問も。回答はフロートパネルに表示されます。',
-    },
-    example: {
-      title: '会話の例',
-      selection: '選択したテキスト',
-      term: 'ファインマン・テクニック',
-      context: 'は、他の人に説明することで理解の抜けを見つける学習法です。',
-      question: 'もっと簡単な言葉で説明して。',
-      answer: '友人に教えるようなものです。分かりやすく説明できるほど、理解が深まっています。',
-    },
     guide: {
       openTitle: 'パネルを開く',
       openDesc: '<key>{{hotkey}}</key> で会話を始めます。',
@@ -757,17 +743,10 @@ export const ja: typeof zhCN = {
       followup: '録音キーでもう一度、続けて質問できます。',
       dismiss: 'パネルを閉じて、この会話を終了',
     },
-    statusEnabled: '有効',
-    statusDisabled: '無効',
     hotkey: {
       title: 'フロートウィンドウのショートカット',
-      desc: 'パネルの開閉を制御。パネル内の録音は {{recordHotkey}}。',
-      optionDisabled: '無効',
-      chordWarning: '',
     },
     save: {
-      hotkeyRegisterFailed: '選択追問ショートカットの登録に失敗しました。設定は保存されていません。',
-      hotkeySaveFailed: '選択追問ショートカットの保存に失敗しました。もう一度お試しください。',
       historySaveFailed: 'Q&A 履歴設定の保存に失敗しました。もう一度お試しください。',
     },
     history: {
@@ -776,15 +755,7 @@ export const ja: typeof zhCN = {
     },
     howto: {
       title: '使い方',
-      step1: '{{hotkey}} でパネルを開く。',
       step2: '任意のアプリでテキストを選択。',
-      step3: '{{recordHotkey}} で録音、再度押して送信。',
-      step4: '{{recordHotkey}} で続けて追問可能。',
-      step5: 'Esc でパネルを閉じ、履歴をクリア。',
-      windowTitle: 'ウィンドウの位置 + ドラッグ + ピン留め',
-      windowDesc: 'パネルはドラッグ可能で位置を記憶。ピン留めで開いたままに。',
-      privacyTitle: 'プライバシー契約',
-      privacyDesc: '選択テキストはメモリ上のみ。パネルを閉じると破棄。4000 字超は自動切り詰め。',
     },
   },
   settings: {

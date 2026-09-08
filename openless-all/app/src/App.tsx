@@ -21,11 +21,8 @@ import {
 } from './lib/windowHotkeyFallback';
 import { HotkeySettingsProvider } from './state/HotkeySettingsContext';
 
-// 各窗口/重页面懒加载,让每个 webview 只下载并解析自己用到的那部分代码。原本所有窗口
-// (主设置 / 胶囊 / QA / Less Computer / glow)共用一个打包产物,导致 5 个常驻 WebKit
-// 进程都把整套设置 UI(FloatingShell + Style/Marketplace/LocalAsr…)和聊天面板加载进来,
-// 常驻内存离谱。拆开后胶囊/glow 这类轻窗口不再加载设置/聊天代码。胶囊保持 eager:
-// 它是听写实时反馈、对首帧延迟敏感,且体积很小。
+// 各 WebView 按窗口用途懒加载页面，减少常驻内存。
+// 胶囊承担录音的即时反馈，体积较小且对首帧延迟敏感，因此保持直接导入。
 const AutoUpdateGate = lazy(() =>
   import('./components/AutoUpdateGate').then(m => ({ default: m.AutoUpdateGate })),
 );

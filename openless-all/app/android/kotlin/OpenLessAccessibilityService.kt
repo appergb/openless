@@ -463,12 +463,6 @@ class OpenLessAccessibilityService : AccessibilityService() {
             return pingResult == AccessibilityPasteResult.SUCCESS
         }
 
-        /** @deprecated Use [pingAccessibilityProcess] for UI; paste no longer gates on this. */
-        @JvmStatic
-        fun isOperational(context: Context): Boolean {
-            return pingAccessibilityProcess(context)
-        }
-
         internal fun performPasteFromCommand(pasteText: String? = null): AccessibilityPasteResult {
             return instance?.performPasteToFocusedFieldInternal(pasteText)
                 ?: AccessibilityPasteResult.SERVICE_NOT_CONNECTED

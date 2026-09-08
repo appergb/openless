@@ -1,4 +1,4 @@
-// Corrections.tsx — 「纠正规则」独立页（2.0 UI 走查：从词典页迁出，归入侧栏「工具」组）。
+// Corrections.tsx — 「纠正规则」独立页。
 // 修正常见 ASR 误识别：pattern → replacement，支持 {num} 一个数字通配。
 // 自动收集（source === 'learned'）的规则可单独筛出并一键清空 —— 与词典页的
 // 「自动添加」筛选同一套信任前提：用户随时能看清、能整块撤销。

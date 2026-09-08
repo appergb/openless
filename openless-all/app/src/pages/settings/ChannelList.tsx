@@ -1,11 +1,5 @@
-// 渠道卡片列表 —— LLM 润色与 ASR 语音转写共用同一套交互。
-//
-// 心智只有一条：**排序即优先级，列表里第一个启用的就是当前生效的渠道**。
-// 开关关掉的渠道自动沉到列表末尾；后端不另存"当前选中"，避免"列表第一张是 A、
-// 实际请求打的是 B"这种两处真相。详见 docs/provider-channels-plan.md。
-//
-// 卡片解决的两件事：同一家厂商可以存多把 key；key 之间切换只是拖一下顺序，
-// 而不是把旧 key 覆盖掉。
+// LLM 与 ASR 共用的渠道列表和编辑器。
+// Core 按排序选择第一个启用渠道；每个渠道独立保存凭据，支持同一供应商的多个账号。
 
 import { useCallback, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
@@ -330,9 +324,8 @@ export function ChannelList({
     channelsRef.current = channels;
   }, [channels]);
 
-  // 2.0 UI 走查：添加/删除/拖序都会让行位置突变，此前没有任何过渡。
-  // FLIP：每次 channels 变化后对比各行上边缘，位移的行从旧位置滑到新位置，
-  // 新出现的行淡入下沉进场；被拖的行保留抬升 scale，避免动画盖掉拖拽态。
+  // FLIP 动画比较更新前后的布局位置，平滑呈现增删与排序变化。
+  // 正在拖动的行保留自己的 transform，避免滑位动画覆盖拖动态。
   const prevRowTops = useRef(new Map<string, number>());
   useLayoutEffect(() => {
     // 同样只量布局位置（offsetTop）：rect.top 会被上一帧仍在飞行的 FLIP
@@ -368,11 +361,8 @@ export function ChannelList({
 
   const dragCleanupRef = useRef<(() => void) | null>(null);
 
-  /** 指针移到哪张卡片上，就把被拖的那张插到那个位置 —— 卡片实时跟手。
-   *  命中测试必须用布局坐标（offsetTop）而不是 getBoundingClientRect：拖动时
-   *  FLIP 滑位动画正在飞行，rect 里掺着动画 transform，会把动画反馈进命中
-   *  判定 —— 同一指针位置交替命中两张卡、顺序来回翻转，整栏疯狂抽搐
-   *  （2.0 UI 走查修复）。offsetTop 只反映布局位置，不受 transform/动画影响。 */
+  /** 按指针命中的行实时排序。使用 offsetTop 读取布局坐标，避免 FLIP 的
+   * transform 改变命中结果，导致同一指针位置反复触发互换。 */
   const moveDragTo = (pointerY: number) => {
     const dragId = dragIdRef.current;
     if (!dragId) return;
@@ -481,7 +471,7 @@ export function ChannelList({
     channels.find(c => c.id === (draftId ?? editingId)) ?? null;
   const isDraft = draftId != null;
 
-  // 弹窗退场门控（2.0 UI 走查「从哪来回到哪去」）：closing 动画期间保留最后一次
+  // 弹窗退场门控：closing 动画期间保留最后一次
   // 打开的 channel/isDraft，避免动画播一半内容先消失、标题从「添加」闪回「编辑」。
   const dialogMount = useExitMount(editingChannel !== null);
   const lastDialogRef = useRef<{ channel: Channel; isDraft: boolean } | null>(null);
@@ -531,7 +521,7 @@ export function ChannelList({
         </div>
       )}
 
-      {/* 2.0 UI 走查：生效渠道不再用蓝底 + 左侧竖条（「当前使用」徽章已经说明问题，
+      {/* 生效渠道不再用蓝底 + 左侧竖条（「当前使用」徽章已经说明问题，
           整行染色太花哨）；行改为圆角卡片，选中态只用中性灰底 + 细描边。 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: channels.length ? 12 : 0 }}>
         {channels.map(channel => {
@@ -551,7 +541,7 @@ export function ChannelList({
                 display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '14px 20px',
                 padding: '14px 12px', borderRadius: 12,
                 // 拖动态：轻微抬升（scale + 大阴影 + 强描边 + 提高层级），
-                // 让「哪张在被拖、拖到哪了」一目了然（2.0 UI 走查）。
+                // 让「哪张在被拖、拖到哪了」一目了然。
                 border: '0.5px solid',
                 borderColor: draggingId === channel.id ? 'var(--ol-line-strong)' : isActive ? 'var(--ol-line)' : 'transparent',
                 background: isActive ? 'var(--ol-surface-2)' : 'transparent',
@@ -661,10 +651,7 @@ function ChannelTestResult({ channel, testing, t }: {
 }
 
 /**
- * 「服务 → AI 提供商」面板：LLM 与 ASR 两张渠道列表。
- *
- * 保留 `ProvidersSection` 这个名字与 `kind` 签名，让设置页 tabs 与新手引导的调用点
- * 不用改。渠道化之后它只是两个 <ChannelList> 的容器。
+ * 为设置与新手引导提供 LLM/ASR 渠道列表；多模态管线启用时展示 Omni 配置。
  */
 export function ProvidersSection({
   kind = 'all',
@@ -698,10 +685,8 @@ export function ProvidersSection({
 }
 
 /**
- * 添加与编辑共用的同一个弹窗 —— 供应商、名字、凭据、测试连通都在这一屏里。
- *
- * 刻意不做「先创建、再填凭据」的两步：那只是实现上需要先有渠道 id 才能写凭据，
- * 不该变成用户多点一次。
+ * 添加与编辑复用同一表单。设置中挂载为右侧子页，新手引导中使用独立弹窗。
+ * 新建渠道先取得凭据所属的 ID，关闭时仅回收从未发生用户操作的空白草稿。
  */
 function ChannelModal({
   kind,

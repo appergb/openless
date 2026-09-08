@@ -12,7 +12,7 @@ import {
     type LocalAsrModelStatus,
     type LocalAsrTestResult,
 } from "../../lib/localAsr"
-import { Btn, Card, Collapsible, Pill } from "../_atoms"
+import { Btn, Card, Pill } from "../_atoms"
 import { Icon } from "../../components/Icon"
 import { formatBytes } from "./helpers"
 import type { RemoteSize } from "./types"

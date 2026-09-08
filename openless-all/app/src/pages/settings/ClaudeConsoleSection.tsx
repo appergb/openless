@@ -203,7 +203,7 @@ export function ClaudeConsoleSection() {
       </SettingRow>
 
       <SettingRow label={t('settings.codingConsole.permissionMode')}>
-        {/* 2.0 UI 走查：统一官方 SelectLite。 */}
+
         <SelectLite
           value={permMode}
           onChange={v => setPermMode(v as CodingAgentPermissionMode)}

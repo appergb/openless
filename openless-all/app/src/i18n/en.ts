@@ -728,23 +728,9 @@ export const en: typeof zhCN = {
     },
   },
   selectionAsk: {
-    kicker: 'SELECTION ASK',
     title: 'Selection Ask',
     desc: 'Select text and ask questions by voice, with multi-turn follow-ups.',
     shortcutSettings: 'Shortcut settings',
-    intro: {
-      eyebrow: 'From reading to understanding',
-      title: 'Select a passage.\nAsk it out loud.',
-      desc: 'Explore a concept, find the key points, or go deeper. Answers appear in a floating panel.',
-    },
-    example: {
-      title: 'Example conversation',
-      selection: 'Selected text',
-      term: 'The Feynman technique',
-      context: ' reveals gaps in your understanding by explaining a concept to someone else.',
-      question: 'Explain that in simpler terms.',
-      answer: 'Think of teaching a friend: the clearer your explanation, the better you understand it.',
-    },
     guide: {
       openTitle: 'Open the panel',
       openDesc: 'Press <key>{{hotkey}}</key> to start a conversation.',
@@ -755,17 +741,10 @@ export const en: typeof zhCN = {
       followup: 'Use the recording shortcut again to ask a follow-up.',
       dismiss: 'Close the panel and end this conversation',
     },
-    statusEnabled: 'Enabled',
-    statusDisabled: 'Disabled',
     hotkey: {
       title: 'Hotkey to open the panel',
-      desc: 'Opens/closes the panel. Recording uses {{recordHotkey}}.',
-      optionDisabled: 'Disabled',
-      chordWarning: '',
     },
     save: {
-      hotkeyRegisterFailed: 'Failed to register the Selection Ask shortcut. The preference was not saved.',
-      hotkeySaveFailed: 'Failed to save the Selection Ask shortcut. Please try again.',
       historySaveFailed: 'Failed to save the Q&A history setting. Please try again.',
     },
     history: {
@@ -774,15 +753,7 @@ export const en: typeof zhCN = {
     },
     howto: {
       title: 'How to use',
-      step1: 'Press {{hotkey}} to open the panel.',
       step2: 'Select text in any app.',
-      step3: 'Press {{recordHotkey}} to record, press again to submit.',
-      step4: 'Continue pressing {{recordHotkey}} for follow-up questions.',
-      step5: 'Press Esc to close and clear history.',
-      windowTitle: 'Position, drag, and pin',
-      windowDesc: 'The panel is draggable and remembers its position. Pin to keep it open.',
-      privacyTitle: 'Privacy contract',
-      privacyDesc: 'Selected text lives only in memory until the panel closes. Text over 4000 chars is truncated.',
     },
   },
   settings: {

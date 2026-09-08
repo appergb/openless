@@ -13,7 +13,7 @@ for (const expected of [
   'scripts/macos-speech-usage-description-contract.test.mjs',
   'scripts/repository-owner-contract.test.mjs',
   'scripts/windows-ui-config.test.mjs',
-  'src/lib/hotkeyRecorder.test.ts',
+  'src/lib/hotkeySideModifiers.test.ts',
   'src/lib/windowHotkeyFallback.test.ts',
 ]) {
   assert(discovered.includes(expected), `aggregate discovery omitted ${expected}`);

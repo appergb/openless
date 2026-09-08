@@ -1,7 +1,6 @@
 import type {
     CorrectionRule,
     DictionaryEntry,
-    PendingCorrection,
     VocabPresetStore,
 } from "../types"
 import { invokeOrMock } from "./shared"

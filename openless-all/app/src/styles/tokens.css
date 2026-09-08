@@ -111,7 +111,7 @@
      light/dark 取值不同需保持主题感知。 */
   --ol-panel-glass-bg: rgba(255, 255, 255, 0.94);
 
-  /* 2.0 UI 走查（参考 Codex 侧栏）：侧栏底色与右侧纯白内容区拉开明确层次，
+  /* （参考 Codex 侧栏）：侧栏底色与右侧纯白内容区拉开明确层次，
      此前 #fafafa 对白底几乎无区分。 */
   --ol-sidebar-bg: #f0f0f1;
   --ol-sidebar-border: #e4e4e7;
@@ -165,34 +165,16 @@
   --ol-toggle-knob: #ffffff;
   --ol-overlay-bg: rgba(15,17,22,0.32);
 
-  --ol-style-shell-bg: linear-gradient(180deg, rgba(255,255,255,0.84), rgba(249,250,252,0.72));
-  --ol-style-shell-border: rgba(255,255,255,0.72);
-  --ol-style-shell-shadow: 0 32px 80px -40px rgba(15, 23, 42, 0.26);
   --ol-style-card-bg: #fafafa;
   --ol-style-card-bg-active: #e4e4e7;
   --ol-style-card-border: #e4e4e7;
   --ol-style-card-border-active: #bfc0c5;
-  --ol-style-card-shadow: 0 24px 48px -34px rgba(15, 23, 42, 0.18), inset 0 1px 0 0 rgba(255,255,255,0.65);
-  --ol-style-card-shadow-active: none;
   --ol-style-card-ink: #09090b;
-  --ol-style-card-ink-2: rgba(9, 9, 11, 0.82);
-  --ol-style-card-ink-3: rgba(9, 9, 11, 0.56);
   --ol-style-card-icon-bg: rgba(228,228,231,0.62);
   --ol-style-card-icon-bg-active: #d4d4d8;
-  --ol-style-delete-bg: rgba(255,255,255,0.56);
-  --ol-style-delete-border: rgba(248,113,113,0.36);
-  --ol-style-add-tile-bg: rgba(255,255,255,0.12);
-  --ol-style-add-tile-icon-bg: rgba(255,255,255,0.48);
-  --ol-style-add-tile-border: rgba(255,255,255,0.32);
   --ol-style-input-bg: rgba(255,255,255,0.86);
-  --ol-style-input-border: rgba(255,255,255,0.74);
-  --ol-style-input-shadow: inset 0 1px 0 0 rgba(255,255,255,0.84), 0 10px 24px -22px rgba(15,23,42,0.16);
   --ol-style-subtle-bg: rgba(255,255,255,0.74);
-  --ol-style-subtle-border: rgba(255,255,255,0.62);
-  --ol-style-subtle-shadow: inset 0 1px 0 0 rgba(255,255,255,0.74);
   --ol-style-editor-bg: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(247,249,252,0.82));
-  --ol-style-editor-border: rgba(255,255,255,0.74);
-  --ol-style-editor-shadow: 0 32px 96px -32px rgba(15,23,42,0.34);
 
   /* Desktop capsule: follows app theme (light frosted pill / dark solid pill). */
   --ol-capsule-pill-bg: rgba(255, 255, 255, 0.90);
@@ -332,34 +314,16 @@
   --ol-toggle-knob: #fafafa;
   --ol-overlay-bg: rgba(5, 8, 13, 0.64);
 
-  --ol-style-shell-bg: linear-gradient(180deg, rgba(24, 24, 27, 0.96), rgba(20, 20, 23, 0.94));
-  --ol-style-shell-border: rgba(226,232,240,0.09);
-  --ol-style-shell-shadow: 0 26px 70px -42px rgba(0,0,0,0.66);
   --ol-style-card-bg: #252528;
   --ol-style-card-bg-active: #37373c;
   --ol-style-card-border: rgba(226,232,240,0.09);
   --ol-style-card-border-active: #62626a;
-  --ol-style-card-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
-  --ol-style-card-shadow-active: none;
   --ol-style-card-ink: #fafafa;
-  --ol-style-card-ink-2: rgba(250,250,250,0.86);
-  --ol-style-card-ink-3: rgba(250,250,250,0.64);
   --ol-style-card-icon-bg: rgba(226,232,240,0.07);
   --ol-style-card-icon-bg-active: #45454d;
-  --ol-style-delete-bg: rgba(226,232,240,0.06);
-  --ol-style-delete-border: rgba(248,113,113,0.34);
-  --ol-style-add-tile-bg: rgba(226,232,240,0.035);
-  --ol-style-add-tile-icon-bg: rgba(226,232,240,0.10);
-  --ol-style-add-tile-border: rgba(226,232,240,0.12);
   --ol-style-input-bg: rgba(9, 9, 11, 0.38);
-  --ol-style-input-border: rgba(226,232,240,0.10);
-  --ol-style-input-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
   --ol-style-subtle-bg: rgba(226,232,240,0.05);
-  --ol-style-subtle-border: rgba(226,232,240,0.08);
-  --ol-style-subtle-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
   --ol-style-editor-bg: linear-gradient(180deg, rgba(24, 24, 27, 0.98), rgba(20, 20, 23, 0.96));
-  --ol-style-editor-border: rgba(226,232,240,0.10);
-  --ol-style-editor-shadow: 0 30px 90px -42px rgba(0,0,0,0.70);
 
   --ol-capsule-pill-bg: #1b222c;
   --ol-capsule-pill-border: rgba(226, 232, 240, 0.12);
@@ -392,7 +356,7 @@ body {
 .ol-noscrollbar { scrollbar-width: none; }
 
 /* Thin scrollbar */
-/* 2.0 UI 走查：内容变长出现 6px 细滚动条的瞬间会把内容宽度挤窄一格，整页「抽搐」。
+/* 内容变长出现 6px 细滚动条的瞬间会把内容宽度挤窄一格，整页「抖动」。
    scrollbar-gutter: stable 让滚动条槽位常驻预留，滚动条出现/消失不再触发布局回流。 */
 .ol-thinscroll { scrollbar-gutter: stable; }
 /* 概览是 overflow:hidden 的单屏固定页，永远不会有滚动条 —— 不占槽位。 */

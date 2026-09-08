@@ -27,7 +27,7 @@ body {
   background: transparent;
   user-select: none;
   -webkit-user-select: none;
-  /* 2.0 UI 走查：全局基准字号 14px（此前未设 → 浏览器默认 16 但组件几乎全部
+  /* 全局基准字号 14px（此前未设 → 浏览器默认 16 但组件几乎全部
      显式写 11–13px 小字，视觉偏小）。控件/正文的显式字号已同步上调到 13.5–14。 */
   font-size: 14px;
 }
@@ -350,7 +350,7 @@ html[data-ol-conservative-layout="true"] .ol-conservative-scope .ol-select-lite-
   .ol-advanced-settings-entry { transition: none; }
 }
 
-/* 桌面端设置侧栏导航（2.0 UI 走查）：选中底色由滑动 thumb 提供，按钮自身透明；
+/* 桌面端设置侧栏导航：选中底色由滑动 thumb 提供，按钮自身透明；
    hover 给弱底色反馈；选中项文字蓝色加粗走 [aria-current]。 */
 .ol-settings-rail-btn {
   color: var(--ol-ink-2);
@@ -367,7 +367,7 @@ html[data-ol-conservative-layout="true"] .ol-conservative-scope .ol-select-lite-
   font-weight: 600;
 }
 
-/* 翻译页顶部两栏（2.0 UI 走查）：左栏略宽让语言 chips 每行 4 个，
+/* 翻译页顶部两栏：左栏略宽让语言 chips 每行 4 个，
    与右栏卡片高度更接近；窄屏叠成单栏。 */
 .ol-translation-grid {
   display: grid;
@@ -381,7 +381,7 @@ html[data-ol-conservative-layout="true"] .ol-conservative-scope .ol-select-lite-
   }
 }
 
-/* 语言/标签选择 chip（2.0 UI 走查 · 翻译页）：底色走 token 以兼容深色模式，
+/* 语言/标签选择 chip：底色走 token 以兼容深色模式，
    选中态走 [aria-pressed]，悬浮给描边+加深反馈。 */
 .ol-chip {
   min-width: 0;
@@ -416,7 +416,7 @@ html[data-ol-conservative-layout="true"] .ol-conservative-scope .ol-select-lite-
   border-color: var(--ol-blue);
 }
 
-/* 列表项通用入场（2.0 UI 走查「从哪来回到哪去」）：新条目淡入轻降。
+/* 列表项通用入场：新条目淡入轻降。
    key 稳定时只有真正新增/过滤变化的项会重播，存量项不动。 */
 @keyframes ol-item-in {
   from { opacity: 0; transform: translateY(-4px); }
@@ -451,7 +451,7 @@ html[data-ol-conservative-layout="true"] .ol-conservative-scope .ol-select-lite-
   to { opacity: 0; }
 }
 
-/* ── 词典页（2.0 UI 走查）────────────────────────────────────────────── */
+/* ── 词典页────────────────────────────────────────────── */
 
 /* 来源分段筛选：灰底胶囊容器 + 白色浮起选中片（参考 Typeless 词典稿）。 */
 .ol-seg {
@@ -489,7 +489,7 @@ html[data-ol-conservative-layout="true"] .ol-conservative-scope .ol-select-lite-
   box-shadow: var(--ol-shadow-sm);
 }
 
-/* 圆形搜索（2.0 UI 走查重做）：同一个胶囊容器原地变形 —— 收起 36px 圆钮，
+/* 圆形搜索：同一个胶囊容器原地变形 —— 收起 36px 圆钮，
    展开 220px 搜索框；放大镜图标始终贴右缘不动，输入文字在左侧淡入。
    展开/收起共用同一条 width 过渡，两个方向都有动画（从哪来回到哪去）。 */
 .ol-search {
@@ -524,7 +524,7 @@ html[data-ol-conservative-layout="true"] .ol-conservative-scope .ol-select-lite-
   font-size: 13px;
   color: var(--ol-ink);
   /* 收起态 padding 必须为 0：否则输入框虽然宽度塌成 0，左右 padding 仍占位，
-     会把 36px 的放大镜按钮顶出圆形容器、被 overflow 裁掉（2.0 UI 走查修复）。 */
+     会把 36px 的放大镜按钮顶出圆形容器、被 overflow 裁掉。 */
   padding: 0;
   opacity: 0;
   transition: opacity 0.16s var(--ol-motion-quick), padding 0.28s var(--ol-motion-spring);
@@ -670,7 +670,7 @@ html[data-ol-conservative-layout="true"] .ol-conservative-scope .ol-select-lite-
   cursor: pointer;
 }
 
-/* 必配服务（语言模型/语音识别）tab 上的状态点：未配置红、已配置黄（2.0 UI 走查）。 */
+/* 必配服务（语言模型/语音识别）tab 上的状态点：未配置红、已配置黄。 */
 .ol-service-status-dot {
   width: 7px;
   height: 7px;

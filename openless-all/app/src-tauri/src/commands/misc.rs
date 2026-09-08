@@ -271,8 +271,3 @@ pub async fn debug_read_cursor_context(
     );
     result
 }
-
-// ─────────────────────────── unused but exported (silences dead_code) ───────────────────────────
-
-#[allow(dead_code)]
-fn _ensure_snapshot_used(_: CredentialsSnapshot) {}

@@ -39,7 +39,6 @@ import {
     getFoundryLocalAsrCatalog,
     getFoundryLocalAsrStatus,
     getLocalAsrEngineStatus,
-    getLocalAsrModelDir,
     getLocalAsrSettings,
     getSherpaOnnxAsrCatalog,
     getSherpaOnnxAsrModelDir,
@@ -113,7 +112,6 @@ import type { RemoteSize } from "./types"
 // Qwen3 模型管理 UI 仍按桌面端守严，具体后端由平台能力与渠道选择决定。
 const OS = detectOS()
 const IS_WINDOWS = OS === "win"
-const IS_MAC = OS === "mac"
 const IS_QWEN_PLATFORM = OS === "mac" || OS === "linux"
 
 interface LocalAsrProps {
@@ -181,7 +179,6 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
     const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
     // 下载弹框开关：点侧栏「下载新模型」/ 看板「下载」打开。
     const [downloadDialogOpen, setDownloadDialogOpen] = useState(false)
-    const [modelDirs, setModelDirs] = useState<Record<string, string>>({})
     const [progress, setProgress] = useState<
         Record<string, LocalAsrDownloadProgress>
     >({})
@@ -511,21 +508,6 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
             )
             setSettings(s)
             setModels(supportedModels)
-            void Promise.all(
-                supportedModels.map(async (m) => {
-                    try {
-                        const dir = await getLocalAsrModelDir(m.id)
-                        if (!isCurrent()) return
-                        setModelDirs((current) =>
-                            current[m.id] === dir
-                                ? current
-                                : { ...current, [m.id]: dir },
-                        )
-                    } catch (err) {
-                        console.warn("[localAsr] Qwen3 model dir query failed", err)
-                    }
-                }),
-            )
             void refreshEngineStatus()
             if (IS_WINDOWS) {
                 void refreshFoundryStatus()
@@ -1487,8 +1469,6 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
         try {
             setError(null)
             await revealLocalAsrModelDir(modelId)
-            const dir = await getLocalAsrModelDir(modelId)
-            setModelDirs((current) => ({ ...current, [modelId]: dir }))
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e))
         } finally {
@@ -2174,7 +2154,7 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                         {t("localAsr.mirrorDesc")}
                                     </div>
                                 </div>
-                                {/* 2.0 UI 走查：统一官方 SelectLite。 */}
+
                                 <SelectLite
                                     value={settings?.mirror ?? "huggingface"}
                                     onChange={(v) => void handleMirrorChange(v)}
@@ -2292,7 +2272,7 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                                 {t("localAsr.keepLoadedDesc")}
                                             </div>
                                         </div>
-                                        {/* 2.0 UI 走查：统一官方 SelectLite。 */}
+
                                         <SelectLite
                                             value={String(
                                                 engineStatus?.keepLoadedSecs ?? 300,
@@ -2572,7 +2552,7 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                     }}
                                 >
                                     {t("localAsr.foundrySelectedModel")}
-                                    {/* 2.0 UI 走查：统一官方 SelectLite；滚动保持
+                                    {/* 统一官方 SelectLite；滚动保持
                                         改从行容器 ref 向上找滚动祖先。 */}
                                     <SelectLite
                                         value={selectedFoundryAlias}
@@ -2629,7 +2609,7 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                     }}
                                 >
                                     {t("localAsr.foundryRuntimeSourceLabel")}
-                                    {/* 2.0 UI 走查：统一官方 SelectLite。 */}
+
                                     <SelectLite
                                         value={selectedFoundryRuntimeSource}
                                         onChange={(v) => {
@@ -2683,7 +2663,7 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                     }}
                                 >
                                     {t("localAsr.foundryLanguageLabel")}
-                                    {/* 2.0 UI 走查：统一官方 SelectLite。 */}
+
                                     <SelectLite
                                         value={selectedFoundryLanguageHint}
                                         onChange={(v) => {
@@ -3074,7 +3054,7 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                     }}
                                 >
                                     {t("localAsr.mirrorLabel")}
-                                    {/* 2.0 UI 走查：统一官方 SelectLite。 */}
+
                                     <SelectLite
                                         value={selectedSherpaMirrorValue}
                                         onChange={(v) =>

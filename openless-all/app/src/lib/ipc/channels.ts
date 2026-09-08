@@ -1,10 +1,5 @@
-// 渠道卡片的 IPC 封装。
-//
-// 一张卡片 = 一份可命名、可排序、可开关的供应商配置；同一家厂商可以有多张卡片
-// （多把 key）。列表里**第一个启用的**就是当前生效的渠道 —— 后端不另存"当前选中"，
-// 排序即优先级（见 docs/provider-channels-plan.md）。
-//
-// 凭据不走这里：按渠道 id 调 readCredential/setCredential(account, value, id)。
+// 渠道配置的 typed IPC：排序、启停、名称和手动验证结果。
+// Core 选择排序后的第一个启用渠道；凭据通过 readCredential/setCredential 按渠道 ID 读写。
 
 import { invokeOrMock } from "./shared"
 

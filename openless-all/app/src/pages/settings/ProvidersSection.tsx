@@ -1,10 +1,9 @@
-// 服务 → AI 提供商：LLM 润色模型 + ASR 语音转写两张卡片。
-// 自 Settings.tsx 整体迁出，逻辑零改动；i18n key 全部保持 `settings.providers.*`。
+// 渠道凭据、模型列表和连接验证表单。供应商能力与默认值由 Core 提供，
+// 界面负责本地化、字段保存反馈，以及用户主动触发的模型拉取和验证。
 
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
-import { detectOS } from '../../components/WindowChrome';
 import {
   listProviderModels,
   listProviderDescriptors,
@@ -32,27 +31,6 @@ import {
   serializeAdvancedAsrConfig,
   type AdvancedAsrConfig,
 } from '../../lib/advancedAsrConfig';
-import {
-  getFoundryLocalAsrCatalog,
-  getSherpaOnnxAsrCatalog,
-  listLocalAsrModels,
-  setFoundryLocalAsrModel,
-  setLocalAsrActiveModel,
-  setSherpaOnnxAsrModel,
-} from '../../lib/localAsr';
-
-// 本地模型供应商：在主下拉里标注「本地」后缀，与云端供应商区分开。
-const LOCAL_ASR_PRESET_IDS: ReadonlySet<string> = new Set([
-  'local-qwen3-mlx',
-  'local-qwen3-c',
-  'local-whisper',
-  'foundry-local-whisper',
-  'sherpa-onnx-local',
-]);
-function isLocalAsrPreset(id: string): boolean {
-  return LOCAL_ASR_PRESET_IDS.has(id);
-}
-
 /** Channel-local form layout; do not change the shared settings row contract. */
 export function ChannelFormRow({ label, htmlFor, children }: { label: string; htmlFor?: string; children: ReactNode }) {
   const stack = useLayoutStack();
@@ -116,12 +94,7 @@ export const LLM_LABELS = [
   ['custom', 'custom'],
 ].map(([id, nameKey]) => ({ id, nameKey })) as readonly { id: string; nameKey: string }[];
 
-// 多模态（Omni）模型预设（issue #902）：一个模型同时接收「提示词 + 音频」一步输出
-// 最终文本。凭据走独立 `omni.*` 命名空间，与上方 LLM/ASR 两套配置完全隔离。
-// - openai       : OpenAI 官方（gpt-4o-audio-preview 等，input_audio part）
-// - gemini       : Gemini 原生 generateContent（inlineData audio/wav）
-// - dashscope-omni: 阿里云百炼 OpenAI 兼容通道（qwen3-omni-flash 等）
-// - custom       : 任意 OpenAI 兼容多模态网关
+// 火山语音转写在资源 ID 为空时显示的默认值。
 const ASR_DEFAULT_RESOURCE_ID = 'volc.seedasr.sauc.duration';
 
 /** 模型预设下拉里的「自定义模型…」哨兵值：选中即切回输入框手输。 */
@@ -153,9 +126,6 @@ export function ChannelCredentialFields({
 }) {
   const { t } = useTranslation();
   const { prefs, updatePrefs } = useHotkeySettings();
-  const baseLayoutStack = useLayoutStack();
-  const conservative = useConservativeLayout();
-  const layoutStack = conservative || baseLayoutStack;
   const [llmModelRevision, setLlmModelRevision] = useState(0);
   const [asrModelRevision, setAsrModelRevision] = useState(0);
   const unifiedBailian = providerType === 'bailian';
@@ -601,9 +571,6 @@ type ProviderToolStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error';
 
 function ProviderTools({ kind, modelAccount, provider, onModelSelected, onTested, onUserMutation, showFetchModels = true }: { kind: 'llm' | 'asr' | 'omni'; modelAccount: string; provider?: string; onModelSelected: () => void; onTested?: () => void; onUserMutation?: () => void; showFetchModels?: boolean }) {
   const { t } = useTranslation();
-  const baseLayoutStack = useLayoutStack();
-  const conservative = useConservativeLayout();
-  const layoutStack = conservative || baseLayoutStack;
   const [models, setModels] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState('');
   const [status, setStatus] = useState<ProviderToolStatus>('idle');
@@ -786,9 +753,6 @@ interface CredentialFieldProps {
 function CredentialField({ label, account, provider, placeholder, mono, mask, defaultValue, trailing, onValueChange, onUserMutation, options }: CredentialFieldProps) {
   const fieldId = useId();
   const { t } = useTranslation();
-  const baseLayoutStack = useLayoutStack();
-  const conservative = useConservativeLayout();
-  const layoutStack = conservative || baseLayoutStack;
   const [value, setValue] = useState('');
   const [revealed, setRevealed] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -1046,11 +1010,9 @@ const iconBtnStyle: CSSProperties = {
 };
 
 /**
- * 多模态（Omni）配置卡片：仅在「高级 → 实验性」里打开多模态管线后出现。
- *
- * 它不参与渠道排序——Omni 是独立命名空间，渠道化范围只覆盖 ASR/LLM
- * （见 docs/provider-channels-plan.md 的分期）；管道模式切换沿用既有语义：
- * 多模态模式下隐藏传统 llm/asr 渠道列表，凭据两套并存但停用，切回即恢复。
+ * 在「实验与扩展」启用多模态管线后，展示独立的 Omni 配置。
+ * Omni 使用自己的凭据命名空间，不参与 ASR/LLM 渠道排序；传统渠道配置仍保留，
+ * 切回传统管线后继续使用。
  */
 export function OmniChannelSection() {
   const { t } = useTranslation();

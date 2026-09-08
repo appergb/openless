@@ -205,7 +205,7 @@ export function Translation() {
 
         <SavedToast saveState={saveState} message={saveMessage} />
 
-        {/* 2.0 UI 走查：宽屏下「工作语言 / 目标语言」并排两栏（窄屏自动叠成一栏），
+        {/* 宽屏下「工作语言 / 目标语言」并排两栏（窄屏自动叠成一栏），
             语言 chips 用对齐的均匀网格代替自由换行，避免参差的标签云。 */}
         <div className="ol-translation-grid">
           {/* 1. 工作语言 */}

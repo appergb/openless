@@ -6,7 +6,7 @@
 // 重渲染不会拖累它，它也不会让页面跟随每个进度事件重渲染。
 //
 // 事件在 Core ModelStore 内已按 ≥150ms 节流，
-// 进度条不会因高频 IPC 抽搐；这里只做展示 + 取消入口，不参与模型状态管理。
+// 进度条不会因高频 IPC 抖动；这里只做展示 + 取消入口，不参与模型状态管理。
 //
 // portal 到 body 的原因与 DownloadDialog 相同：WindowChrome 根节点的常驻
 // transform / will-change 会为 position:fixed 后代创建 containing block，不

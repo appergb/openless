@@ -102,7 +102,7 @@ export function RemoteInputSection() {
   const mode = prefs.remoteInputDefaultMode ?? 'toggle';
   const viewState = getRemoteInputViewState(enabled, status, startError);
 
-  // 提交端口草稿：非法（非有限数/越界离谱）则丢弃还原显示，合法则取整并 clamp 到 [1024, 65535]。
+  // 无效或非正数草稿还原显示；有效数值取整并限制在 [1024, 65535]。
   const commitPort = () => {
     if (portDraft == null) return;
     const n = Math.round(Number(portDraft));

@@ -16,7 +16,7 @@ interface ModalProps {
   width?: string;
   /** 需要固定标题和底栏的弹窗可由内部内容区负责滚动。 */
   style?: CSSProperties;
-  /** true 时反向播放入场动画（2.0 UI 走查「从哪来回到哪去」）；调用方用
+  /** true 时反向播放入场动画；调用方用
    *  useExitMount 门控卸载时机，动画播完再 unmount。 */
   closing?: boolean;
 }

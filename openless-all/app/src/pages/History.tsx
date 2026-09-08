@@ -322,7 +322,7 @@ export function History() {
       <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '300px 1fr', gap: 14, flex: 1, minHeight: 0 }}>
         {( !mobile || !mobileDetailOpen) && (
         <Card padding={0} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* 2.0 UI 走查：左列整体是一个滚动容器，搜索框吸顶且自带不透明底 ——
+          {/* 左列整体是一个滚动容器，搜索框吸顶且自带不透明底 ——
               列表内容直接从搜索框下方滚过去；样式筛选 chips 与「共 N 条」计数行
               删掉，只保留搜索。 */}
           <div className="ol-thinscroll" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
@@ -376,7 +376,7 @@ export function History() {
                   setSelectedId(s.id);
                   if (mobile) setMobileDetailOpen(true);
                 }}
-                // 2.0 UI 走查：选中项不再用蓝色左条 + 淡蓝底 —— 与渠道行同一套
+                // 选中项不再用蓝色左条 + 淡蓝底 —— 与渠道行同一套
                 // 中性语言：圆角 + 灰底 + 细描边。
                 style={{
                   width: '100%', padding: '10px 12px', textAlign: 'left',
@@ -386,7 +386,7 @@ export function History() {
                   background: selectedId === s.id ? 'var(--ol-surface-2)' : 'transparent',
                   cursor: 'default', fontFamily: 'inherit', marginBottom: 4,
                   transition: 'background 0.16s var(--ol-motion-quick), border-color 0.16s var(--ol-motion-quick)',
-                  // 搜索过滤/新记录插入时，进入结果的行淡入轻降（2.0 UI 走查）。
+                  // 搜索过滤/新记录插入时，进入结果的行淡入轻降。
                   animation: 'ol-item-in 0.22s var(--ol-motion-spring) both',
                 }}
               >
@@ -532,7 +532,7 @@ export function History() {
                     {item.rawTranscript || t('history.rawEmpty')}
                   </p>
                 </div>
-                {/* 润色结果框同样去蓝：中性 surface-2 底 + 细线描边（2.0 UI 走查）。 */}
+                {/* 润色结果框同样去蓝：中性 surface-2 底 + 细线描边。 */}
                 <div style={{ minWidth: 0, padding: 14, border: '0.5px solid var(--ol-line)', borderRadius: 10, background: 'var(--ol-surface-2)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
                     <span style={{ display: 'flex', minWidth: 0 }} title={styleLabel(item)}>
@@ -680,7 +680,7 @@ function RepolishPanel({ session, mobile, allPacks, packsError }: {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: 'var(--ol-ink-2)' }}>
           {t('history.repolish.title')}
-          {/* 2.0 UI 走查：常驻说明文字收进「?」徽章，悬停/聚焦才展开全文（与设置页同款）。 */}
+          {/* 常驻说明文字收进「?」徽章，悬停/聚焦才展开全文（与设置页同款）。 */}
           <Tooltip content={t('history.repolish.hint')} wrap placement="bottom" focusable>
             <span style={{
               width: 16, height: 16, borderRadius: 999,
@@ -718,7 +718,7 @@ function RepolishPanel({ session, mobile, allPacks, packsError }: {
           <span style={{ fontSize: 11, color: 'var(--ol-ink-4)' }}>{t('history.repolish.noPacks')}</span>
         ) : (
           <>
-            {/* 2.0 UI 走查：统一用官方 SelectLite，不再混用原生 <select>。 */}
+            {/* 统一用官方 SelectLite，不再混用原生 <select>。 */}
             <SelectLite
               value={selectedPackId}
               onChange={setSelectedPackId}

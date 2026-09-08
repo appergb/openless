@@ -18,7 +18,7 @@ interface SettingsModalProps {
   os: OS;
   onClose: () => void;
   initialSettingsSection?: SettingsSectionId;
-  /** true 时反向播放入场动画（2.0 UI 走查「从哪来回到哪去」）；由 FloatingShell
+  /** true 时反向播放入场动画；由 FloatingShell
    *  的 useExitMount 门控，动画播完才真正卸载。 */
   closing?: boolean;
 }
@@ -69,8 +69,7 @@ export function SettingsModal({ os, onClose, initialSettingsSection, closing = f
   const contentDescription = searching ? t('modal.searchCount', { count: results.length })
     : activeAdvancedPage ? t(`modal.advancedPages.${activeAdvancedPage.id}`) : t(`modal.descriptions.${section}`);
 
-  // 2.0 UI 走查：桌面端设置侧栏的选中蓝框改为滑动指示块——切换分类时蓝框沿
-  // 列表平滑移动到目标项（spring 曲线），而不是生硬地瞬间换底色。
+  // 指示块按所选导航行的布局位置移动；搜索或移动布局时隐藏。
   const railNavRef = useRef<HTMLElement>(null);
   const railBtnRefs = useRef(new Map<SettingsSectionId, HTMLButtonElement>());
   const [railThumb, setRailThumb] = useState<{ top: number; height: number } | null>(null);
@@ -164,7 +163,7 @@ export function SettingsModal({ os, onClose, initialSettingsSection, closing = f
   };
 
   // 搜索框：桌面端放在侧栏顶部（仿 macOS 系统设置的「搜索在导航栏上方」布局，
-  // 2.0 UI 走查）；移动端仍留在标题栏下方整行。
+  // ）；移动端仍留在标题栏下方整行。
   const searchBox = (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8, border: '0.5px solid var(--ol-line-strong)', background: 'var(--ol-surface)', minWidth: 0 }}>
       <Icon name="search" size={15} />
@@ -177,7 +176,7 @@ export function SettingsModal({ os, onClose, initialSettingsSection, closing = f
     <div
       onClick={mobile ? undefined : closeSettings}
       // 打开动画：遮罩淡入 + 面板弹入（global.css ol-modal-* keyframes，纯
-      // opacity/transform，合成器友好）。2.0 UI 走查：此前设置面板是瞬间出现的。
+      // opacity/transform，合成器友好）。此前设置面板是瞬间出现的。
       style={{ position: mobile ? 'fixed' : 'absolute', inset: 0, background: mobile ? 'var(--ol-surface)' : 'var(--ol-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: mobile ? 0 : 20, zIndex: mobile ? 70 : 50, animation: mobile ? undefined : closing ? 'ol-modal-backdrop-in 0.18s var(--ol-motion-soft) reverse both' : 'ol-modal-backdrop-in 0.2s var(--ol-motion-soft) both' }}
     >
       <div
@@ -194,7 +193,7 @@ export function SettingsModal({ os, onClose, initialSettingsSection, closing = f
           ? closing ? 'ol-mobile-sheet-up 0.22s var(--ol-motion-soft) reverse both' : 'ol-mobile-sheet-up 0.26s var(--ol-motion-spring) both'
           : closing ? 'ol-modal-card-in 0.2s var(--ol-motion-soft) reverse both' : 'ol-modal-card-in 0.28s var(--ol-motion-spring) both' }}
       >
-        {/* 桌面端不再有横跨两栏的标题栏（2.0 UI 走查：去掉「第三条横栏」）；
+        {/* 桌面端不再有横跨两栏的标题栏；
             左侧栏与右侧内容各自通到顶，标题/自动保存/关闭并入右栏顶部。
             移动端保留整宽 header（标题 + 关闭 + 整行搜索）。 */}
         {mobile && (
@@ -276,7 +275,7 @@ export function SettingsModal({ os, onClose, initialSettingsSection, closing = f
                 {results.length === 0 && <div style={{ padding: '24px 16px', border: '0.5px solid var(--ol-line)', borderRadius: 10, textAlign: 'center' }}><p style={{ fontSize: 13, color: 'var(--ol-ink-3)' }}>{t('modal.noResults')}</p><button type="button" onClick={() => { setQuery(''); searchRef.current?.focus(); }} style={{ ...navButtonStyle, margin: '12px auto 0', color: 'var(--ol-blue)' }}>{t('modal.clearSearch')}</button></div>}
               </div>}
               {/* key={section} 重挂载 → 每次切换分类播放轻微淡入（ol-tab-fade），
-                  与 tab 切换动画语言一致（2.0 UI 走查：补全动效）。 */}
+                  与 tab 切换动画语言一致。 */}
               <div key={section} style={{ display: searching ? 'none' : 'flex', flexDirection: 'column', gap: 16, animation: 'ol-tab-fade 0.22s var(--ol-motion-soft) both' }}>
                 {section === 'general' && <GeneralTab />}
                 {section === 'shortcuts' && <ShortcutsTab />}

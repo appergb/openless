@@ -88,7 +88,7 @@ export function SettingRow({
             }}
         >
             <div style={{ minWidth: 0, alignSelf: "center" }}>
-                {/* 2.0 UI 走查：行内长说明不再常驻占位，统一收进标题旁的「?」，
+                {/* 行内长说明不再常驻占位，统一收进标题旁的「?」，
                     悬停 / 点击弹出（与「录音与输入」标题的提示同一交互语言）。 */}
                 <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                     <span style={{ ...labelStyle, minWidth: 0 }}>{label}</span>
@@ -146,7 +146,7 @@ export function Toggle({
             onClick={() => onToggle?.(!on)}
             style={{
                 position: "relative",
-                // 2.0 UI 走查：此前写死 flex: 0 0 36px，在列方向的设置行包装里
+                // 此前写死 flex: 0 0 36px，在列方向的设置行包装里
                 // flex-basis 作用在高度上，开关被拉成 36×36 的圆球（开机自启行）。
                 // 宽高由 width/height 显式锁定，flex 只负责不伸不缩。
                 flex: "0 0 auto",

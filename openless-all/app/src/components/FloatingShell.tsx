@@ -1,10 +1,7 @@
-// FloatingShell.tsx — frosted outer frame + raised inner console.
-// Sidebar lives INSIDE the console card.
-// Settings opens as a centered modal sheet from the sidebar bottom entry.
-//
-// Ported verbatim from design_handoff_openless/variants.jsx::FloatingShell.
+// 主窗口外壳：组织侧栏导航、页面切换、移动端面板和设置弹窗。
+// 各页面共享偏好状态；业务读写通过 typed IPC 交给 Core。
 
-import { useEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type ComponentType, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { Tooltip } from './Tooltip';
@@ -19,9 +16,6 @@ import { Marketplace } from '../pages/Marketplace';
 import { Translation } from '../pages/Translation';
 import { SelectionAsk } from '../pages/SelectionAsk';
 import { Corrections } from '../pages/Corrections';
-// 风格市场（Marketplace）现在是侧栏「风格」展开组下的独立页面（不再是 Style 页面内 modal）。
-// LocalAsr 不再作为主 nav tab——本地 ASR 模型管理已合并到 Settings → Services 中
-// 通过 <LocalAsr embedded /> 渲染。这里之前的 import 与 NAV_BASE 条目都已移除。
 import { APP_VERSION_LABEL, IS_BETA_BUILD } from '../lib/appVersion';
 import {
   HOTKEY_MODE_MIGRATION_ACK_KEY,
@@ -65,10 +59,7 @@ const PAGE_CMP: Record<Exclude<AppTab, 'localAsr'>, ComponentType> = {
   corrections: Corrections,
 };
 
-/** 侧栏导航树：扁平项 + 可展开分组（用户拍板的结构）。
- *  - 概览 / 历史 / 词汇：扁平项，位置不变。
- *  - 风格：展开组 → 润色模式(=style 页) + 风格市场(=marketplace 页，原为 Style 内 modal)。
- *  - 工具：展开组 → 划词追问 + 翻译 + 纠正规则（2.0 UI 走查：纠正规则从词典页迁入）。 */
+/** 主导航分为直接入口与可展开分组；页面组件由 PAGE_CMP 统一解析。 */
 type NavNode =
   | { kind: 'item'; id: AppTab; icon: string }
   | { kind: 'group'; key: string; icon: string; children: Array<{ id: AppTab }> };
@@ -105,7 +96,7 @@ function FloatingShellBody({ os, initialTab, initialSettings }: { os: OS; initia
   const [settingsInitialSection, setSettingsInitialSection] = useState<SettingsSectionId | undefined>();
   const [providerPromptOpen, setProviderPromptOpen] = useState(false);
   const [hotkeyModePromptOpen, setHotkeyModePromptOpen] = useState(false);
-  // 退出动画门（2.0 UI 走查「从哪来回到哪去」）：关闭时先反向播放入场动画再卸载。
+  // 退出动画门：关闭时先反向播放入场动画再卸载。
   const settingsMount = useExitMount(settingsOpen, 220);
   const providerPromptMount = useExitMount(providerPromptOpen);
   const hotkeyPromptMount = useExitMount(hotkeyModePromptOpen);
@@ -235,9 +226,7 @@ function FloatingShellBody({ os, initialTab, initialSettings }: { os: OS; initia
   const styleTabActive = STYLE_TAB_IDS.includes(currentTab);
 
   return (
-    // 不再为 macOS 红绿灯预留顶部 28px 空条（用户反馈「块上方多一条丑横条」）：
-    // 侧栏与内容块都顶到窗口最上沿，原生红绿灯直接浮在侧栏左上角的块面上。
-    // 侧栏 aside 在 mac 上加 topClearance（红绿灯竖直居中的避让带）让导航避开红绿灯。
+    // 窗口内容从顶端铺开；macOS 仅在侧栏内部预留红绿灯区域。
     <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0, paddingTop: 0, background: 'var(--ol-app-shell-bg)' }}>
 
       {mobile && (
@@ -278,7 +267,7 @@ function FloatingShellBody({ os, initialTab, initialSettings }: { os: OS; initia
             padding: os === 'mac' ? `${MAC_TRAFFIC_LIGHT_CLEARANCE}px 10px 12px` : '10px 10px 12px',
           }}>
 
-          {/* 版本信息行（2.0 UI 走查）：原「OpenLess」品牌位置直接改为显示版本信息，
+          {/* 版本信息行：原「OpenLess」品牌位置直接改为显示版本信息，
               填掉导航上方的空档；BETA 徽章与版本号同基线。 */}
           <div
             style={{
@@ -388,7 +377,7 @@ function FloatingShellBody({ os, initialTab, initialSettings }: { os: OS; initia
 
           <div style={{ flex: 1 }} />
 
-          {/* 底部只剩设置按钮（2.0 UI 走查：版本信息已上移到侧栏顶部原品牌位）。 */}
+          {/* 底部只剩设置按钮。 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 10 }}>
             <Tooltip content={t('shell.navHint.settings')} placement="right">
               <button
@@ -450,7 +439,7 @@ function FloatingShellBody({ os, initialTab, initialSettings }: { os: OS; initia
               data-ol-page-fixed={displayTab === 'overview' && !mobile ? 'true' : undefined}
               style={{
                 flex: 1, minHeight: 0,
-                // 概览页是单屏固定页（2.0 UI 走查）：不滚动，所有仪表盘铺在一屏内，
+                // 概览页是单屏固定页：不滚动，所有仪表盘铺在一屏内，
                 // 由 Overview.tsx 内部 flex 自行分配高度；其余页保持细滚动条。
                 overflow: displayTab === 'overview' && !mobile ? 'hidden' : 'auto',
                 padding: mobile
@@ -803,7 +792,7 @@ const navBtnStyle: CSSProperties = {
   width: '100%',
   padding: '8px 10px',
   borderRadius: 8, border: 0,
-  // 2.0 UI 走查（参考 Codex 侧栏）：导航文字 15px、图标 16px，观感更接近参考稿。
+  // （参考 Codex 侧栏）：导航文字 15px、图标 16px，观感更接近参考稿。
   fontFamily: 'inherit', fontSize: 15,
   cursor: 'default',
   transition: 'color 0.16s var(--ol-motion-quick), background 0.16s var(--ol-motion-quick)',

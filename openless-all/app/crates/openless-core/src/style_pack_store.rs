@@ -173,7 +173,14 @@ impl StylePackStore {
         Ok(updated)
     }
 
-    /// Store a rasterized user icon without accepting caller-supplied file paths.
+    /// Save a PNG icon in this pack's owned asset directory, or clear it with `None`.
+    ///
+    /// Metadata is committed before the old file is removed. A failed metadata
+    /// write leaves the previous image and in-memory pack unchanged.
+    ///
+    /// # Errors
+    /// Returns an error for an unknown/invalid pack ID, an invalid PNG, an image
+    /// over 64 KiB, an unavailable asset directory, or a failed filesystem write.
     pub fn update_icon(&self, id: &str, png: Option<&[u8]>) -> Result<StylePack, BackendError> {
         if id.is_empty()
             || id == "."
@@ -247,7 +254,13 @@ impl StylePackStore {
         Ok(saved)
     }
 
-    /// Return only bounded, validated image data from this repository's assets.
+    /// Read a pack icon as a PNG/JPEG/WebP data URL without exposing filesystem access.
+    ///
+    /// Missing icons return `None`. Reads are limited to 64 KiB and must resolve
+    /// inside the repository's asset directory.
+    ///
+    /// # Errors
+    /// Returns an error for an unknown pack, an invalid image or path, or a read failure.
     pub fn icon_data_url(&self, id: &str) -> Result<Option<String>, BackendError> {
         let pack = self.get(id)?;
         let Some(path) = pack.icon_path else {

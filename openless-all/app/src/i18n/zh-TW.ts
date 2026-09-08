@@ -728,23 +728,9 @@ export const zhTW: typeof zhCN = {
     },
   },
   selectionAsk: {
-    kicker: 'SELECTION ASK',
     title: '劃詞追問',
     desc: '選中文字後語音提問，支援多輪追問。',
     shortcutSettings: '快捷鍵設定',
-    intro: {
-      eyebrow: '在文字與理解之間',
-      title: '選取一段文字，\n把問題說出來。',
-      desc: '解釋概念、整理重點，或繼續深入。答案會出現在獨立浮窗裡。',
-    },
-    example: {
-      title: '對話範例',
-      selection: '選取的文字',
-      term: '費曼學習法',
-      context: '：透過向他人講解，發現自己理解中的空白。',
-      question: '用更簡單的話解釋一下。',
-      answer: '就像給朋友講課：講得越明白，你就理解得越透徹。',
-    },
     guide: {
       openTitle: '開啟追問浮窗',
       openDesc: '按 <key>{{hotkey}}</key>，開始一輪對話。',
@@ -755,17 +741,10 @@ export const zhTW: typeof zhCN = {
       followup: '繼續使用錄音快捷鍵，即可多輪追問。',
       dismiss: '關閉浮窗，結束本次對話',
     },
-    statusEnabled: '已啓用',
-    statusDisabled: '未啓用',
     hotkey: {
       title: '彈出浮窗的快捷鍵',
-      desc: '控制浮窗開關。浮窗內錄音用 {{recordHotkey}}。',
-      optionDisabled: '不啓用',
-      chordWarning: '',
     },
     save: {
-      hotkeyRegisterFailed: '劃詞追問快捷鍵註冊失敗，未繼續保存。',
-      hotkeySaveFailed: '劃詞追問快捷鍵保存失敗，請重試。',
       historySaveFailed: 'Q&A 歷史保存設置保存失敗，請重試。',
     },
     history: {
@@ -774,15 +753,7 @@ export const zhTW: typeof zhCN = {
     },
     howto: {
       title: '使用方法',
-      step1: '按 {{hotkey}} 開啟浮窗。',
       step2: '在任意 app 選中文字。',
-      step3: '按 {{recordHotkey}} 錄音，再按一次提交。',
-      step4: '可繼續按 {{recordHotkey}} 多輪追問。',
-      step5: '按 Esc 關閉浮窗並清空歷史。',
-      windowTitle: '浮窗位置 + 拖動 + 釘住',
-      windowDesc: '浮窗可拖動，位置自動記憶。釘住可保持視窗不關。',
-      privacyTitle: '隱私契約',
-      privacyDesc: '選中文本僅存於記憶體，關閉浮窗即銷毀。超 4000 字元自動截斷。',
     },
   },
   settings: {

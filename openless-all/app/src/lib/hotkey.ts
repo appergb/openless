@@ -111,10 +111,7 @@ export function getHotkeyBindingLabel(binding: HotkeyBinding | null | undefined)
 export function getHotkeyCodeLabel(code: string): string {
   const zh = i18n.language.toLowerCase().startsWith('zh');
   const isMac = currentPlatform().isMac;
-  // Alt 在 macOS 是 Option（⌥），Meta 在 macOS 是 Command（⌘），Linux 上 Meta 是 Super。
-  // 之前对所有平台一律返回 "Alt" / "Win"，QA 浮窗里 macOS 用户的"右 Option" 被显示成
-  // "右 Alt"，"左 Cmd" 被显示成 "左 Win"——平台错配。下面按平台分流。
-  // 用 ⌥/⌘ 与 formatPrimary 的输出（"Right ⌥" 等）保持一致。
+  // macOS 使用 Option/Command 符号，并与组合键标签 formatPrimary 保持一致。
   const labels: Record<string, string> = {
     ControlLeft: zh ? '左Ctrl' : 'Left Ctrl',
     ControlRight: zh ? '右Ctrl' : 'Right Ctrl',
@@ -306,10 +303,6 @@ export function modifiersFromPressedCodes(
   return sideSpecific
     ? sideModifiersFromPressedCodes(codes)
     : genericModifiersFromPressedCodes(codes);
-}
-
-function modifierDisplayName(tag: string, platform: { isMac: boolean; isWindows: boolean }): string {
-  return sideModifierDisplayName(tag, platform);
 }
 
 function sideModifierDisplayName(tag: string, platform: { isMac: boolean; isWindows: boolean }): string {

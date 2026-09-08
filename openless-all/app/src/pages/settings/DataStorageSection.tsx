@@ -1,5 +1,4 @@
-// 隐私 → 数据存储：本地保留的历史会话与对话上下文窗口。
-// 自 Settings.tsx 的 RecordingSection「历史与上下文」折叠组拆出，逻辑零改动。
+// 历史与上下文数据的保留、清理和存储设置。
 
 import { useTranslation } from 'react-i18next';
 import { detectOS } from '../../components/WindowChrome';

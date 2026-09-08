@@ -2,7 +2,6 @@ import type { PolishMode, StylePack, StylePackRuntimeDiagnostics } from "../type
 import { invokeOrMock } from "./shared"
 import {
     cloneMockStylePacks,
-    cloneStylePack,
     composeMockStylePackRuntimeDiagnostics,
     mockSetDefaultPolishMode,
     mockSetStyleEnabled,
