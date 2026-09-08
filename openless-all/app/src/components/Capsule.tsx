@@ -1,3 +1,4 @@
+import { Icon } from './Icon';
 import {
   memo,
   useCallback,
@@ -167,9 +168,7 @@ function VoiceOrbStage({ os, state, level, warming, warmupMs, message }: VoiceOr
           }}
         />
       )}
-      {state === 'error' && (
-        <span style={errorGlowTextStyle}>{message || t('capsule.error')}</span>
-      )}
+      {state === 'error' && <span style={errorGlowTextStyle}>{message || t('capsule.error')}</span>}
     </div>
   );
 }
@@ -206,8 +205,9 @@ function SelectionPolishNotice({ state, message }: SelectionPolishNoticeProps) {
   const failed = state === 'error';
   const completed = state === 'done';
   const cancelled = state === 'cancelled';
-  const label = message
-    ?? (processing
+  const label =
+    message ??
+    (processing
       ? t('capsule.selectionPolish.polishing')
       : completed
         ? t('capsule.selectionPolish.replaced')
@@ -323,7 +323,10 @@ function AudioBars({ level }: { level: number }) {
   const voice = Math.min(1, Math.max(0, level));
   const silenceGate = 0.012;
   const responseCeiling = 0.34;
-  const gatedVoice = Math.min(1, Math.max(0, (voice - silenceGate) / (responseCeiling - silenceGate)));
+  const gatedVoice = Math.min(
+    1,
+    Math.max(0, (voice - silenceGate) / (responseCeiling - silenceGate)),
+  );
   const easedVoice = gatedVoice * gatedVoice * (3 - 2 * gatedVoice);
   const visualVoice = Math.pow(easedVoice, 0.42);
   return (
@@ -429,18 +432,11 @@ const CircleButton = memo(function CircleButton({ variant, enabled, onClick }: C
         flexShrink: 0,
         padding: 0,
         boxShadow: '0 1px 2px rgba(0, 0, 0, 0.06)',
-        transition: 'opacity 0.18s var(--ol-motion-soft), background 0.16s var(--ol-motion-quick), transform 0.12s var(--ol-motion-quick)',
+        transition:
+          'opacity 0.18s var(--ol-motion-soft), background 0.16s var(--ol-motion-quick), transform 0.12s var(--ol-motion-quick)',
       }}
     >
-      {isCancel ? (
-        <svg width="11" height="11" viewBox="0 0 11 11">
-          <path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      ) : (
-        <svg width="13" height="13" viewBox="0 0 13 13">
-          <path d="M2 6.5l3.2 3.5L11 3.5" stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      )}
+      <Icon name={isCancel ? 'close' : 'check'} size={13} strokeWidth={2.2} />
     </button>
   );
 });
@@ -456,7 +452,16 @@ interface ClassicPillProps {
   onConfirm: () => void;
 }
 
-function ClassicPill({ os, state, level, insertedChars, message, operating, onCancel, onConfirm }: ClassicPillProps) {
+function ClassicPill({
+  os,
+  state,
+  level,
+  insertedChars,
+  message,
+  operating,
+  onCancel,
+  onConfirm,
+}: ClassicPillProps) {
   const { t } = useTranslation();
   const metrics = classicPillMetrics(os);
   const processingLayout = useMemo(() => getCapsuleMessageLayout(os, 'processing'), [os]);
@@ -536,13 +541,26 @@ function ClassicPill({ os, state, level, insertedChars, message, operating, onCa
       );
       break;
     case 'done':
-      center = <CenterText os={os} kind="default" text={message || t('capsule.inserted', { count: insertedChars })} />;
+      center = (
+        <CenterText
+          os={os}
+          kind="default"
+          text={message || t('capsule.inserted', { count: insertedChars })}
+        />
+      );
       break;
     case 'cancelled':
       center = <CenterText os={os} kind="default" text={t('capsule.cancelled')} />;
       break;
     case 'error':
-      center = <CenterText os={os} kind="error" text={message || t('capsule.error')} color="var(--ol-err)" />;
+      center = (
+        <CenterText
+          os={os}
+          kind="error"
+          text={message || t('capsule.error')}
+          color="var(--ol-err)"
+        />
+      );
       break;
     default:
       center = <AudioBars level={0} />;
@@ -550,7 +568,7 @@ function ClassicPill({ os, state, level, insertedChars, message, operating, onCa
 
   const ambient = state === 'recording' ? Math.min(1, Math.max(0, level)) : 0;
   const scale = os === 'win' ? 1 : 1 + ambient * 0.018;
-  const shadowAlpha = 0.20 + ambient * 0.10;
+  const shadowAlpha = 0.2 + ambient * 0.1;
 
   return (
     // 非 Linux 走假毛玻璃；Linux 禁用透明窗口后由 .ol-frost 平台规则退成不透明面。
@@ -573,12 +591,21 @@ function ClassicPill({ os, state, level, insertedChars, message, operating, onCa
         fontFamily: 'var(--ol-font-sans)',
         transform: `scale(${scale.toFixed(4)})`,
         transformOrigin: 'center',
-        transition: 'transform 0.08s var(--ol-motion-quick), box-shadow 0.08s var(--ol-motion-quick)',
+        transition:
+          'transform 0.08s var(--ol-motion-quick), box-shadow 0.08s var(--ol-motion-quick)',
         willChange: 'transform, box-shadow',
       }}
     >
       <CircleButton variant="cancel" enabled={cancelEnabled} onClick={onCancel} />
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         {center}
       </div>
       <CircleButton variant="confirm" enabled={confirmEnabled} onClick={onConfirm} />
@@ -631,9 +658,10 @@ function ClassicCapsule({
           left: '50%',
           // macOS / Linux：pill 居中在 460×180 host，badge 锚到 pill 中线上方 21+8。
           // Windows：pill 更高（52），badge 锚到 pill 上沿（bottomInset + height + gap）。
-          bottom: os === 'win'
-            ? `${hostMetrics.bottomInset + metrics.height + hostMetrics.badgeGap}px`
-            : 'calc(50% + 21px + 8px)',
+          bottom:
+            os === 'win'
+              ? `${hostMetrics.bottomInset + metrics.height + hostMetrics.badgeGap}px`
+              : 'calc(50% + 21px + 8px)',
           transform: 'translateX(-50%)',
           pointerEvents: 'none',
         }}
@@ -736,7 +764,8 @@ function getPreviewCapsulePayload() {
     warming: params.get('warming') === '1',
     selectionPolish: params.get('selectionPolish') === '1',
     // 浏览器预览：?style=classic 直接看经典药丸。
-    style: params.get('style') === 'classic' ? ('classic' as CapsuleStyle) : ('siri' as CapsuleStyle),
+    style:
+      params.get('style') === 'classic' ? ('classic' as CapsuleStyle) : ('siri' as CapsuleStyle),
   };
 }
 
@@ -792,8 +821,7 @@ export function Capsule({ os: forcedOs }: CapsuleProps = {}) {
   // Space 贴附、多屏定位一整串逻辑，加一个非会话状态进去只会污染它。
   const [suggestions, setSuggestions] = useState<PendingCorrection[]>([]);
   // 落字失败兜底卡片。与词条卡片同一套路：独立事件通道，不进会话状态机。
-  const [insertFallback, setInsertFallback] =
-    useState<InsertFallbackCardPayload | null>(null);
+  const [insertFallback, setInsertFallback] = useState<InsertFallbackCardPayload | null>(null);
   // 前端 host 与原生窗口保持同一份透明语音 orb 舞台尺寸。
   const hostMetrics = getCapsuleHostMetrics(os, translation);
   // Windows 端 host 用「host 高 − pill 高」把 pill 垂直居中；Siri 舞台 460×180 与 host
@@ -819,7 +847,7 @@ export function Capsule({ os: forcedOs }: CapsuleProps = {}) {
     let cancelled = false;
     (async () => {
       const { listen } = await import('@tauri-apps/api/event');
-      const handle = await listen<CapsulePayload>('capsule:state', event => {
+      const handle = await listen<CapsulePayload>('capsule:state', (event) => {
         const p = event.payload;
         if (!capsuleStateFirstLogged) {
           capsuleStateFirstLogged = true;
@@ -838,17 +866,17 @@ export function Capsule({ os: forcedOs }: CapsuleProps = {}) {
         if (p.insertedChars != null) insertedCharsRef.current = p.insertedChars;
         operatingRef.current = p.operating === true;
       });
-      const transcriptHandle = await listen<BackendEvent>('backend:event', event => {
+      const transcriptHandle = await listen<BackendEvent>('backend:event', (event) => {
         const next = applyTranscriptEvent(transcriptViewRef.current, event.payload);
         transcriptViewRef.current = next;
         setLocalAsrText(next.text);
       });
-      const suggestHandle = await listen<PendingCorrection[]>('vocab:suggested', event => {
+      const suggestHandle = await listen<PendingCorrection[]>('vocab:suggested', (event) => {
         setSuggestions(event.payload ?? []);
       });
       const fallbackHandle = await listen<InsertFallbackCardPayload | null>(
         'insert:fallback',
-        event => {
+        (event) => {
           setInsertFallback(event.payload ?? null);
         },
       );
@@ -882,7 +910,7 @@ export function Capsule({ os: forcedOs }: CapsuleProps = {}) {
     let cancelled = false;
     (async () => {
       const { listen } = await import('@tauri-apps/api/event');
-      const handle = await listen<{ capsuleStyle?: CapsuleStyle }>('prefs:changed', event => {
+      const handle = await listen<{ capsuleStyle?: CapsuleStyle }>('prefs:changed', (event) => {
         const next = event.payload?.capsuleStyle;
         if (next === 'siri' || next === 'classic') setCapsuleStyle(next);
       });
@@ -951,9 +979,13 @@ export function Capsule({ os: forcedOs }: CapsuleProps = {}) {
     warmStartRef.current = null;
     // 过滤异常样本：<20ms 多半不是真入场；>3s 多半首次 TCC / 卡顿，不代表常态。
     if (loadMs < 20 || loadMs > 3000) return;
-    setWarmupMs(prev => {
+    setWarmupMs((prev) => {
       const next = Math.min(600, Math.max(60, prev * 0.7 + loadMs * 0.3));
-      try { localStorage.setItem(WARMUP_MS_KEY, String(Math.round(next))); } catch { /* ignore */ }
+      try {
+        localStorage.setItem(WARMUP_MS_KEY, String(Math.round(next)));
+      } catch {
+        /* ignore */
+      }
       return next;
     });
   }, [warming]);
@@ -978,14 +1010,13 @@ export function Capsule({ os: forcedOs }: CapsuleProps = {}) {
 
   // 离场时用 lastVisibleState 渲染最后一帧内容，避免把 idle 当作无波形状态。
   const renderedState: CapsuleState = state === 'idle' ? lastVisibleState : state;
-  const renderedSelectionPolish = state === 'idle'
-    ? lastVisibleSelectionPolish
-    : selectionPolish;
-  const renderedMessage = state === 'idle'
-    ? lastVisibleMessage
-    : state === 'transcribing' && localAsrText
-      ? localAsrText
-      : message;
+  const renderedSelectionPolish = state === 'idle' ? lastVisibleSelectionPolish : selectionPolish;
+  const renderedMessage =
+    state === 'idle'
+      ? lastVisibleMessage
+      : state === 'transcribing' && localAsrText
+        ? localAsrText
+        : message;
 
   return (
     <div
@@ -999,87 +1030,89 @@ export function Capsule({ os: forcedOs }: CapsuleProps = {}) {
         paddingLeft: hostMetrics.horizontalInset,
         paddingRight: hostMetrics.horizontalInset,
         boxSizing: hostMetrics.boxSizing,
-        paddingTop: os === 'win'
-          ? Math.max(0, hostMetrics.height - pillMetrics.height - hostMetrics.bottomInset)
-          : 0,
+        paddingTop:
+          os === 'win'
+            ? Math.max(0, hostMetrics.height - pillMetrics.height - hostMetrics.bottomInset)
+            : 0,
         paddingBottom: os === 'win' ? hostMetrics.bottomInset : 0,
         background: 'transparent',
         animation: leaving
           ? `capsule-out ${exitMs}ms cubic-bezier(.55,.06,.68,.19) forwards`
-          // .68s 的入场被反馈「按下之后有延迟」：压到 .38s，曲线保持轻微弹性，
-          // 光条几乎跟手出现。
-          : 'capsule-in .38s cubic-bezier(.3,1.2,.4,1) both',
+          : // .68s 的入场被反馈「按下之后有延迟」：压到 .38s，曲线保持轻微弹性，
+            // 光条几乎跟手出现。
+            'capsule-in .38s cubic-bezier(.3,1.2,.4,1) both',
         transformOrigin: 'center',
         willChange: 'transform, opacity',
       }}
     >
-      {!renderedSelectionPolish && (isClassic ? (
-        <ClassicCapsule
-          os={os}
-          state={renderedState}
-          level={leaving ? 0 : level}
-          insertedChars={insertedCharsRef.current}
-          message={renderedMessage}
-          operating={operatingRef.current}
-          translation={translation}
-        />
-      ) : (
-        <>
-      {/* "正在翻译" 徽章 — 嵌套两层：
+      {!renderedSelectionPolish &&
+        (isClassic ? (
+          <ClassicCapsule
+            os={os}
+            state={renderedState}
+            level={leaving ? 0 : level}
+            insertedChars={insertedCharsRef.current}
+            message={renderedMessage}
+            operating={operatingRef.current}
+            translation={translation}
+          />
+        ) : (
+          <>
+            {/* "正在翻译" 徽章 — 嵌套两层：
           外层只负责"绝对定位 + 水平居中（translateX(-50%)）"，不参与动画；
           内层只负责"垂直位移 + 渐变透明度"——这样不会跟 translateX(-50%) 冲突，
           也不存在 keyframe 与 inline transform 互相覆盖导致的视觉跳变。 */}
-      <div
-        style={{
-          position: 'absolute',
-          left: '50%',
-          bottom: `${badgeBottom}px`,
-          transform: 'translateX(-50%)',
-          pointerEvents: 'none',
-        }}
-      >
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 5,
-            fontSize: 10.5,
-            fontWeight: 600,
-            // 纯光效语言：无壳发光小字，与波形同一气质（浮空 + 冷蓝光晕）。
-            color: 'rgba(190, 212, 255, 0.95)',
-            textShadow: '0 0 14px rgba(90, 140, 255, 0.85), 0 1px 6px rgba(0, 0, 0, 0.45)',
-            letterSpacing: '0.02em',
-            whiteSpace: 'nowrap',
-            // 隐藏：从光条附近偏下出发；显示：归位到光条上方。
-            opacity: translation ? 1 : 0,
-            transform: translation ? 'translateY(0) scale(1)' : 'translateY(40px) scale(.88)',
-            transformOrigin: 'center bottom',
-            transition: 'opacity .24s ease-out, transform .34s cubic-bezier(.2,.9,.3,1.1)',
-            willChange: 'opacity, transform',
-          }}
-        >
-          <span
-            style={{
-              width: 5,
-              height: 5,
-              borderRadius: 999,
-              background: 'rgba(150, 185, 255, 0.95)',
-              boxShadow: '0 0 8px rgba(90, 140, 255, 0.9)',
-            }}
-          />
-          {t('capsule.translating')}
-        </div>
-      </div>
-      <VoiceOrbStage
-        os={os}
-        state={renderedState}
-        level={leaving ? 0 : level}
-        warming={!leaving && warming}
-        warmupMs={warmupMs}
-        message={renderedMessage}
-      />
-        </>
-      ))}
+            <div
+              style={{
+                position: 'absolute',
+                left: '50%',
+                bottom: `${badgeBottom}px`,
+                transform: 'translateX(-50%)',
+                pointerEvents: 'none',
+              }}
+            >
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  // 纯光效语言：无壳发光小字，与波形同一气质（浮空 + 冷蓝光晕）。
+                  color: 'rgba(190, 212, 255, 0.95)',
+                  textShadow: '0 0 14px rgba(90, 140, 255, 0.85), 0 1px 6px rgba(0, 0, 0, 0.45)',
+                  letterSpacing: '0.02em',
+                  whiteSpace: 'nowrap',
+                  // 隐藏：从光条附近偏下出发；显示：归位到光条上方。
+                  opacity: translation ? 1 : 0,
+                  transform: translation ? 'translateY(0) scale(1)' : 'translateY(40px) scale(.88)',
+                  transformOrigin: 'center bottom',
+                  transition: 'opacity .24s ease-out, transform .34s cubic-bezier(.2,.9,.3,1.1)',
+                  willChange: 'opacity, transform',
+                }}
+              >
+                <span
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: 999,
+                    background: 'rgba(150, 185, 255, 0.95)',
+                    boxShadow: '0 0 8px rgba(90, 140, 255, 0.9)',
+                  }}
+                />
+                {t('capsule.translating')}
+              </div>
+            </div>
+            <VoiceOrbStage
+              os={os}
+              state={renderedState}
+              level={leaving ? 0 : level}
+              warming={!leaving && warming}
+              warmupMs={warmupMs}
+              message={renderedMessage}
+            />
+          </>
+        ))}
       {renderedSelectionPolish && (
         <SelectionPolishNotice state={renderedState} message={renderedMessage} />
       )}

@@ -1,0 +1,450 @@
+{
+  "_generatedFrom": "openless-core::provider_rules::provider_descriptors",
+  "asr": [
+    {
+      "authRequirement": "volcengine",
+      "defaultEndpoint": null,
+      "defaultModel": null,
+      "kind": "asr",
+      "labelKey": "asrVolcengine",
+      "providerType": "volcengine",
+      "staticModels": [],
+      "validationProbe": "asr_silence_allows_no_final"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "https://api.elevenlabs.io/v1",
+      "defaultModel": "scribe_v2",
+      "kind": "asr",
+      "labelKey": "asrElevenLabs",
+      "providerType": "elevenlabs",
+      "staticModels": [
+        "scribe_v2"
+      ],
+      "validationProbe": "asr_silence"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "wss://dashscope.aliyuncs.com/api-ws/v1/inference/",
+      "defaultModel": "fun-asr-realtime",
+      "kind": "asr",
+      "labelKey": "asrBailian",
+      "providerType": "bailian",
+      "staticModels": [
+        "fun-asr-realtime",
+        "fun-asr-flash-8k-realtime",
+        "qwen3-asr-flash-realtime",
+        "qwen3-asr-flash-realtime-2026-02-10",
+        "qwen3-asr-flash-realtime-2025-10-27",
+        "qwen-audio-3.0-asr-flash",
+        "fun-asr-flash-2026-06-15",
+        "qwen3-asr-flash",
+        "fun-asr",
+        "fun-asr-2025-11-07",
+        "fun-asr-2025-08-25",
+        "fun-asr-mtl",
+        "fun-asr-mtl-2025-08-25",
+        "paraformer-v2"
+      ],
+      "validationProbe": "asr_silence"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "wss://dashscope.aliyuncs.com/api-ws/v1/realtime",
+      "defaultModel": "qwen3-asr-flash-realtime",
+      "kind": "asr",
+      "labelKey": "asrBailianQwen3",
+      "providerType": "bailian-qwen3-realtime",
+      "staticModels": [
+        "qwen3-asr-flash-realtime",
+        "qwen3-asr-flash-realtime-2026-02-10",
+        "qwen3-asr-flash-realtime-2025-10-27"
+      ],
+      "validationProbe": "asr_silence"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
+      "defaultModel": "fun-asr-flash-2026-06-15",
+      "kind": "asr",
+      "labelKey": "asrBailianFunAsrFlash",
+      "providerType": "bailian-fun-asr-flash",
+      "staticModels": [
+        "qwen-audio-3.0-asr-flash",
+        "fun-asr-flash-2026-06-15"
+      ],
+      "validationProbe": "asr_non_silent"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "https://api.siliconflow.cn/v1",
+      "defaultModel": "FunAudioLLM/SenseVoiceSmall",
+      "kind": "asr",
+      "labelKey": "asrSiliconflow",
+      "providerType": "siliconflow",
+      "staticModels": [],
+      "validationProbe": "asr_silence"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "https://api.stepfun.com/v1",
+      "defaultModel": "stepaudio-2.5-asr",
+      "kind": "asr",
+      "labelKey": "asrStepfun",
+      "providerType": "stepfun",
+      "staticModels": [],
+      "validationProbe": "stepfun_no_speech"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "https://open.bigmodel.cn/api/paas/v4",
+      "defaultModel": "glm-asr-2512",
+      "kind": "asr",
+      "labelKey": "asrZhipu",
+      "providerType": "zhipu",
+      "staticModels": [],
+      "validationProbe": "asr_silence"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "https://api.groq.com/openai/v1",
+      "defaultModel": "whisper-large-v3-turbo",
+      "kind": "asr",
+      "labelKey": "asrGroq",
+      "providerType": "groq",
+      "staticModels": [],
+      "validationProbe": "asr_silence"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "https://api.openai.com/v1",
+      "defaultModel": "whisper-1",
+      "kind": "asr",
+      "labelKey": "asrWhisper",
+      "providerType": "whisper",
+      "staticModels": [],
+      "validationProbe": "asr_silence"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "https://openrouter.ai/api/v1",
+      "defaultModel": "openai/whisper-large-v3-turbo",
+      "kind": "asr",
+      "labelKey": "asrOpenrouter",
+      "providerType": "openrouter",
+      "staticModels": [],
+      "validationProbe": "asr_silence"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "https://zenmux.ai/api/v1",
+      "defaultModel": "qwen/qwen3-asr-flash",
+      "kind": "asr",
+      "labelKey": "asrZenmux",
+      "providerType": "zenmux",
+      "staticModels": [],
+      "validationProbe": "asr_silence"
+    },
+    {
+      "authRequirement": "endpoint_model_optional_api_key",
+      "defaultEndpoint": null,
+      "defaultModel": null,
+      "kind": "asr",
+      "labelKey": "asrOpenAiCompatible",
+      "providerType": "openai-compatible",
+      "staticModels": [],
+      "validationProbe": "asr_silence"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "https://api.xiaomimimo.com/v1",
+      "defaultModel": "mimo-v2.5-asr",
+      "kind": "asr",
+      "labelKey": "asrXiaomiMimo",
+      "providerType": "xiaomi-mimo-asr",
+      "staticModels": [
+        "mimo-v2.5-asr"
+      ],
+      "validationProbe": "asr_silence"
+    },
+    {
+      "authRequirement": "xfyun",
+      "defaultEndpoint": null,
+      "defaultModel": null,
+      "kind": "asr",
+      "labelKey": "asrIflytek",
+      "providerType": "iflytek",
+      "staticModels": [],
+      "validationProbe": "asr_silence_allows_no_final"
+    },
+    {
+      "authRequirement": "none",
+      "defaultEndpoint": null,
+      "defaultModel": null,
+      "kind": "asr",
+      "labelKey": "asrFoundryLocalWhisper",
+      "providerType": "foundry-local-whisper",
+      "staticModels": [],
+      "validationProbe": "unsupported"
+    },
+    {
+      "authRequirement": "none",
+      "defaultEndpoint": null,
+      "defaultModel": null,
+      "kind": "asr",
+      "labelKey": "asrLocalWhisper",
+      "providerType": "local-whisper",
+      "staticModels": [],
+      "validationProbe": "unsupported"
+    },
+    {
+      "authRequirement": "none",
+      "defaultEndpoint": null,
+      "defaultModel": null,
+      "kind": "asr",
+      "labelKey": "asrSherpaOnnxLocal",
+      "providerType": "sherpa-onnx-local",
+      "staticModels": [],
+      "validationProbe": "unsupported"
+    },
+    {
+      "authRequirement": "none",
+      "defaultEndpoint": null,
+      "defaultModel": null,
+      "kind": "asr",
+      "labelKey": "asrLocalQwen3Mlx",
+      "providerType": "local-qwen3-mlx",
+      "staticModels": [],
+      "validationProbe": "unsupported"
+    },
+    {
+      "authRequirement": "none",
+      "defaultEndpoint": null,
+      "defaultModel": null,
+      "kind": "asr",
+      "labelKey": "asrLocalQwen3C",
+      "providerType": "local-qwen3-c",
+      "staticModels": [],
+      "validationProbe": "unsupported"
+    },
+    {
+      "authRequirement": "none",
+      "defaultEndpoint": null,
+      "defaultModel": null,
+      "kind": "asr",
+      "labelKey": "asrLocalQwen3",
+      "providerType": "local-qwen3",
+      "staticModels": [],
+      "validationProbe": "unsupported"
+    },
+    {
+      "authRequirement": "none",
+      "defaultEndpoint": null,
+      "defaultModel": null,
+      "kind": "asr",
+      "labelKey": "asrAppleSpeech",
+      "providerType": "apple-speech",
+      "staticModels": [],
+      "validationProbe": "unsupported"
+    }
+  ],
+  "llm": [
+    {
+      "authRequirement": "api_key_unless_custom_endpoint",
+      "defaultEndpoint": "https://ark.cn-beijing.volces.com/api/v3",
+      "defaultModel": "deepseek-v3-2",
+      "kind": "llm",
+      "labelKey": "ark",
+      "providerType": "ark",
+      "staticModels": [],
+      "validationProbe": "llm_text"
+    },
+    {
+      "authRequirement": "api_key_unless_custom_endpoint",
+      "defaultEndpoint": "https://api.deepseek.com/v1",
+      "defaultModel": "deepseek-v4-flash",
+      "kind": "llm",
+      "labelKey": "deepseek",
+      "providerType": "deepseek",
+      "staticModels": [],
+      "validationProbe": "llm_text"
+    },
+    {
+      "authRequirement": "api_key_unless_custom_endpoint",
+      "defaultEndpoint": "https://api.siliconflow.cn/v1",
+      "defaultModel": "Qwen/Qwen2.5-7B-Instruct",
+      "kind": "llm",
+      "labelKey": "siliconflow",
+      "providerType": "siliconflow",
+      "staticModels": [],
+      "validationProbe": "llm_text"
+    },
+    {
+      "authRequirement": "api_key_unless_custom_endpoint",
+      "defaultEndpoint": "https://api.atlascloud.ai/v1",
+      "defaultModel": "qwen/qwen3.5-flash",
+      "kind": "llm",
+      "labelKey": "atlascloud",
+      "providerType": "atlascloud",
+      "staticModels": [],
+      "validationProbe": "llm_text"
+    },
+    {
+      "authRequirement": "api_key_unless_custom_endpoint",
+      "defaultEndpoint": "https://api.openai.com/v1",
+      "defaultModel": "gpt-4o",
+      "kind": "llm",
+      "labelKey": "openai",
+      "providerType": "openai",
+      "staticModels": [],
+      "validationProbe": "llm_text"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "https://generativelanguage.googleapis.com/v1beta",
+      "defaultModel": "gemini-2.5-flash",
+      "kind": "llm",
+      "labelKey": "gemini",
+      "providerType": "gemini",
+      "staticModels": [],
+      "validationProbe": "llm_text"
+    },
+    {
+      "authRequirement": "o_auth",
+      "defaultEndpoint": null,
+      "defaultModel": "gpt-5.5",
+      "kind": "llm",
+      "labelKey": "codexOAuth",
+      "providerType": "codex_oauth",
+      "staticModels": [
+        "gpt-5.5",
+        "gpt-5.3-codex",
+        "gpt-5.4",
+        "gpt-5.5"
+      ],
+      "validationProbe": "llm_text"
+    },
+    {
+      "authRequirement": "api_key_unless_custom_endpoint",
+      "defaultEndpoint": "https://api.xiaomimimo.com/v1",
+      "defaultModel": "xiaomi/mimo-v2-flash",
+      "kind": "llm",
+      "labelKey": "mimo",
+      "providerType": "mimo",
+      "staticModels": [],
+      "validationProbe": "llm_text"
+    },
+    {
+      "authRequirement": "api_key_unless_custom_endpoint",
+      "defaultEndpoint": "https://api.cometapi.com/v1",
+      "defaultModel": "gpt-4o",
+      "kind": "llm",
+      "labelKey": "cometapi",
+      "providerType": "cometapi",
+      "staticModels": [],
+      "validationProbe": "llm_text"
+    },
+    {
+      "authRequirement": "api_key_unless_custom_endpoint",
+      "defaultEndpoint": "https://openrouter.ai/api/v1",
+      "defaultModel": "qwen/qwen3-coder:free",
+      "kind": "llm",
+      "labelKey": "openrouterFree",
+      "providerType": "openrouterFree",
+      "staticModels": [],
+      "validationProbe": "llm_text"
+    },
+    {
+      "authRequirement": "api_key_unless_custom_endpoint",
+      "defaultEndpoint": "https://coding-intl.dashscope.aliyuncs.com/v1",
+      "defaultModel": "qwen3-coder-plus",
+      "kind": "llm",
+      "labelKey": "alibabaCoding",
+      "providerType": "alibabaCoding",
+      "staticModels": [],
+      "validationProbe": "llm_text"
+    },
+    {
+      "authRequirement": "api_key_unless_custom_endpoint",
+      "defaultEndpoint": "https://api.codingplanx.ai/v1",
+      "defaultModel": "gpt-5-mini",
+      "kind": "llm",
+      "labelKey": "codingPlanX",
+      "providerType": "codingPlanX",
+      "staticModels": [],
+      "validationProbe": "llm_text"
+    },
+    {
+      "authRequirement": "api_key_unless_custom_endpoint",
+      "defaultEndpoint": "https://api.minimaxi.com/v1",
+      "defaultModel": "MiniMax-M3",
+      "kind": "llm",
+      "labelKey": "minimax",
+      "providerType": "minimax",
+      "staticModels": [],
+      "validationProbe": "llm_text"
+    },
+    {
+      "authRequirement": "api_key_unless_custom_endpoint",
+      "defaultEndpoint": "https://api.stepfun.com/v1",
+      "defaultModel": "step-1o-turbo-vision",
+      "kind": "llm",
+      "labelKey": "stepfun",
+      "providerType": "stepfun",
+      "staticModels": [],
+      "validationProbe": "llm_text"
+    },
+    {
+      "authRequirement": "api_key_unless_custom_endpoint",
+      "defaultEndpoint": null,
+      "defaultModel": null,
+      "kind": "llm",
+      "labelKey": "custom",
+      "providerType": "custom",
+      "staticModels": [],
+      "validationProbe": "llm_text"
+    }
+  ],
+  "omni": [
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "https://api.openai.com/v1",
+      "defaultModel": "gpt-4o-audio-preview",
+      "kind": "omni",
+      "labelKey": "omniOpenai",
+      "providerType": "openai",
+      "staticModels": [],
+      "validationProbe": "omni_text"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "https://generativelanguage.googleapis.com/v1beta",
+      "defaultModel": "gemini-2.5-flash",
+      "kind": "omni",
+      "labelKey": "omniGemini",
+      "providerType": "gemini",
+      "staticModels": [],
+      "validationProbe": "omni_text"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "defaultModel": "qwen3-omni-flash",
+      "kind": "omni",
+      "labelKey": "omniDashscope",
+      "providerType": "dashscope-omni",
+      "staticModels": [],
+      "validationProbe": "omni_text"
+    },
+    {
+      "authRequirement": "api_key",
+      "defaultEndpoint": null,
+      "defaultModel": null,
+      "kind": "omni",
+      "labelKey": "custom",
+      "providerType": "custom",
+      "staticModels": [],
+      "validationProbe": "omni_text"
+    }
+  ]
+}

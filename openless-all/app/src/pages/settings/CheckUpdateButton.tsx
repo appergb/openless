@@ -8,14 +8,22 @@ import { Icon } from '../../components/Icon';
 import { isDialogStatus, UpdateDialog, useAutoUpdate } from '../../components/AutoUpdate';
 import type { UpdateChannel } from '../../lib/ipc';
 
-export function CheckUpdateButton({ channel, compact = false }: { channel: UpdateChannel; compact?: boolean }) {
+export function CheckUpdateButton({
+  channel,
+  compact = false,
+}: {
+  channel: UpdateChannel;
+  compact?: boolean;
+}) {
   const { t } = useTranslation();
   const updater = useAutoUpdate();
   const { status, checking, busy } = updater;
 
   useEffect(() => {
     if (status === 'none' || status === 'error') {
-      const id = window.setTimeout(() => { void updater.dismissDialog(); }, 2500);
+      const id = window.setTimeout(() => {
+        void updater.dismissDialog();
+      }, 2500);
       return () => window.clearTimeout(id);
     }
     return undefined;
@@ -26,9 +34,10 @@ export function CheckUpdateButton({ channel, compact = false }: { channel: Updat
   const failed = status === 'error';
   const iconName = upToDate ? 'check' : 'refresh';
   const color = upToDate ? 'var(--ol-ok)' : failed ? 'var(--ol-err)' : 'var(--ol-ink-2)';
-  const labelKey = channel === 'beta'
-    ? 'settings.about.checkBetaUpdateBtn'
-    : 'settings.about.checkStableUpdateBtn';
+  const labelKey =
+    channel === 'beta'
+      ? 'settings.about.checkBetaUpdateBtn'
+      : 'settings.about.checkStableUpdateBtn';
   const label = checking ? t('settings.about.checkingUpdate') : t(labelKey);
 
   return (
@@ -64,7 +73,16 @@ export function CheckUpdateButton({ channel, compact = false }: { channel: Updat
           flexShrink: 0,
         }}
       >
-        <span style={{ display: 'inline-flex', width: 14, height: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span
+          style={{
+            display: 'inline-flex',
+            width: 14,
+            height: 14,
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
           <Icon
             name={iconName}
             size={12}

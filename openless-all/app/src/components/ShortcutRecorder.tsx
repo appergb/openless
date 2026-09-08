@@ -11,7 +11,7 @@ import type { ShortcutBinding } from '../lib/types';
 const SLIDE_DISTANCE = 48;
 /** 下拉菜单展开后的固定高度（px）：菜单按钮行高恒定，用固定值动画避免每次测量。 */
 const MENU_HEIGHT = 34;
-/** 滑动切换用 spring（与 Style.tsx 编辑抽屉同款）。只动 transform/opacity，不驱动布局，避免抽搐。 */
+/** 滑动切换用 spring（与 Style.tsx 编辑抽屉同款）。只动 transform/opacity，不驱动布局，避免抖动。 */
 const slideSpring = { type: 'spring' as const, damping: 26, stiffness: 280 };
 /** 下拉菜单展开/收起缓动，与 --ol-motion-soft 一致。 */
 const menuEase = [0.22, 0.8, 0.22, 1] as const;
@@ -59,15 +59,21 @@ export function ShortcutRecorder({
   useEffect(() => {
     if (!menuOpen) return;
     const onKeyDown = (e: globalThis.KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuOpen(false);
+      if (e.key === 'Escape' && !e.isComposing) {
+        e.preventDefault();
+        e.stopPropagation();
+        setMenuOpen(false);
+        rootRef.current?.querySelector<HTMLButtonElement>('[aria-expanded]')?.focus();
+      }
     };
     const onPointerDown = (e: MouseEvent) => {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setMenuOpen(false);
     };
-    window.addEventListener('keydown', onKeyDown);
+    // Capture Escape before the surrounding settings dialog handles it.
+    window.addEventListener('keydown', onKeyDown, true);
     window.addEventListener('mousedown', onPointerDown);
     return () => {
-      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keydown', onKeyDown, true);
       window.removeEventListener('mousedown', onPointerDown);
     };
   }, [menuOpen]);
@@ -89,9 +95,12 @@ export function ShortcutRecorder({
     clearPressedCodes();
   };
 
-  useEffect(() => () => {
-    resetRecordingState();
-  }, []);
+  useEffect(
+    () => () => {
+      resetRecordingState();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!disabled || !recording) return;
@@ -187,7 +196,10 @@ export function ShortcutRecorder({
     clearPendingModifier();
     const primary = primaryFromKeyboardEvent(e);
     if (primary) {
-      void finish({ primary, modifiers: modifiersFromPressedCodes(pressedCodes.current, sideSpecificModifiers) });
+      void finish({
+        primary,
+        modifiers: modifiersFromPressedCodes(pressedCodes.current, sideSpecificModifiers),
+      });
     }
   };
 
@@ -225,6 +237,9 @@ export function ShortcutRecorder({
     flexDirection: 'column',
     gap: 6,
     width: '100%',
+    // 设置行里的快捷键录制控件不再拉满整行（此前「Right ⌃」值贴左、
+    // 下拉箭头甩到最右缘），与输入框同宽上限，紧凑地跟在标签列之后。
+    maxWidth: 360,
   };
   const recorderRowStyle: CSSProperties = {
     display: 'flex',
@@ -286,7 +301,7 @@ export function ShortcutRecorder({
   return (
     <div style={rootStyle} ref={rootRef}>
       {/* mode="wait"：主行与「正在录入」面板不重叠渲染；切换只做 transform/opacity 动画，
-          不驱动布局，面板运动过程不抽搐。所有滑入/滑出统一向右。 */}
+          不驱动布局，面板运动过程不抖动。所有滑入/滑出统一向右。 */}
       <AnimatePresence mode="wait" initial={false}>
         {recording ? (
           <motion.div
@@ -298,7 +313,7 @@ export function ShortcutRecorder({
             tabIndex={-1}
             onKeyDown={onKeyDown}
             onKeyUp={onKeyUp}
-            ref={el => el?.focus()}
+            ref={(el) => el?.focus()}
             style={{
               minHeight: 36,
               display: 'flex',
@@ -331,7 +346,7 @@ export function ShortcutRecorder({
               <div style={controlsGroupStyle}>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => setMenuOpen(open => !open)}
+                  onClick={() => setMenuOpen((open) => !open)}
                   aria-label={t('settings.recording.comboMenuToggle', 'More options')}
                   aria-expanded={menuOpen}
                   title={t('settings.recording.comboMenuToggle', 'More options')}

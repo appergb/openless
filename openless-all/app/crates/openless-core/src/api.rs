@@ -3632,6 +3632,34 @@ impl OpenLessBackend {
         self.preferences.get()
     }
 
+    /// 消费「本大版本首启」开屏 PV 标记：配置里的 `splash_seen_version` 与传入的
+    /// 当前主版本一致时返回 false（不再播放）；不一致时写回主版本并返回 true，
+    /// 前端据此播放随包发行的开屏动画（同世代 2.x 升级与重启都不重播）。
+    /// 磁盘写入失败时仍返回 true——宁可多播一次，也不静默吞掉首启体验；标记留待
+    /// 下次启动重试。成功写回后走 publish_preferences_changed 递增 revision，
+    /// 让并发中的设置页乐观提交重新对账，不会拿着旧档把标记冲掉。
+    pub fn take_splash_playback(&self, current_major: &str) -> bool {
+        match self.preferences.update(|preferences| {
+            if preferences.splash_seen_version == current_major {
+                false
+            } else {
+                preferences.splash_seen_version = current_major.to_string();
+                true
+            }
+        }) {
+            Ok(should_play) => {
+                if should_play {
+                    self.publish_preferences_changed();
+                }
+                should_play
+            }
+            Err(error) => {
+                log::warn!("[splash] failed to persist splash marker: {error}");
+                true
+            }
+        }
+    }
+
     #[cfg(test)]
     pub(crate) fn set_preferences(
         &self,
@@ -3715,6 +3743,10 @@ impl OpenLessBackend {
         let mut previous = self.preferences.get();
         crate::sync_dictation_hotkey_legacy_fields(&mut previous);
         crate::sync_dictation_hotkey_legacy_fields(&mut preferences);
+        // 开屏标记只能由 take_splash_playback 推进：整档提交的客户端（旧前端或
+        // 尚未回读标记的请求）不带此字段时，serde 默认会把空串写回，导致下次
+        // 启动重播开屏 PV。这里永远沿用盘上的当前值。
+        preferences.splash_seen_version = previous.splash_seen_version.clone();
         if options.preserve_current_style {
             preferences.preserve_style_preferences_from(&previous);
         }
@@ -3912,6 +3944,20 @@ impl OpenLessBackend {
         self.sync_preferences_after_style_pack_change()?;
         self.publish_style_packs_changed();
         Ok(pack)
+    }
+
+    pub fn set_style_pack_icon(
+        &self,
+        id: &str,
+        png: Option<&[u8]>,
+    ) -> Result<StylePack, BackendError> {
+        let pack = self.style_packs.update_icon(id, png)?;
+        self.publish_style_packs_changed();
+        Ok(pack)
+    }
+
+    pub fn read_style_pack_icon(&self, id: &str) -> Result<Option<String>, BackendError> {
+        self.style_packs.icon_data_url(id)
     }
 
     pub fn set_style_pack_enabled(
@@ -4350,6 +4396,12 @@ impl OpenLessBackend {
 
     pub fn set_vocabulary_enabled(&self, id: &str, enabled: bool) -> Result<(), BackendError> {
         self.vocabulary.set_enabled(id, enabled)?;
+        self.publish_vocabulary_changed();
+        Ok(())
+    }
+
+    pub fn update_vocabulary_phrase(&self, id: &str, phrase: String) -> Result<(), BackendError> {
+        self.vocabulary.update_phrase(id, phrase)?;
         self.publish_vocabulary_changed();
         Ok(())
     }
@@ -10608,6 +10660,36 @@ mod tests {
         let error = backend.cancel_dictation(Some(wrong)).await.unwrap_err();
         assert_eq!(error.code, BackendErrorCode::InvalidArgument);
         assert_eq!(backend.snapshot().dictation.session_id, Some(active));
+    }
+
+    #[test]
+    fn take_splash_playback_marks_major_once_and_survives_restart() {
+        let data_dir = TestDataDir::new("splash-playback");
+        let make = || {
+            OpenLessBackend::new(
+                BackendConfig {
+                    data_dir: data_dir.path().to_path_buf(),
+                    ..BackendConfig::default()
+                },
+                BackendDependencies::unsupported(),
+            )
+            .unwrap()
+        };
+
+        let backend = make();
+        // 首启：标记缺失 → 播放一次并写回主版本。
+        assert!(backend.take_splash_playback("2"));
+        assert_eq!(backend.get_preferences().splash_seen_version, "2");
+        // 同一世代内再次启动不再播放。
+        assert!(!backend.take_splash_playback("2"));
+
+        // 模拟进程重启：标记已从 preferences.json 读回。
+        let reopened = make();
+        assert!(!reopened.take_splash_playback("2"));
+        // 新一代大版本：播一次新 PV 后同样收口。
+        assert!(reopened.take_splash_playback("3"));
+        assert!(!reopened.take_splash_playback("3"));
+        assert_eq!(reopened.get_preferences().splash_seen_version, "3");
     }
 
     #[tokio::test]

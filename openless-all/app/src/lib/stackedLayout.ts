@@ -9,9 +9,7 @@ export function applyStackedLayout(enabled: boolean): void {
   }
 }
 
-export function applyStackedLayoutFromPrefs(
-  stackedRowLayout?: boolean,
-): void {
+export function applyStackedLayoutFromPrefs(stackedRowLayout?: boolean): void {
   applyStackedLayout(stackedRowLayout === true);
 }
 

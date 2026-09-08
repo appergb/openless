@@ -15,9 +15,7 @@ export function resolveRepolishRetryPackId(
   allPacks: StylePack[] | null,
 ): string | undefined {
   if (!session.stylePackId || !allPacks) return undefined;
-  return allPacks.some(pack => pack.id === session.stylePackId)
-    ? session.stylePackId
-    : undefined;
+  return allPacks.some((pack) => pack.id === session.stylePackId) ? session.stylePackId : undefined;
 }
 
 /**
@@ -27,16 +25,13 @@ export function resolveRepolishRetryPackId(
  * 串语言，所以内置包一律走 i18n 的 mode 名（与历史条目 Pill 同一原则）。自定义包
  * 显示用户起的原名。
  */
-export function packDisplayName(
-  pack: StylePack,
-  modeLabel: Record<PolishMode, string>,
-): string {
+export function packDisplayName(pack: StylePack, modeLabel: Record<PolishMode, string>): string {
   return pack.kind === 'builtin' ? modeLabel[pack.baseMode] : pack.name.trim();
 }
 
 /** 「换风格」下拉的默认选中项：当前激活包优先，其次第一个可用包，空列表返回 ''。 */
 export function defaultPackId(packs: StylePack[]): string {
-  return packs.find(pack => pack.active)?.id || packs[0]?.id || '';
+  return packs.find((pack) => pack.active)?.id || packs[0]?.id || '';
 }
 
 /**
@@ -49,5 +44,7 @@ export function resolveRepolishRetryPackIdWithFallback(
   allPacks: StylePack[] | null,
   enabledPacks: StylePack[],
 ): string | undefined {
-  return (resolveRepolishRetryPackId(session, allPacks) ?? defaultPackId(enabledPacks)) || undefined;
+  return (
+    (resolveRepolishRetryPackId(session, allPacks) ?? defaultPackId(enabledPacks)) || undefined
+  );
 }

@@ -17,11 +17,17 @@ Object.defineProperty(globalThis, 'document', {
 
 try {
   applyStackedLayoutFromPrefs(true);
-  assert(dataset.olStackedLayout === 'true', 'enabled preference should set the root layout attribute');
+  assert(
+    dataset.olStackedLayout === 'true',
+    'enabled preference should set the root layout attribute',
+  );
   assert(isStackedLayoutActive(), 'active query should reflect the root layout attribute');
 
   applyStackedLayoutFromPrefs(false);
-  assert(!('olStackedLayout' in dataset), 'disabled preference should remove the root layout attribute');
+  assert(
+    !('olStackedLayout' in dataset),
+    'disabled preference should remove the root layout attribute',
+  );
   assert(!isStackedLayoutActive(), 'active query should become false after removal');
 
   applyStackedLayout(true);

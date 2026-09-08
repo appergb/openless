@@ -59,7 +59,8 @@ assert(
 
 // 内置包同样按原 id 重试。
 assert(
-  resolveRepolishRetryPackId({ stylePackId: 'builtin.structured' }, allPacks) === 'builtin.structured',
+  resolveRepolishRetryPackId({ stylePackId: 'builtin.structured' }, allPacks) ===
+    'builtin.structured',
   'retry should use the builtin pack id as-is',
 );
 
@@ -93,11 +94,7 @@ assert(
 
 // 下拉默认：当前激活包优先，其次第一个包，空列表为 ''。
 assert(
-  defaultPackId([
-    pack('a', true),
-    { ...pack('b', true), active: true },
-    pack('c', true),
-  ]) === 'b',
+  defaultPackId([pack('a', true), { ...pack('b', true), active: true }, pack('c', true)]) === 'b',
   'default should prefer the active pack',
 );
 assert(
@@ -112,21 +109,25 @@ const enabledPacks: StylePack[] = [
   pack('idle-pack', true),
 ];
 assert(
-  resolveRepolishRetryPackIdWithFallback({ stylePackId: 'custom-alive' }, allPacks, enabledPacks)
-    === 'custom-alive',
+  resolveRepolishRetryPackIdWithFallback(
+    { stylePackId: 'custom-alive' },
+    allPacks,
+    enabledPacks,
+  ) === 'custom-alive',
   'retry-with-fallback should keep the original pack when it still exists',
 );
 assert(
-  resolveRepolishRetryPackIdWithFallback({ stylePackId: 'deleted-pack' }, allPacks, enabledPacks)
-    === 'active-pack',
+  resolveRepolishRetryPackIdWithFallback(
+    { stylePackId: 'deleted-pack' },
+    allPacks,
+    enabledPacks,
+  ) === 'active-pack',
   'retry-with-fallback should use the active pack when the original was deleted',
 );
 assert(
-  resolveRepolishRetryPackIdWithFallback(
-    { stylePackId: null },
-    allPacks,
-    [pack('only-pack', true)],
-  ) === 'only-pack',
+  resolveRepolishRetryPackIdWithFallback({ stylePackId: null }, allPacks, [
+    pack('only-pack', true),
+  ]) === 'only-pack',
   'retry-with-fallback should use the first enabled pack when none is active',
 );
 assert(
