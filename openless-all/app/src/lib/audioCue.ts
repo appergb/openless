@@ -218,7 +218,7 @@ function scheduleCueVoices(ctx: AudioContext): void {
       const voice: ActiveVoice = { osc, gain };
       activeVoices.push(voice);
       osc.onended = () => {
-        activeVoices = activeVoices.filter(v => v !== voice);
+        activeVoices = activeVoices.filter((v) => v !== voice);
         try {
           osc.disconnect();
           gain.disconnect();

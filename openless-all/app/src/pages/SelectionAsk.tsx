@@ -21,9 +21,12 @@ export function SelectionAsk({ onOpenShortcuts }: SelectionAskProps) {
   const [saveMessage, setSaveMessage] = useState('');
   const statusTimer = useRef<number | null>(null);
 
-  useEffect(() => () => {
-    if (statusTimer.current !== null) window.clearTimeout(statusTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (statusTimer.current !== null) window.clearTimeout(statusTimer.current);
+    },
+    [],
+  );
 
   const showSaveStatus = (state: SaveState, message: string, temporary = false) => {
     if (statusTimer.current !== null) {
@@ -52,8 +55,11 @@ export function SelectionAsk({ onOpenShortcuts }: SelectionAskProps) {
     } catch (error) {
       console.error('[selection-ask] failed to save preferences', error);
       showSaveStatus('failed', failureMessage);
-      await refresh().catch(refreshError => {
-        console.warn('[selection-ask] failed to refresh preferences after save error', refreshError);
+      await refresh().catch((refreshError) => {
+        console.warn(
+          '[selection-ask] failed to refresh preferences after save error',
+          refreshError,
+        );
       });
       return false;
     }
@@ -73,7 +79,7 @@ export function SelectionAsk({ onOpenShortcuts }: SelectionAskProps) {
   const onSaveHistoryChange = (qaSaveHistory: boolean) => {
     showSaveStatus('saving', t('common.saving'));
     void persistPrefs(
-      current => ({ ...current, qaSaveHistory }),
+      (current) => ({ ...current, qaSaveHistory }),
       t('selectionAsk.save.historySaveFailed'),
     );
   };
@@ -87,13 +93,15 @@ export function SelectionAsk({ onOpenShortcuts }: SelectionAskProps) {
       <PageHeader
         title={t('selectionAsk.title')}
         desc={t('selectionAsk.desc')}
-        right={onOpenShortcuts && (
-          <button type="button" className="ol-selection-ask-settings" onClick={onOpenShortcuts}>
-            <Icon name="settings" size={15} />
-            {t('selectionAsk.shortcutSettings')}
-            <Icon name="chevRight" size={14} />
-          </button>
-        )}
+        right={
+          onOpenShortcuts && (
+            <button type="button" className="ol-selection-ask-settings" onClick={onOpenShortcuts}>
+              <Icon name="settings" size={15} />
+              {t('selectionAsk.shortcutSettings')}
+              <Icon name="chevRight" size={14} />
+            </button>
+          )
+        }
       />
       <SavedToast saveState={saveState} message={saveMessage} />
 
@@ -101,39 +109,65 @@ export function SelectionAsk({ onOpenShortcuts }: SelectionAskProps) {
         <h2 id="selection-ask-guide-title">{t('selectionAsk.howto.title')}</h2>
         <ol className="ol-selection-ask-steps">
           <li>
-            <span className="ol-selection-ask-step-number" aria-hidden="true">01</span>
+            <span className="ol-selection-ask-step-number" aria-hidden="true">
+              01
+            </span>
             <div>
               <h3>{t('selectionAsk.guide.openTitle')}</h3>
-              <p>{currentLabel
-                ? <Trans i18nKey="selectionAsk.guide.openDesc" values={{ hotkey: currentLabel }} components={{ key: <kbd /> }} />
-                : t('selectionAsk.guide.unsetDesc')}</p>
+              <p>
+                {currentLabel ? (
+                  <Trans
+                    i18nKey="selectionAsk.guide.openDesc"
+                    values={{ hotkey: currentLabel }}
+                    components={{ key: <kbd /> }}
+                  />
+                ) : (
+                  t('selectionAsk.guide.unsetDesc')
+                )}
+              </p>
             </div>
           </li>
           <li>
-            <span className="ol-selection-ask-step-number" aria-hidden="true">02</span>
+            <span className="ol-selection-ask-step-number" aria-hidden="true">
+              02
+            </span>
             <div>
               <h3>{t('selectionAsk.guide.selectTitle')}</h3>
               <p>{t('selectionAsk.howto.step2')}</p>
             </div>
           </li>
           <li>
-            <span className="ol-selection-ask-step-number" aria-hidden="true">03</span>
+            <span className="ol-selection-ask-step-number" aria-hidden="true">
+              03
+            </span>
             <div>
               <h3>{t('selectionAsk.guide.askTitle')}</h3>
               <p>
-                <Trans i18nKey="selectionAsk.guide.askDesc" values={{ recordHotkey: recordHotkeyLabel }} components={{ key: <kbd /> }} />
+                <Trans
+                  i18nKey="selectionAsk.guide.askDesc"
+                  values={{ recordHotkey: recordHotkeyLabel }}
+                  components={{ key: <kbd /> }}
+                />
               </p>
             </div>
           </li>
         </ol>
         <div className="ol-selection-ask-guide-footer">
-          <span><Icon name="refresh" size={14} />{t('selectionAsk.guide.followup')}</span>
-          <span><kbd>Esc</kbd>{t('selectionAsk.guide.dismiss')}</span>
+          <span>
+            <Icon name="refresh" size={14} />
+            {t('selectionAsk.guide.followup')}
+          </span>
+          <span>
+            <kbd>Esc</kbd>
+            {t('selectionAsk.guide.dismiss')}
+          </span>
         </div>
       </section>
 
       <section className="ol-selection-ask-history" aria-labelledby="selection-ask-history-title">
-        <span className="ol-selection-ask-history-icon"><Icon name="history" size={20} /></span>
+        <span className="ol-selection-ask-history-icon">
+          <Icon name="history" size={20} />
+        </span>
         <div className="ol-selection-ask-history-copy">
           <h2 id="selection-ask-history-title">{t('selectionAsk.history.title')}</h2>
           <p id="selection-ask-history-desc">{t('selectionAsk.history.desc')}</p>

@@ -1,13 +1,59 @@
 // Shared interface icons use one 24px grid and a consistent rounded stroke.
 import type { CSSProperties } from 'react';
 import {
-  Archive, ChartNoAxesColumn, Check, ChevronDown, ChevronLeft, ChevronRight,
-  CircleHelp, Clock3, Cloud, CodeXml, Command, Copy, CornerDownLeft, Download,
-  Ellipsis, ExternalLink, Eye, Feather, FileText, Hash, History, Info, Languages,
-  Link, ListFilter, Mail, Maximize2, MessageSquareText, Mic, Minimize2, Minus,
-  Monitor, Option, PanelLeft, PanelsTopLeft, Pencil, Play, Plus, RefreshCw,
-  Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Square, Tag, Trash2, Upload,
-  UserRound, X, Zap, BookOpenText, type LucideIcon,
+  Archive,
+  ChartNoAxesColumn,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CircleHelp,
+  Clock3,
+  Cloud,
+  CodeXml,
+  Command,
+  Copy,
+  CornerDownLeft,
+  Download,
+  Ellipsis,
+  ExternalLink,
+  Eye,
+  Feather,
+  FileText,
+  Hash,
+  History,
+  Info,
+  Languages,
+  Link,
+  ListFilter,
+  Mail,
+  Maximize2,
+  MessageSquareText,
+  Mic,
+  Minimize2,
+  Minus,
+  Monitor,
+  Option,
+  PanelLeft,
+  PanelsTopLeft,
+  Pencil,
+  Play,
+  Plus,
+  RefreshCw,
+  Search,
+  Settings2,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+  Square,
+  Tag,
+  Trash2,
+  Upload,
+  UserRound,
+  X,
+  Zap,
+  BookOpenText,
+  type LucideIcon,
 } from 'lucide-react';
 
 export const ICONS: Record<string, LucideIcon> = {
@@ -79,8 +125,27 @@ export interface IconProps {
   className?: string;
 }
 
-export function Icon({ name, size = 16, stroke = 'currentColor', strokeWidth = 1.75, fill = 'none', style, className }: IconProps) {
+export function Icon({
+  name,
+  size = 16,
+  stroke = 'currentColor',
+  strokeWidth = 1.75,
+  fill = 'none',
+  style,
+  className,
+}: IconProps) {
   const Glyph = ICONS[name];
   if (!Glyph) return null;
-  return <Glyph size={size} stroke={stroke} strokeWidth={strokeWidth} fill={fill} style={style} className={className} aria-hidden="true" focusable="false" />;
+  return (
+    <Glyph
+      size={size}
+      stroke={stroke}
+      strokeWidth={strokeWidth}
+      fill={fill}
+      style={style}
+      className={className}
+      aria-hidden="true"
+      focusable="false"
+    />
+  );
 }

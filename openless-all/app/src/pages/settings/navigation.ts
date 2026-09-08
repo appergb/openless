@@ -1,7 +1,8 @@
 import type { OS } from '../../components/WindowChrome';
 import type { PlatformKind } from '../../lib/types';
 
-export type SettingsSectionId = 'general' | 'shortcuts' | 'appearance' | 'services' | 'privacy' | 'advanced' | 'about';
+export type SettingsSectionId =
+  'general' | 'shortcuts' | 'appearance' | 'services' | 'privacy' | 'advanced' | 'about';
 
 export const ADVANCED_PAGES = [
   { id: 'lessComputer', icon: 'mac', titleKey: 'settings.codingAgent.title' },
@@ -10,11 +11,11 @@ export const ADVANCED_PAGES = [
   { id: 'debug', icon: 'bolt', titleKey: 'settings.debug.title' },
 ] as const;
 
-export type AdvancedPage = typeof ADVANCED_PAGES[number];
+export type AdvancedPage = (typeof ADVANCED_PAGES)[number];
 export type AdvancedPageId = AdvancedPage['id'];
 
 export function visibleAdvancedPages(platform: PlatformKind | undefined, os: OS): AdvancedPage[] {
-  return ADVANCED_PAGES.filter(page => {
+  return ADVANCED_PAGES.filter((page) => {
     if (page.id === 'lessComputer') return platform === 'desktop' && (os === 'mac' || os === 'win');
     if (page.id === 'claudeConsole') return platform === 'desktop' && os === 'mac';
     if (page.id === 'debug') return platform === 'desktop' || platform === 'android';
@@ -38,7 +39,7 @@ export const SETTINGS_SECTIONS: SettingsNavigationItem[] = [
 ];
 
 export function visibleSettingsSections(supportsDesktopHotkey: boolean): SettingsNavigationItem[] {
-  return SETTINGS_SECTIONS.filter(item => item.id !== 'shortcuts' || supportsDesktopHotkey);
+  return SETTINGS_SECTIONS.filter((item) => item.id !== 'shortcuts' || supportsDesktopHotkey);
 }
 
 export interface SearchableSettingsSection extends SettingsNavigationItem {
@@ -47,12 +48,15 @@ export interface SearchableSettingsSection extends SettingsNavigationItem {
   keywords: string;
 }
 
-export function searchSettingsSections<T extends SearchableSettingsSection>(sections: T[], query: string): T[] {
+export function searchSettingsSections<T extends SearchableSettingsSection>(
+  sections: T[],
+  query: string,
+): T[] {
   const normalize = (text: string) => text.normalize('NFKC').toLocaleLowerCase();
   const terms = normalize(query).trim().split(/\s+/).filter(Boolean);
-  return sections.filter(item => {
+  return sections.filter((item) => {
     const text = normalize(`${item.title} ${item.description} ${item.keywords}`);
-    return terms.every(term => text.includes(term));
+    return terms.every((term) => text.includes(term));
   });
 }
 
@@ -66,6 +70,9 @@ export function availableServiceViews(multimodal: boolean, localModels: boolean)
   ];
 }
 
-export function resolveServiceView(requested: ServiceViewId, available: ServiceViewId[]): ServiceViewId {
+export function resolveServiceView(
+  requested: ServiceViewId,
+  available: ServiceViewId[],
+): ServiceViewId {
   return available.includes(requested) ? requested : available[0];
 }

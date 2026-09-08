@@ -1,7 +1,16 @@
 // LLM 与 ASR 共用的渠道列表和编辑器。
 // Core 按排序选择第一个启用渠道；每个渠道独立保存凭据，支持同一供应商的多个账号。
 
-import { useCallback, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
@@ -27,7 +36,11 @@ import {
 } from '../../lib/ipc';
 import { emitSaved } from '../../lib/savedEvent';
 import { useExitMount } from '../../lib/useExitMount';
-import { useMobileLayout, useReadableLayout, useConservativeLayout } from '../../lib/useMobileLayout';
+import {
+  useMobileLayout,
+  useReadableLayout,
+  useConservativeLayout,
+} from '../../lib/useMobileLayout';
 import { useHotkeySettings } from '../../state/HotkeySettingsContext';
 import { getPlatformCapabilities } from '../../lib/platform';
 import { Btn, Pill } from '../_atoms';
@@ -61,7 +74,7 @@ export function presetsFor(
   currentProviderId?: string,
   descriptors: ProviderDescriptor[] = [],
 ): PresetOption[] {
-  const descriptorPresets = descriptors.map(descriptor => ({
+  const descriptorPresets = descriptors.map((descriptor) => ({
     id: descriptor.providerType,
     nameKey: descriptor.labelKey,
     defaultEndpoint: descriptor.defaultEndpoint ?? undefined,
@@ -71,7 +84,7 @@ export function presetsFor(
   }));
   if (kind === 'llm') return descriptorPresets;
   const available = descriptorPresets;
-  const visible = available.filter(p => {
+  const visible = available.filter((p) => {
     // 本地引擎严格按其实际支持的平台暴露；Linux / Android 不展示桌面专有实现。
     if (p.id === 'local-qwen3-mlx') return os === 'mac' && supportsQwen3Mlx;
     if (p.id === 'local-whisper' || p.id === 'apple-speech') return os === 'mac';
@@ -86,8 +99,8 @@ export function presetsFor(
   });
   // 新建渠道继续隐藏历史别名；编辑已有渠道时把当前值补回，避免 Select value
   // 找不到对应 option 而显示为空。只接受注册表里已知的 preset，不放行任意字符串。
-  if (currentProviderId && !visible.some(preset => preset.id === currentProviderId)) {
-    const current = available.find(preset => preset.id === currentProviderId);
+  if (currentProviderId && !visible.some((preset) => preset.id === currentProviderId)) {
+    const current = available.find((preset) => preset.id === currentProviderId);
     if (current) visible.push(current);
   }
   return visible;
@@ -104,14 +117,11 @@ function presetLabel(
   t: ReturnType<typeof useTranslation>['t'],
   descriptors: ProviderDescriptor[],
 ): string {
-  const descriptor = descriptors.find(item => item.providerType === providerType);
+  const descriptor = descriptors.find((item) => item.providerType === providerType);
   if (descriptor) return t(`settings.providers.presets.${descriptor.labelKey}`);
-  const list: readonly { id: string; nameKey: string }[] =
-    kind === 'llm' ? LLM_LABELS : ASR_LABELS;
-  const preset = list.find(p => p.id === providerType);
-  return preset
-    ? t(`settings.providers.presets.${preset.nameKey}`)
-    : providerType;
+  const list: readonly { id: string; nameKey: string }[] = kind === 'llm' ? LLM_LABELS : ASR_LABELS;
+  const preset = list.find((p) => p.id === providerType);
+  return preset ? t(`settings.providers.presets.${preset.nameKey}`) : providerType;
 }
 
 /** 卡片上模型那一行读的凭据账户 —— 与 ChannelCredentialFields 里保持一致。 */
@@ -123,10 +133,7 @@ function modelAccountFor(kind: ChannelKind): string {
  * 把后端的错误串压成按钮上放得下的短标签，且要**能指导行动**：
  * 401 是 key 不对、429 是被限流等会儿再说、超时是网络——用户看到才知道该改什么。
  */
-function shortErrorLabel(
-  raw: string | null,
-  t: ReturnType<typeof useTranslation>['t'],
-): string {
+function shortErrorLabel(raw: string | null, t: ReturnType<typeof useTranslation>['t']): string {
   const message = (raw ?? '').trim();
   if (message.startsWith('providerHttpStatus:')) {
     return message.split(':')[1] || t('settings.channels.errGeneric');
@@ -192,13 +199,13 @@ export function ChannelList({
   const autoOpenedRef = useRef(false);
 
   useEffect(() => {
-    void getPlatformCapabilities().then(caps => setSupportsQwen3Mlx(caps.supportsLocalQwen3Mlx));
+    void getPlatformCapabilities().then((caps) => setSupportsQwen3Mlx(caps.supportsLocalQwen3Mlx));
   }, []);
 
   useEffect(() => {
     void listProviderDescriptors(kind)
       .then(setDescriptors)
-      .catch(error => console.error('[channels] failed to load provider descriptors', error));
+      .catch((error) => console.error('[channels] failed to load provider descriptors', error));
   }, [kind]);
 
   const refresh = useCallback(async () => {
@@ -213,7 +220,7 @@ export function ChannelList({
       // 渠道数量是个位数，并发读一轮的开销可以忽略。
       const account = modelAccountFor(kind);
       const entries = await Promise.all(
-        list.map(async channel => {
+        list.map(async (channel) => {
           try {
             return [channel.id, (await readCredential(account, channel.id)) ?? ''] as const;
           } catch {
@@ -261,7 +268,7 @@ export function ChannelList({
   }, [autoCreateWhenEmpty, loaded, channels.length, startCreate]);
 
   // 生效中的那张 = 第一个启用的（列表已按 order 排好）。
-  const activeId = channels.find(c => c.enabled)?.id ?? null;
+  const activeId = channels.find((c) => c.enabled)?.id ?? null;
 
   // ── 卡片上的验证 ──
   // 只在用户点的时候跑：验证是**真实的 API 调用**（LLM 走一次真的润色请求、ASR 会传
@@ -271,7 +278,7 @@ export function ChannelList({
 
   const runTest = async (channel: Channel) => {
     if (testingIds[channel.id]) return;
-    setTestingIds(prev => ({ ...prev, [channel.id]: true }));
+    setTestingIds((prev) => ({ ...prev, [channel.id]: true }));
     const started = performance.now();
     try {
       const result = await validateProviderCredentials(kind, channel.id);
@@ -283,7 +290,6 @@ export function ChannelList({
         result.ok ? latency : null,
         result.ok ? null : 'validateFailed',
       );
-
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       try {
@@ -292,7 +298,7 @@ export function ChannelList({
         console.error('[channels] failed to record test', recordError);
       }
     } finally {
-      setTestingIds(prev => ({ ...prev, [channel.id]: false }));
+      setTestingIds((prev) => ({ ...prev, [channel.id]: false }));
       await refresh();
     }
   };
@@ -389,9 +395,9 @@ export function ChannelList({
       }
     }
     if (!targetId || targetId === dragId) return;
-    setChannels(prev => {
-      const from = prev.findIndex(c => c.id === dragId);
-      const to = prev.findIndex(c => c.id === targetId);
+    setChannels((prev) => {
+      const from = prev.findIndex((c) => c.id === dragId);
+      const to = prev.findIndex((c) => c.id === targetId);
       if (from < 0 || to < 0 || from === to) return prev;
       const next = [...prev];
       next.splice(to, 0, next.splice(from, 1)[0]);
@@ -422,7 +428,7 @@ export function ChannelList({
     setDraggingId(null);
     if (!dragId) return;
     swallowNextClick();
-    const ids = channelsRef.current.map(c => c.id);
+    const ids = channelsRef.current.map((c) => c.id);
     const before = orderAtDragStartRef.current;
     if (ids.length === before.length && ids.every((id, index) => id === before[index])) {
       return; // 顺序没变，不打扰后端
@@ -444,7 +450,7 @@ export function ChannelList({
     event.preventDefault();
     event.stopPropagation();
     dragIdRef.current = id;
-    orderAtDragStartRef.current = channelsRef.current.map(c => c.id);
+    orderAtDragStartRef.current = channelsRef.current.map((c) => c.id);
     setDraggingId(id);
     // 拖动期间整页光标保持 grabbing：指针滑出手柄后也能看出「正在拖」。
     document.body.style.cursor = 'grabbing';
@@ -462,13 +468,15 @@ export function ChannelList({
   };
 
   // 组件卸载（比如关掉设置面板）时别把 window 监听 / grabbing 光标留在外面。
-  useEffect(() => () => {
-    dragCleanupRef.current?.();
-    document.body.style.cursor = '';
-  }, []);
+  useEffect(
+    () => () => {
+      dragCleanupRef.current?.();
+      document.body.style.cursor = '';
+    },
+    [],
+  );
 
-  const editingChannel =
-    channels.find(c => c.id === (draftId ?? editingId)) ?? null;
+  const editingChannel = channels.find((c) => c.id === (draftId ?? editingId)) ?? null;
   const isDraft = draftId != null;
 
   // 弹窗退场门控：closing 动画期间保留最后一次
@@ -477,7 +485,7 @@ export function ChannelList({
   const lastDialogRef = useRef<{ channel: Channel; isDraft: boolean } | null>(null);
   if (editingChannel) lastDialogRef.current = { channel: editingChannel, isDraft };
   const dialogChannel = editingChannel ?? lastDialogRef.current?.channel ?? null;
-  const dialogIsDraft = editingChannel ? isDraft : lastDialogRef.current?.isDraft ?? false;
+  const dialogIsDraft = editingChannel ? isDraft : (lastDialogRef.current?.isDraft ?? false);
 
   const markDraftTouched = () => {
     if (draftId != null) draftTouchedRef.current = true;
@@ -502,83 +510,205 @@ export function ChannelList({
   };
 
   return (
-    <section aria-label={t(`settings.channels.${kind}Title`)} style={{ minWidth: 0, marginBottom: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+    <section
+      aria-label={t(`settings.channels.${kind}Title`)}
+      style={{ minWidth: 0, marginBottom: 24 }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 16,
+          marginBottom: 20,
+        }}
+      >
         <div style={{ flex: '1 1 260px', minWidth: 0 }}>
-          <h2 style={{ margin: 0, color: 'var(--ol-ink)', fontSize: 17, fontWeight: 600 }}>{t(`settings.channels.${kind}Title`)}</h2>
-          <p style={{ margin: '7px 0 0', fontSize: 12, color: 'var(--ol-ink-3)', lineHeight: 1.65 }}>{t('settings.channels.orderHint')}</p>
+          <h2 style={{ margin: 0, color: 'var(--ol-ink)', fontSize: 17, fontWeight: 600 }}>
+            {t(`settings.channels.${kind}Title`)}
+          </h2>
+          <p
+            style={{ margin: '7px 0 0', fontSize: 12, color: 'var(--ol-ink-3)', lineHeight: 1.65 }}
+          >
+            {t('settings.channels.orderHint')}
+          </p>
         </div>
-        <Btn variant="blue" icon="plus" disabled={creatingBusy || presets.length === 0} onClick={() => void startCreate()}>
+        <Btn
+          variant="blue"
+          icon="plus"
+          disabled={creatingBusy || presets.length === 0}
+          onClick={() => void startCreate()}
+        >
           {creatingBusy ? t('common.loading') : t('settings.channels.add')}
         </Btn>
       </div>
 
-      {!loaded && <div role="status" style={emptyStyle}>{t('common.loading')}</div>}
+      {!loaded && (
+        <div role="status" style={emptyStyle}>
+          {t('common.loading')}
+        </div>
+      )}
       {loaded && channels.length === 0 && (
         <div style={emptyStyle}>
-          <Icon name={kind === 'llm' ? 'sparkle' : 'mic'} size={24} style={{ color: 'var(--ol-blue)', marginBottom: 10 }} />
+          <Icon
+            name={kind === 'llm' ? 'sparkle' : 'mic'}
+            size={24}
+            style={{ color: 'var(--ol-blue)', marginBottom: 10 }}
+          />
           <div>{t('settings.channels.empty')}</div>
         </div>
       )}
 
       {/* 生效渠道不再用蓝底 + 左侧竖条（「当前使用」徽章已经说明问题，
           整行染色太花哨）；行改为圆角卡片，选中态只用中性灰底 + 细描边。 */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: channels.length ? 12 : 0 }}>
-        {channels.map(channel => {
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+          paddingTop: channels.length ? 12 : 0,
+        }}
+      >
+        {channels.map((channel) => {
           const isActive = channel.id === activeId;
           const providerLabel = presetLabel(kind, channel.providerType, t, descriptors);
           const label = channel.name.trim() || providerLabel;
           const model = models[channel.id] ?? '';
-          const localEngine = descriptors.find(item => item.providerType === channel.providerType)?.authRequirement === 'none';
+          const localEngine =
+            descriptors.find((item) => item.providerType === channel.providerType)
+              ?.authRequirement === 'none';
           return (
             <div
               key={channel.id}
-              ref={element => {
+              ref={(element) => {
                 if (element) rowsRef.current.set(channel.id, element);
                 else rowsRef.current.delete(channel.id);
               }}
               style={{
-                display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '14px 20px',
-                padding: '14px 12px', borderRadius: 12,
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: '14px 20px',
+                padding: '14px 12px',
+                borderRadius: 12,
                 // 拖动态：轻微抬升（scale + 大阴影 + 强描边 + 提高层级），
                 // 让「哪张在被拖、拖到哪了」一目了然。
                 border: '0.5px solid',
-                borderColor: draggingId === channel.id ? 'var(--ol-line-strong)' : isActive ? 'var(--ol-line)' : 'transparent',
+                borderColor:
+                  draggingId === channel.id
+                    ? 'var(--ol-line-strong)'
+                    : isActive
+                      ? 'var(--ol-line)'
+                      : 'transparent',
                 background: isActive ? 'var(--ol-surface-2)' : 'transparent',
                 position: 'relative',
                 zIndex: draggingId === channel.id ? 2 : undefined,
                 transform: draggingId === channel.id ? 'scale(1.012)' : undefined,
                 boxShadow: draggingId === channel.id ? 'var(--ol-shadow-lg)' : undefined,
                 opacity: draggingId === channel.id ? 0.96 : 1,
-                transition: draggingId ? undefined : 'background 0.16s var(--ol-motion-quick), border-color 0.16s var(--ol-motion-quick), transform 0.18s var(--ol-motion-spring), box-shadow 0.18s var(--ol-motion-soft)',
+                transition: draggingId
+                  ? undefined
+                  : 'background 0.16s var(--ol-motion-quick), border-color 0.16s var(--ol-motion-quick), transform 0.18s var(--ol-motion-spring), box-shadow 0.18s var(--ol-motion-soft)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minWidth: 0, flex: preferenceStack ? '1 1 100%' : '1 1 260px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 10,
+                  minWidth: 0,
+                  flex: preferenceStack ? '1 1 100%' : '1 1 260px',
+                }}
+              >
                 <span
-                  onPointerDown={e => onDragHandleDown(e, channel.id)}
-                  onClick={e => e.stopPropagation()}
+                  onPointerDown={(e) => onDragHandleDown(e, channel.id)}
+                  onClick={(e) => e.stopPropagation()}
                   title={t('settings.channels.dragHint')}
                   aria-label={t('settings.channels.dragHint')}
-                  style={{ color: draggingId === channel.id ? 'var(--ol-ink)' : 'var(--ol-ink-4)', fontSize: 18, flexShrink: 0, cursor: draggingId === channel.id ? 'grabbing' : 'grab', touchAction: 'none', padding: '0 4px', userSelect: 'none', transition: 'color 0.16s var(--ol-motion-quick)' }}
-                >⠿</span>
+                  style={{
+                    color: draggingId === channel.id ? 'var(--ol-ink)' : 'var(--ol-ink-4)',
+                    fontSize: 18,
+                    flexShrink: 0,
+                    cursor: draggingId === channel.id ? 'grabbing' : 'grab',
+                    touchAction: 'none',
+                    padding: '0 4px',
+                    userSelect: 'none',
+                    transition: 'color 0.16s var(--ol-motion-quick)',
+                  }}
+                >
+                  ⠿
+                </span>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ol-ink)', overflowWrap: 'anywhere' }}>{label}</span>
-                    {isActive && <Pill tone="blue" size="sm">{t('settings.channels.current')}</Pill>}
-                    {!channel.enabled && <Pill tone="outline" size="sm">{t('settings.channels.disabled')}</Pill>}
+                    <span
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: 'var(--ol-ink)',
+                        overflowWrap: 'anywhere',
+                      }}
+                    >
+                      {label}
+                    </span>
+                    {isActive && (
+                      <Pill tone="blue" size="sm">
+                        {t('settings.channels.current')}
+                      </Pill>
+                    )}
+                    {!channel.enabled && (
+                      <Pill tone="outline" size="sm">
+                        {t('settings.channels.disabled')}
+                      </Pill>
+                    )}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--ol-ink-3)', marginTop: 6, lineHeight: 1.6, overflowWrap: 'anywhere' }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: 'var(--ol-ink-3)',
+                      marginTop: 6,
+                      lineHeight: 1.6,
+                      overflowWrap: 'anywhere',
+                    }}
+                  >
                     {channel.name.trim() && <span>{providerLabel} · </span>}
                     <span style={{ fontFamily: model ? 'var(--ol-font-mono)' : undefined }}>
-                      {model || t(localEngine ? 'settings.channels.localModelManaged' : 'settings.channels.modelNotSet')}
+                      {model ||
+                        t(
+                          localEngine
+                            ? 'settings.channels.localModelManaged'
+                            : 'settings.channels.modelNotSet',
+                        )}
                     </span>
                   </div>
-                  <ChannelTestResult channel={channel} testing={Boolean(testingIds[channel.id])} t={t} />
+                  <ChannelTestResult
+                    channel={channel}
+                    testing={Boolean(testingIds[channel.id])}
+                    t={t}
+                  />
                 </div>
               </div>
-              <div className={conservative ? 'ol-conservative-stack' : undefined} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginLeft: preferenceStack ? 0 : 30, width: preferenceStack ? '100%' : undefined }}>
-                <Btn size="sm" disabled={Boolean(testingIds[channel.id])} onClick={() => void runTest(channel)}>
-                  {t(testingIds[channel.id] ? 'settings.channels.verifying' : 'settings.channels.verify')}
+              <div
+                className={conservative ? 'ol-conservative-stack' : undefined}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  marginLeft: preferenceStack ? 0 : 30,
+                  width: preferenceStack ? '100%' : undefined,
+                }}
+              >
+                <Btn
+                  size="sm"
+                  disabled={Boolean(testingIds[channel.id])}
+                  onClick={() => void runTest(channel)}
+                >
+                  {t(
+                    testingIds[channel.id]
+                      ? 'settings.channels.verifying'
+                      : 'settings.channels.verify',
+                  )}
                 </Btn>
                 <button
                   type="button"
@@ -588,13 +718,38 @@ export function ChannelList({
                   onClick={() => void onToggle(channel)}
                   style={{ ...ghostBtn, display: 'inline-flex', alignItems: 'center', gap: 7 }}
                 >
-                  <span aria-hidden="true" style={{ width: 24, height: 14, borderRadius: 999, background: channel.enabled ? 'var(--ol-blue)' : 'var(--ol-toggle-off-bg)', position: 'relative' }}>
-                    <span style={{ position: 'absolute', top: 2, left: channel.enabled ? 12 : 2, width: 10, height: 10, borderRadius: 999, background: 'var(--ol-toggle-knob)' }} />
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 24,
+                      height: 14,
+                      borderRadius: 999,
+                      background: channel.enabled ? 'var(--ol-blue)' : 'var(--ol-toggle-off-bg)',
+                      position: 'relative',
+                    }}
+                  >
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: 2,
+                        left: channel.enabled ? 12 : 2,
+                        width: 10,
+                        height: 10,
+                        borderRadius: 999,
+                        background: 'var(--ol-toggle-knob)',
+                      }}
+                    />
                   </span>
                   {t('settings.channels.enabled')}
                 </button>
-                <button type="button" className="ol-channel-edit-button" onClick={() => setEditingId(channel.id)}>
-                  <Icon name="pencil" size={14} />{t('settings.channels.edit')}<Icon name="chevRight" size={14} />
+                <button
+                  type="button"
+                  className="ol-channel-edit-button"
+                  onClick={() => setEditingId(channel.id)}
+                >
+                  <Icon name="pencil" size={14} />
+                  {t('settings.channels.edit')}
+                  <Icon name="chevRight" size={14} />
                 </button>
               </div>
             </div>
@@ -622,7 +777,11 @@ export function ChannelList({
 
 /** Selection and the last manual test are separate facts. The action keeps a
  * stable label; result, elapsed time and age remain readable alongside it. */
-function ChannelTestResult({ channel, testing, t }: {
+function ChannelTestResult({
+  channel,
+  testing,
+  t,
+}: {
   channel: Channel;
   testing: boolean;
   t: ReturnType<typeof useTranslation>['t'];
@@ -632,17 +791,46 @@ function ChannelTestResult({ channel, testing, t }: {
   const passed = last?.ok;
   const elapsed = last?.latencyMs;
   return (
-    <div role="status" style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '3px 8px', marginTop: 7, fontSize: 11.5, lineHeight: 1.6, color: 'var(--ol-ink-3)' }}>
+    <div
+      role="status"
+      style={{
+        display: 'flex',
+        alignItems: 'baseline',
+        flexWrap: 'wrap',
+        gap: '3px 8px',
+        marginTop: 7,
+        fontSize: 11.5,
+        lineHeight: 1.6,
+        color: 'var(--ol-ink-3)',
+      }}
+    >
       <span>{t('settings.channels.lastCheck')}</span>
-      {testing ? <span>{t('settings.channels.verifying')}</span> : !last ? (
+      {testing ? (
+        <span>{t('settings.channels.verifying')}</span>
+      ) : !last ? (
         <span>{t('settings.channels.notVerified')}</span>
       ) : (
         <>
-          <span style={{ color: stale ? 'var(--ol-ink-3)' : passed ? 'var(--ol-ok)' : 'var(--ol-warn)' }}>
-            {passed ? t('settings.channels.passed') : t('settings.channels.failed', { reason: shortErrorLabel(last?.error ?? null, t) })}
+          <span
+            style={{
+              color: stale ? 'var(--ol-ink-3)' : passed ? 'var(--ol-ok)' : 'var(--ol-warn)',
+            }}
+          >
+            {passed
+              ? t('settings.channels.passed')
+              : t('settings.channels.failed', { reason: shortErrorLabel(last?.error ?? null, t) })}
           </span>
-          {passed && elapsed != null && <span>{t('settings.channels.elapsed', { ms: elapsed })}</span>}
-          {last && <time dateTime={new Date(last.at * 1000).toISOString()} title={new Date(last.at * 1000).toLocaleString()}>{relativeTime(last.at, t)}</time>}
+          {passed && elapsed != null && (
+            <span>{t('settings.channels.elapsed', { ms: elapsed })}</span>
+          )}
+          {last && (
+            <time
+              dateTime={new Date(last.at * 1000).toISOString()}
+              title={new Date(last.at * 1000).toLocaleString()}
+            >
+              {relativeTime(last.at, t)}
+            </time>
+          )}
           {stale && <span>{t('settings.channels.staleResult')}</span>}
         </>
       )}
@@ -670,7 +858,9 @@ export function ProvidersSection({
     <>
       {kind === 'all' && <OmniChannelSection />}
       {kind === 'all' && !multimodalMode && (
-        <div style={{ fontSize: 11.5, color: 'var(--ol-ink-4)', lineHeight: 1.6, marginBottom: 10 }}>
+        <div
+          style={{ fontSize: 11.5, color: 'var(--ol-ink-4)', lineHeight: 1.6, marginBottom: 10 }}
+        >
           {t('settings.providers.credentialStorageNotice')}
         </div>
       )}
@@ -732,10 +922,17 @@ function ChannelModal({
   useEffect(() => {
     const opener = document.activeElement;
     const dialog = dialogRef.current;
-    const parentDialog = opener instanceof HTMLElement ? opener.closest<HTMLElement>('[role="dialog"]') : null;
-    const background = embedded ? editorHost?.background : parentDialog !== dialog ? parentDialog : null;
+    const parentDialog =
+      opener instanceof HTMLElement ? opener.closest<HTMLElement>('[role="dialog"]') : null;
+    const background = embedded
+      ? editorHost?.background
+      : parentDialog !== dialog
+        ? parentDialog
+        : null;
     const wasInert = background?.inert ?? false;
-    (dialog?.querySelector<HTMLElement>('[role="combobox"], input:not([disabled])') ?? dialog)?.focus();
+    (
+      dialog?.querySelector<HTMLElement>('[role="combobox"], input:not([disabled])') ?? dialog
+    )?.focus();
     // Keep body-portaled provider menus accessible while disabling the covered
     // settings surface. aria-modal would hide those existing sibling portals.
     if (background) background.inert = true;
@@ -750,7 +947,8 @@ function ChannelModal({
   const onDialogKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const dialog = dialogRef.current;
     if (!dialog || event.defaultPrevented) return;
-    if (event.target instanceof Element && event.target.closest('[role="dialog"]') !== dialog) return;
+    if (event.target instanceof Element && event.target.closest('[role="dialog"]') !== dialog)
+      return;
     if (event.key === 'Escape') {
       // SelectLite handles its open menu first. Never close both layers at once.
       if (dialog.querySelector('[role="combobox"][aria-expanded="true"]')) return;
@@ -758,15 +956,20 @@ function ChannelModal({
       event.stopPropagation();
       requestClose();
     } else if (event.key === 'Tab') {
-      const controls = Array.from(dialog.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
-      )).filter(element => element.tabIndex >= 0 && element.getClientRects().length > 0);
+      const controls = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => element.tabIndex >= 0 && element.getClientRects().length > 0);
       const first = controls[0];
       const last = controls[controls.length - 1];
       if (!first) {
         event.preventDefault();
         dialog.focus();
-      } else if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog)) {
+      } else if (
+        event.shiftKey &&
+        (document.activeElement === first || document.activeElement === dialog)
+      ) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
@@ -775,7 +978,6 @@ function ChannelModal({
       }
     }
   };
-
 
   const saveName = async () => {
     if (name.trim() === channel.name.trim()) return;
@@ -793,7 +995,7 @@ function ChannelModal({
   // OpenAI 兼容（baseUrl/model 为空）自然跳过。失败只记日志，不影响换厂商本身。
   const fillProviderDefaults = async (next: string) => {
     try {
-      const preset = presets.find(item => item.id === next);
+      const preset = presets.find((item) => item.id === next);
       if (!preset) return;
       const endpointAccount = kind === 'llm' ? 'ark.endpoint' : 'asr.endpoint';
       const modelAccount = kind === 'llm' ? 'ark.model_id' : 'asr.model';
@@ -834,32 +1036,65 @@ function ChannelModal({
     }
   };
 
-  const descriptor = presets.find(item => item.id === providerType);
+  const descriptor = presets.find((item) => item.id === providerType);
   const isLocalEngine = descriptor?.authRequirement === 'none';
 
   const content = (
-      <div ref={dialogRef} className={`ol-channel-dialog${embedded ? ' ol-channel-dialog-embedded' : ''}`} data-closing={closing ? 'true' : undefined} role="dialog" aria-label={t(isDraft ? 'settings.channels.createTitle' : 'settings.channels.editTitle')} tabIndex={-1} onKeyDown={onDialogKeyDown}>
-        <header className="ol-channel-dialog-header">
-          {embedded ? <button type="button" className="ol-settings-back" onClick={requestClose} aria-label={t('settings.channels.backToList')} title={t('settings.channels.backToList')}><Icon name="chevLeft" size={19} /></button>
-            : <span className="ol-channel-dialog-icon"><Icon name={kind === 'llm' ? 'style' : 'mic'} size={22} /></span>}
-          <div className="ol-channel-dialog-heading">
-            <div className="ol-channel-dialog-title">
-              <h2>{t(isDraft ? 'settings.channels.createTitle' : 'settings.channels.editTitle')}</h2>
-              <span>{t(`settings.channels.${kind}Title`)}</span>
-            </div>
-            <p>{t('settings.channels.autoSaveHint')}</p>
+    <div
+      ref={dialogRef}
+      className={`ol-channel-dialog${embedded ? ' ol-channel-dialog-embedded' : ''}`}
+      data-closing={closing ? 'true' : undefined}
+      role="dialog"
+      aria-label={t(isDraft ? 'settings.channels.createTitle' : 'settings.channels.editTitle')}
+      tabIndex={-1}
+      onKeyDown={onDialogKeyDown}
+    >
+      <header className="ol-channel-dialog-header">
+        {embedded ? (
+          <button
+            type="button"
+            className="ol-settings-back"
+            onClick={requestClose}
+            aria-label={t('settings.channels.backToList')}
+            title={t('settings.channels.backToList')}
+          >
+            <Icon name="chevLeft" size={19} />
+          </button>
+        ) : (
+          <span className="ol-channel-dialog-icon">
+            <Icon name={kind === 'llm' ? 'style' : 'mic'} size={22} />
+          </span>
+        )}
+        <div className="ol-channel-dialog-heading">
+          <div className="ol-channel-dialog-title">
+            <h2>{t(isDraft ? 'settings.channels.createTitle' : 'settings.channels.editTitle')}</h2>
+            <span>{t(`settings.channels.${kind}Title`)}</span>
           </div>
-          {!embedded && <button type="button" className="ol-channel-dialog-close" onClick={requestClose} aria-label={t('common.close')}><Icon name="close" size={18} /></button>}
-        </header>
+          <p>{t('settings.channels.autoSaveHint')}</p>
+        </div>
+        {!embedded && (
+          <button
+            type="button"
+            className="ol-channel-dialog-close"
+            onClick={requestClose}
+            aria-label={t('common.close')}
+          >
+            <Icon name="close" size={18} />
+          </button>
+        )}
+      </header>
 
-        <div className="ol-channel-dialog-body ol-thinscroll">
-          <div className="ol-channel-form-sheet">
+      <div className="ol-channel-dialog-body ol-thinscroll">
+        <div className="ol-channel-form-sheet">
           <ChannelSectionHeading icon="cloud" title={t('settings.channels.connectionTitle')} />
           <ChannelFormRow label={t('settings.channels.providerLabel')}>
             <SelectLite
               value={providerType}
-              onChange={next => void changeProvider(next)}
-              options={presets.map(p => ({ value: p.id, label: t(`settings.providers.presets.${p.nameKey}`) }))}
+              onChange={(next) => void changeProvider(next)}
+              options={presets.map((p) => ({
+                value: p.id,
+                label: t(`settings.providers.presets.${p.nameKey}`),
+              }))}
               ariaLabel={t('settings.channels.providerLabel')}
               style={{ ...inputStyle, width: '100%', maxWidth: '100%', height: 38 }}
             />
@@ -868,7 +1103,10 @@ function ChannelModal({
             <input
               id={nameId}
               value={name}
-              onChange={e => { onUserMutation(); setName(e.target.value); }}
+              onChange={(e) => {
+                onUserMutation();
+                setName(e.target.value);
+              }}
               onBlur={() => void saveName()}
               placeholder={t('settings.channels.namePlaceholder')}
               style={{ ...inputStyle, width: '100%', maxWidth: '100%', height: 38 }}
@@ -886,38 +1124,75 @@ function ChannelModal({
             onTested={() => void onChanged()}
             onUserMutation={onUserMutation}
           />
-          {isLocalEngine && <p className="ol-channel-local-hint">{t('settings.channels.localEngineModelHint')}</p>}
-          </div>
-        </div>
-
-        <footer className="ol-channel-dialog-footer">
-          {confirmDelete ? (
-            <div className="ol-channel-delete-confirm" role="group" aria-label={t('settings.channels.delete')}>
-              <p>{t('settings.channels.deleteConfirm')}</p>
-              <button type="button" autoFocus className="ol-channel-delete-button" onClick={() => void remove()}><Icon name="trash" size={15} />{t('settings.channels.confirmDelete')}</button>
-              <button type="button" onClick={() => setConfirmDelete(false)} style={ghostBtn}>{t('common.cancel')}</button>
-            </div>
-          ) : (
-            <button type="button" className="ol-channel-delete-button" onClick={() => setConfirmDelete(true)}><Icon name="trash" size={15} />{t('settings.channels.delete')}</button>
+          {isLocalEngine && (
+            <p className="ol-channel-local-hint">{t('settings.channels.localEngineModelHint')}</p>
           )}
-          <div className="ol-channel-dialog-footer-end">
-            <span className="ol-channel-autosave-hint">{t('modal.autoSaveHint')}</span>
-            <Btn variant={embedded ? 'primary' : 'blue'} onClick={requestClose}>{t(embedded ? 'settings.channels.done' : 'common.close')}</Btn>
-          </div>
-        </footer>
+        </div>
       </div>
+
+      <footer className="ol-channel-dialog-footer">
+        {confirmDelete ? (
+          <div
+            className="ol-channel-delete-confirm"
+            role="group"
+            aria-label={t('settings.channels.delete')}
+          >
+            <p>{t('settings.channels.deleteConfirm')}</p>
+            <button
+              type="button"
+              autoFocus
+              className="ol-channel-delete-button"
+              onClick={() => void remove()}
+            >
+              <Icon name="trash" size={15} />
+              {t('settings.channels.confirmDelete')}
+            </button>
+            <button type="button" onClick={() => setConfirmDelete(false)} style={ghostBtn}>
+              {t('common.cancel')}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="ol-channel-delete-button"
+            onClick={() => setConfirmDelete(true)}
+          >
+            <Icon name="trash" size={15} />
+            {t('settings.channels.delete')}
+          </button>
+        )}
+        <div className="ol-channel-dialog-footer-end">
+          <span className="ol-channel-autosave-hint">{t('modal.autoSaveHint')}</span>
+          <Btn variant={embedded ? 'primary' : 'blue'} onClick={requestClose}>
+            {t(embedded ? 'settings.channels.done' : 'common.close')}
+          </Btn>
+        </div>
+      </footer>
+    </div>
   );
-  return embedded ? createPortal(content, editorHost!.container!) : (
-    <Modal onClose={requestClose} zIndex={1000} closing={closing} width={mobile ? '100%' : 'min(840px, 100%)'} style={{ padding: 0, overflow: 'hidden', maxHeight: 'calc(100dvh - 40px)' }}>
+  return embedded ? (
+    createPortal(content, editorHost!.container!)
+  ) : (
+    <Modal
+      onClose={requestClose}
+      zIndex={1000}
+      closing={closing}
+      width={mobile ? '100%' : 'min(840px, 100%)'}
+      style={{ padding: 0, overflow: 'hidden', maxHeight: 'calc(100dvh - 40px)' }}
+    >
       {content}
     </Modal>
   );
 }
 
 const emptyStyle: CSSProperties = {
-  padding: '28px 20px', textAlign: 'center', fontSize: 13,
-  color: 'var(--ol-ink-3)', lineHeight: 1.7,
-  borderTop: '1px solid var(--ol-line)', borderBottom: '1px solid var(--ol-line)',
+  padding: '28px 20px',
+  textAlign: 'center',
+  fontSize: 13,
+  color: 'var(--ol-ink-3)',
+  lineHeight: 1.7,
+  borderTop: '1px solid var(--ol-line)',
+  borderBottom: '1px solid var(--ol-line)',
 };
 
 const ghostBtn: CSSProperties = {

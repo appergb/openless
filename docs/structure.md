@@ -64,3 +64,11 @@ Core 其余模块按领域列于 [架构模块地图](architecture.md)。平台�
 | `node_modules/`、`dist/`、各 `target/` | 依赖和构建产物，不作为源码或 docs 的事实来源 |
 
 检查命令集中在 [架构的验证入口](architecture.md)，版本与发布流程集中在 [RELEASING.md](../RELEASING.md)。不要在目录说明中复制易变的命令数量、分支领先数或单次测试结果。
+
+## 源码格式与注释
+
+应用目录的 `.editorconfig` 定义基础缩进和换行。TypeScript、JavaScript、CSS、HTML、JSON 与 shell 使用锁定版本的 Prettier，执行 `npm run format` 修改格式，执行 `npm run format:check` 检查。配置见 `.prettierrc.json`；生成文件和第三方源码不参与格式化。
+
+Rust 使用 rustfmt，分别覆盖根 workspace、`src-tauri/Cargo.toml` 与 `src-tauri/backend-tests/Cargo.toml`。C/C++ 使用 clang-format 23，遵循应用目录的 `.clang-format`。Android 手写 Kotlin 使用 ktfmt 0.64 的 `--kotlinlang-style --do-not-remove-unused-imports` 选项。
+
+注释说明当前职责、调用约束、生命周期与失败处理；涉及 FFI 时写明所有权和 ABI 前提。已完成任务的过程说明、失效文档引用及重复代码含义的注释应删除。对协议兼容或平台限制的说明保留必要依据。

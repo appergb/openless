@@ -13,7 +13,19 @@ export function sanitizeStyleSvg(source: string): string {
   }
   const clean = DOMPurify.sanitize(source, {
     USE_PROFILES: { svg: true, svgFilters: true },
-    FORBID_TAGS: ['script', 'foreignObject', 'image', 'feImage', 'iframe', 'object', 'embed', 'animate', 'animateMotion', 'animateTransform', 'set'],
+    FORBID_TAGS: [
+      'script',
+      'foreignObject',
+      'image',
+      'feImage',
+      'iframe',
+      'object',
+      'embed',
+      'animate',
+      'animateMotion',
+      'animateTransform',
+      'set',
+    ],
   });
   const svg = new DOMParser().parseFromString(clean, 'image/svg+xml').documentElement;
   if (svg.localName !== 'svg') throw new Error('invalidSvg');
@@ -32,7 +44,8 @@ export function sanitizeStyleSvg(source: string): string {
   if (!svg.hasAttribute('viewBox')) {
     const width = Number.parseFloat(svg.getAttribute('width') ?? '24');
     const height = Number.parseFloat(svg.getAttribute('height') ?? '24');
-    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) throw new Error('invalidSvg');
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0)
+      throw new Error('invalidSvg');
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   }
   svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
@@ -43,13 +56,21 @@ export function sanitizeStyleSvg(source: string): string {
 }
 
 function hasExternalCssReference(value: string): boolean {
-  return /@import/i.test(value) || Array.from(value.matchAll(/url\s*\(\s*(['"]?)(.*?)\1\s*\)/gi))
-    .some(match => !match[2].trim().startsWith('#'));
+  return (
+    /@import/i.test(value) ||
+    Array.from(value.matchAll(/url\s*\(\s*(['"]?)(.*?)\1\s*\)/gi)).some(
+      (match) => !match[2].trim().startsWith('#'),
+    )
+  );
 }
 
 /** 转成风格包已有的 PNG 资源格式；128px 输出仍须满足 Core 的 64 KiB 上限。 */
 export async function rasterizeStyleSvg(file: File): Promise<number[]> {
-  if (!file.name.toLowerCase().endsWith('.svg') || (file.type && file.type !== 'image/svg+xml') || file.size > MAX_SVG_BYTES) {
+  if (
+    !file.name.toLowerCase().endsWith('.svg') ||
+    (file.type && file.type !== 'image/svg+xml') ||
+    file.size > MAX_SVG_BYTES
+  ) {
     throw new Error('invalidSvg');
   }
   const svg = sanitizeStyleSvg(await file.text());
@@ -64,7 +85,7 @@ export async function rasterizeStyleSvg(file: File): Promise<number[]> {
     if (!context) throw new Error('invalidSvg');
     context.drawImage(image, 0, 0, ICON_SIZE, ICON_SIZE);
     const encoded = canvas.toDataURL('image/png').split(',')[1];
-    const bytes = Array.from(atob(encoded), character => character.charCodeAt(0));
+    const bytes = Array.from(atob(encoded), (character) => character.charCodeAt(0));
     if (bytes.length > MAX_PNG_BYTES) throw new Error('invalidSvg');
     return bytes;
   } finally {
@@ -74,5 +95,9 @@ export async function rasterizeStyleSvg(file: File): Promise<number[]> {
 
 /** 图片仅通过 img 展示；拒绝可执行类型和超过资源上限的返回值。 */
 export function isStyleIconDataUrl(value: string | null): value is string {
-  return value !== null && value.length < 90_000 && /^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(value);
+  return (
+    value !== null &&
+    value.length < 90_000 &&
+    /^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(value)
+  );
 }

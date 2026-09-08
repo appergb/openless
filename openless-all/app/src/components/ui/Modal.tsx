@@ -21,7 +21,14 @@ interface ModalProps {
   closing?: boolean;
 }
 
-export function Modal({ children, onClose, zIndex = 50, width = 'min(560px, 100%)', style, closing = false }: ModalProps) {
+export function Modal({
+  children,
+  onClose,
+  zIndex = 50,
+  width = 'min(560px, 100%)',
+  style,
+  closing = false,
+}: ModalProps) {
   // Portal 到 document.body：弹窗常从设置 / 市场等面板内部触发，而窗口 chrome
   // （WindowChrome）和页面容器带常驻 `will-change: transform`，会创建 containing
   // block —— 直接渲染的话 backdrop 的 `position: fixed` 会相对那个祖先而非视口定位，
@@ -38,11 +45,13 @@ export function Modal({ children, onClose, zIndex = 50, width = 'min(560px, 100%
         placeItems: 'center',
         zIndex,
         padding: 20,
-        animation: closing ? 'ol-modal-backdrop-in 0.18s var(--ol-motion-soft) reverse both' : 'ol-modal-backdrop-in 0.18s var(--ol-motion-soft)',
+        animation: closing
+          ? 'ol-modal-backdrop-in 0.18s var(--ol-motion-soft) reverse both'
+          : 'ol-modal-backdrop-in 0.18s var(--ol-motion-soft)',
       }}
     >
       <div
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
         style={{
           width,
           maxHeight: '85vh',
@@ -52,7 +61,9 @@ export function Modal({ children, onClose, zIndex = 50, width = 'min(560px, 100%
           border: '0.5px solid var(--ol-line-strong)',
           boxShadow: '0 18px 42px rgba(0,0,0,0.18)',
           padding: 22,
-          animation: closing ? 'ol-modal-card-in 0.18s var(--ol-motion-soft) reverse both' : 'ol-modal-card-in 0.24s var(--ol-motion-spring)',
+          animation: closing
+            ? 'ol-modal-card-in 0.18s var(--ol-motion-soft) reverse both'
+            : 'ol-modal-card-in 0.24s var(--ol-motion-spring)',
           ...style,
         }}
       >

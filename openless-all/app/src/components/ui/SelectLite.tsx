@@ -93,10 +93,7 @@ export function SelectLite({
   // 而且整轮发生在 paint 之前——见下方 useLayoutEffect 注释。
   const [popoverMounted, setPopoverMounted] = useState(false);
 
-  const selected = useMemo(
-    () => options.find(opt => opt.value === value),
-    [options, value],
-  );
+  const selected = useMemo(() => options.find((opt) => opt.value === value), [options, value]);
   const displayLabel = selected?.label ?? placeholder ?? '';
 
   const positionPopover = useCallback(() => {
@@ -197,8 +194,8 @@ export function SelectLite({
 
   const openMenu = () => {
     if (disabled) return;
-    const initial = options.findIndex(opt => opt.value === value && !opt.disabled);
-    setHighlight(initial >= 0 ? initial : options.findIndex(opt => !opt.disabled));
+    const initial = options.findIndex((opt) => opt.value === value && !opt.disabled);
+    setHighlight(initial >= 0 ? initial : options.findIndex((opt) => !opt.disabled));
     setLeaving(false);
     setOpen(true);
     onOpenChange?.(true);
@@ -239,7 +236,12 @@ export function SelectLite({
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
     if (disabled) return;
     if (!open) {
-      if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter' || event.key === ' ') {
+      if (
+        event.key === 'ArrowDown' ||
+        event.key === 'ArrowUp' ||
+        event.key === 'Enter' ||
+        event.key === ' '
+      ) {
         event.preventDefault();
         openMenu();
       }
@@ -306,83 +308,88 @@ export function SelectLite({
         </span>
         <Icon name="chevDown" size={11} />
       </button>
-      {open && anchor && createPortal(
-        <div
-          ref={setPopoverRef}
-          id={listboxId}
-          role="listbox"
-          aria-label={ariaLabel}
-          style={{
-            position: 'fixed',
-            left: anchor.left,
-            top: anchor.top,
-            // 锁到 trigger 宽（不是 minWidth），避免 content 撑大让 popover 跑出
-            // trigger 范围；长 label 走 textOverflow:ellipsis 截断。
-            width: anchor.width,
-            maxHeight: 280,
-            overflowY: 'auto',
-            padding: 4,
-            borderRadius: 10,
-            border: '0.5px solid var(--ol-select-popover-border)',
-            background: 'var(--ol-select-popover-bg)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            boxShadow: 'var(--ol-select-popover-shadow)',
-            zIndex: 9999,
-            fontFamily: 'inherit',
-            fontSize: 13.5,
-            animation: leaving
-              ? 'ol-select-pop-out .14s cubic-bezier(.4,.0,.7,.2) forwards'
-              : 'ol-select-pop .14s var(--ol-motion-quick) both',
-            transformOrigin: 'top center',
-          }}
-        >
-          {options.map((option, index) => {
-            const isSelected = option.value === value;
-            const isHighlighted = index === highlight;
-            return (
-              <div
-                key={option.value || `__opt_${index}`}
-                id={`${listboxId}-${index}`}
-                data-option-index={index}
-                role="option"
-                aria-selected={isSelected}
-                aria-disabled={option.disabled}
-                onMouseEnter={() => !option.disabled && setHighlight(index)}
-                onMouseDown={event => {
-                  event.preventDefault();
-                  selectIndex(index);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '7px 10px',
-                  borderRadius: 6,
-                  cursor: option.disabled ? 'not-allowed' : 'default',
-                  opacity: option.disabled ? 0.45 : 1,
-                  background: isHighlighted && !option.disabled
-                    ? 'var(--ol-select-option-hover-bg)'
-                    : 'transparent',
-                  color: isSelected ? 'var(--ol-blue)' : 'var(--ol-ink)',
-                  fontWeight: isSelected ? 600 : 500,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  transition: 'background 0.10s var(--ol-motion-quick)',
-                }}
-              >
-                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {option.label}
-                </span>
-                {option.trailing}
-                {isSelected && <Icon name="check" size={12} />}
-              </div>
-            );
-          })}
-        </div>,
-        document.body,
-      )}
+      {open &&
+        anchor &&
+        createPortal(
+          <div
+            ref={setPopoverRef}
+            id={listboxId}
+            role="listbox"
+            aria-label={ariaLabel}
+            style={{
+              position: 'fixed',
+              left: anchor.left,
+              top: anchor.top,
+              // 锁到 trigger 宽（不是 minWidth），避免 content 撑大让 popover 跑出
+              // trigger 范围；长 label 走 textOverflow:ellipsis 截断。
+              width: anchor.width,
+              maxHeight: 280,
+              overflowY: 'auto',
+              padding: 4,
+              borderRadius: 10,
+              border: '0.5px solid var(--ol-select-popover-border)',
+              background: 'var(--ol-select-popover-bg)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              boxShadow: 'var(--ol-select-popover-shadow)',
+              zIndex: 9999,
+              fontFamily: 'inherit',
+              fontSize: 13.5,
+              animation: leaving
+                ? 'ol-select-pop-out .14s cubic-bezier(.4,.0,.7,.2) forwards'
+                : 'ol-select-pop .14s var(--ol-motion-quick) both',
+              transformOrigin: 'top center',
+            }}
+          >
+            {options.map((option, index) => {
+              const isSelected = option.value === value;
+              const isHighlighted = index === highlight;
+              return (
+                <div
+                  key={option.value || `__opt_${index}`}
+                  id={`${listboxId}-${index}`}
+                  data-option-index={index}
+                  role="option"
+                  aria-selected={isSelected}
+                  aria-disabled={option.disabled}
+                  onMouseEnter={() => !option.disabled && setHighlight(index)}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    selectIndex(index);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '7px 10px',
+                    borderRadius: 6,
+                    cursor: option.disabled ? 'not-allowed' : 'default',
+                    opacity: option.disabled ? 0.45 : 1,
+                    background:
+                      isHighlighted && !option.disabled
+                        ? 'var(--ol-select-option-hover-bg)'
+                        : 'transparent',
+                    color: isSelected ? 'var(--ol-blue)' : 'var(--ol-ink)',
+                    fontWeight: isSelected ? 600 : 500,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    transition: 'background 0.10s var(--ol-motion-quick)',
+                  }}
+                >
+                  <span
+                    style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}
+                  >
+                    {option.label}
+                  </span>
+                  {option.trailing}
+                  {isSelected && <Icon name="check" size={12} />}
+                </div>
+              );
+            })}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

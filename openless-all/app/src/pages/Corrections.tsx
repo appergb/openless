@@ -62,7 +62,7 @@ export function Corrections() {
     try {
       setError(null);
       const rule = await addCorrectionRule(pattern, replacement);
-      setRules(prev => [rule, ...prev]);
+      setRules((prev) => [rule, ...prev]);
       setRulePatternDraft('');
       setRuleReplacementDraft('');
     } catch (err) {
@@ -73,14 +73,14 @@ export function Corrections() {
   const onRemoveCorrectionRule = async (id: string) => {
     try {
       await removeCorrectionRule(id);
-      setRules(prev => prev.filter(r => r.id !== id));
+      setRules((prev) => prev.filter((r) => r.id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
   };
 
   const onRemoveAllLearnedRules = async () => {
-    const learned = rules.filter(r => r.source === 'learned');
+    const learned = rules.filter((r) => r.source === 'learned');
     if (learned.length === 0) return;
     // 逐条删而不是加一个新的批量后端命令：规则数量是几十条量级，为此多开一条 IPC
     // 不值得，而且逐条删失败一条也不影响其余。
@@ -93,21 +93,19 @@ export function Corrections() {
         setError(e instanceof Error ? e.message : String(e));
       }
     }
-    setRules(prev => prev.filter(r => !removed.includes(r.id)));
+    setRules((prev) => prev.filter((r) => !removed.includes(r.id)));
   };
 
-  const learnedRuleCount = rules.filter(r => r.source === 'learned').length;
-  const visibleRules = onlyLearnedRules
-    ? rules.filter(r => r.source === 'learned')
-    : rules;
+  const learnedRuleCount = rules.filter((r) => r.source === 'learned').length;
+  const visibleRules = onlyLearnedRules ? rules.filter((r) => r.source === 'learned') : rules;
 
   const onToggleCorrectionRule = async (rule: CorrectionRule) => {
     const next = !rule.enabled;
-    setRules(prev => prev.map(r => (r.id === rule.id ? { ...r, enabled: next } : r)));
+    setRules((prev) => prev.map((r) => (r.id === rule.id ? { ...r, enabled: next } : r)));
     try {
       await setCorrectionRuleEnabled(rule.id, next);
     } catch (err) {
-      setRules(prev => prev.map(r => (r.id === rule.id ? { ...r, enabled: rule.enabled } : r)));
+      setRules((prev) => prev.map((r) => (r.id === rule.id ? { ...r, enabled: rule.enabled } : r)));
       setError(err instanceof Error ? err.message : String(err));
     }
   };
@@ -119,35 +117,75 @@ export function Corrections() {
         desc={t('vocab.corrections.tip')}
         right={
           <div style={{ display: 'flex', gap: 8 }}>
-            <Btn icon="refresh" variant="ghost" size="sm" onClick={() => void refresh()}>{t('common.refresh')}</Btn>
+            <Btn icon="refresh" variant="ghost" size="sm" onClick={() => void refresh()}>
+              {t('common.refresh')}
+            </Btn>
           </div>
         }
       />
       <Card>
         <div style={{ display: 'grid', gap: 10 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : 'minmax(0, 1fr) auto minmax(0, 1fr) auto', gap: 8, alignItems: mobile ? 'stretch' : 'center' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: mobile ? '1fr' : 'minmax(0, 1fr) auto minmax(0, 1fr) auto',
+              gap: 8,
+              alignItems: mobile ? 'stretch' : 'center',
+            }}
+          >
             <input
               value={rulePatternDraft}
-              onChange={e => setRulePatternDraft(e.target.value)}
+              onChange={(e) => setRulePatternDraft(e.target.value)}
               placeholder={t('vocab.corrections.patternPlaceholder')}
-              style={{ height: 32, padding: '0 10px', border: '0.5px solid var(--ol-line-strong)', borderRadius: 8, background: 'var(--ol-surface-2)', fontFamily: 'inherit', fontSize: 13 }}
+              style={{
+                height: 32,
+                padding: '0 10px',
+                border: '0.5px solid var(--ol-line-strong)',
+                borderRadius: 8,
+                background: 'var(--ol-surface-2)',
+                fontFamily: 'inherit',
+                fontSize: 13,
+              }}
             />
             {!mobile && <span style={{ color: 'var(--ol-ink-4)', fontSize: 12 }}>→</span>}
             <input
               value={ruleReplacementDraft}
-              onChange={e => setRuleReplacementDraft(e.target.value)}
+              onChange={(e) => setRuleReplacementDraft(e.target.value)}
               placeholder={t('vocab.corrections.replacementPlaceholder')}
-              style={{ height: 32, padding: '0 10px', border: '0.5px solid var(--ol-line-strong)', borderRadius: 8, background: 'var(--ol-surface-2)', fontFamily: 'inherit', fontSize: 13 }}
+              style={{
+                height: 32,
+                padding: '0 10px',
+                border: '0.5px solid var(--ol-line-strong)',
+                borderRadius: 8,
+                background: 'var(--ol-surface-2)',
+                fontFamily: 'inherit',
+                fontSize: 13,
+              }}
             />
-            <Btn size="sm" variant="primary" onClick={() => void onAddCorrectionRule()} style={mobile ? { justifySelf: 'start' } : undefined}>{t('common.add')}</Btn>
+            <Btn
+              size="sm"
+              variant="primary"
+              onClick={() => void onAddCorrectionRule()}
+              style={mobile ? { justifySelf: 'start' } : undefined}
+            >
+              {t('common.add')}
+            </Btn>
           </div>
           {learnedRuleCount > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--ol-ink-3)' }}>
+              <label
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: 12,
+                  color: 'var(--ol-ink-3)',
+                }}
+              >
                 <input
                   type="checkbox"
                   checked={onlyLearnedRules}
-                  onChange={e => setOnlyLearnedRules(e.target.checked)}
+                  onChange={(e) => setOnlyLearnedRules(e.target.checked)}
                 />
                 {t('vocab.corrections.onlyLearned', { count: learnedRuleCount })}
               </label>
@@ -159,11 +197,20 @@ export function Corrections() {
           {error && (
             <div style={{ fontSize: 12, color: 'var(--ol-err)', lineHeight: 1.6 }}>{error}</div>
           )}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, minHeight: visibleRules.length ? undefined : 20 }}>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              minHeight: visibleRules.length ? undefined : 20,
+            }}
+          >
             {visibleRules.length === 0 && (
-              <span style={{ fontSize: 12, color: 'var(--ol-ink-4)' }}>{t('vocab.corrections.empty')}</span>
+              <span style={{ fontSize: 12, color: 'var(--ol-ink-4)' }}>
+                {t('vocab.corrections.empty')}
+              </span>
             )}
-            {visibleRules.map(rule => (
+            {visibleRules.map((rule) => (
               <CorrectionRuleChip
                 key={rule.id}
                 rule={rule}
@@ -190,7 +237,9 @@ function CorrectionRuleChip({ rule, onToggle, onRemove }: CorrectionRuleChipProp
   return (
     <span
       style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
         padding: '5px 8px 5px 10px',
         borderRadius: 999,
         border: '0.5px solid var(--ol-line-strong)',
@@ -203,7 +252,14 @@ function CorrectionRuleChip({ rule, onToggle, onRemove }: CorrectionRuleChipProp
       <button
         onClick={onToggle}
         title={enabled ? t('vocab.corrections.tipDisabled') : t('vocab.corrections.tipEnabled')}
-        style={{ background: 'transparent', border: 0, padding: 0, color: 'inherit', fontFamily: 'inherit', cursor: 'default' }}
+        style={{
+          background: 'transparent',
+          border: 0,
+          padding: 0,
+          color: 'inherit',
+          fontFamily: 'inherit',
+          cursor: 'default',
+        }}
       >
         {rule.pattern} → {rule.replacement}
       </button>
@@ -211,9 +267,13 @@ function CorrectionRuleChip({ rule, onToggle, onRemove }: CorrectionRuleChipProp
         <span
           title={t('vocab.corrections.learnedTip')}
           style={{
-            padding: '1px 5px', borderRadius: 4, fontSize: 10,
-            background: 'var(--ol-blue-soft)', color: 'var(--ol-ink-3)',
-            fontFamily: 'inherit', letterSpacing: 0.2,
+            padding: '1px 5px',
+            borderRadius: 4,
+            fontSize: 10,
+            background: 'var(--ol-blue-soft)',
+            color: 'var(--ol-ink-3)',
+            fontFamily: 'inherit',
+            letterSpacing: 0.2,
           }}
         >
           {t('vocab.corrections.learnedBadge')}
@@ -222,7 +282,15 @@ function CorrectionRuleChip({ rule, onToggle, onRemove }: CorrectionRuleChipProp
       <button
         onClick={onRemove}
         aria-label={t('vocab.corrections.removeAria')}
-        style={{ width: 18, height: 18, borderRadius: 999, border: 0, background: 'var(--ol-control-muted)', color: 'var(--ol-ink-4)', cursor: 'default' }}
+        style={{
+          width: 18,
+          height: 18,
+          borderRadius: 999,
+          border: 0,
+          background: 'var(--ol-control-muted)',
+          color: 'var(--ol-ink-4)',
+          cursor: 'default',
+        }}
       >
         ×
       </button>

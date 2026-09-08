@@ -21,7 +21,7 @@ export function MultimodalPipelineSection() {
   }
 
   const onToggle = (multimodalPipelineEnabled: boolean) => {
-    void updatePrefs({ ...prefs, multimodalPipelineEnabled }).catch(error => {
+    void updatePrefs({ ...prefs, multimodalPipelineEnabled }).catch((error) => {
       console.error('[settings] failed to update multimodal pipeline flag', error);
     });
   };

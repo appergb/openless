@@ -39,7 +39,7 @@ interface OverviewProps {
 // id → i18n nameKey；这里只保留展示文案，provider 行为来自 Core descriptor。
 // （之前漏了 bailian-qwen3-realtime / apple-speech，会退化成显示裸 id）。
 const ASR_NAME_KEY_BY_ID: Record<string, string> = Object.fromEntries(
-  ASR_LABELS.map(p => [p.id, p.nameKey]),
+  ASR_LABELS.map((p) => [p.id, p.nameKey]),
 );
 
 const LLM_NAME_KEY_BY_ID: Record<string, string> = {
@@ -81,11 +81,11 @@ export function Overview({ onOpenHistory, onOpenSettings }: OverviewProps) {
     historyRequestSeq.current = requestSeq;
     setHistoryError(false);
     listHistory()
-      .then(entries => {
+      .then((entries) => {
         if (requestSeq !== historyRequestSeq.current) return;
         setHistory(entries);
       })
-      .catch(error => {
+      .catch((error) => {
         if (requestSeq !== historyRequestSeq.current) return;
         console.error('[overview] failed to load history', error);
         setHistoryError(true);
@@ -104,11 +104,11 @@ export function Overview({ onOpenHistory, onOpenSettings }: OverviewProps) {
     activityRequestSeq.current = requestSeq;
     setActivityError(false);
     getActivityStats()
-      .then(stats => {
+      .then((stats) => {
         if (requestSeq !== activityRequestSeq.current) return;
         setActivity(stats);
       })
-      .catch(error => {
+      .catch((error) => {
         if (requestSeq !== activityRequestSeq.current) return;
         console.error('[overview] failed to load activity stats', error);
         setActivity(null);
@@ -125,12 +125,12 @@ export function Overview({ onOpenHistory, onOpenSettings }: OverviewProps) {
     setCredsError(false);
     setCredsLoading(true);
     getCredentials()
-      .then(status => {
+      .then((status) => {
         if (requestSeq !== credentialsRequestSeq.current) return;
         setCreds(status);
         setCredsError(false);
       })
-      .catch(error => {
+      .catch((error) => {
         if (requestSeq !== credentialsRequestSeq.current) return;
         console.error('[overview] failed to load credentials status', error);
         setCredsError(true);
@@ -146,7 +146,13 @@ export function Overview({ onOpenHistory, onOpenSettings }: OverviewProps) {
 
   useEffect(() => {
     refreshCredentials();
-  }, [refreshCredentials, prefs?.activeLlmProvider, prefs?.activeAsrProvider, prefs?.pipelineMode, prefs?.activeOmniProvider]);
+  }, [
+    refreshCredentials,
+    prefs?.activeLlmProvider,
+    prefs?.activeAsrProvider,
+    prefs?.pipelineMode,
+    prefs?.activeOmniProvider,
+  ]);
 
   // ⌘R / Ctrl+R 重新拉取本页的三份数据（历史、活动、凭据），与历史页同键同语义。
   // preventDefault 拦掉 webview 默认的整页 reload，避免整个前端重挂载。
@@ -199,7 +205,7 @@ export function Overview({ onOpenHistory, onOpenSettings }: OverviewProps) {
   const metrics = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todays = history.filter(s => new Date(s.createdAt) >= today);
+    const todays = history.filter((s) => new Date(s.createdAt) >= today);
     const charsToday = todays.reduce((acc, s) => acc + countCodePoints(s.finalText), 0);
     const segmentsToday = todays.length;
     const totalDurationMs = todays.reduce((acc, s) => acc + (s.durationMs ?? 0), 0);
@@ -232,61 +238,153 @@ export function Overview({ onOpenHistory, onOpenSettings }: OverviewProps) {
   // 已配置完成的服务商卡不再常驻（没有信息价值），只展示仍待配置的
   // 卡作为提醒；全部配置完成后整组「当前语音服务」隐藏。凭据加载中/拉取失败
   // （providers 为空）时保留占位卡，避免页面闪空。
-  const pendingProviders = setup.providers.filter(p => !p.configured);
+  const pendingProviders = setup.providers.filter((p) => !p.configured);
   const showProvidersSection = setup.providers.length === 0 || pendingProviders.length > 0;
 
   return (
     // 单屏固定页：不滚动，撑满外壳给定的高度，所有仪表盘在一屏内
     // 弹性分配；窗口压到很矮时由底部行内部收缩（最近识别列表内滚），页面本身不出滚动条。
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, gap: 14 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        minHeight: 0,
+        minWidth: 0,
+        gap: 14,
+      }}
+    >
       <PageHeader
         compact
         title={t('overview.title')}
-        right={<Btn size="sm" icon="refresh" onClick={refreshAll}>{t('overview.refresh')}</Btn>}
+        right={
+          <Btn size="sm" icon="refresh" onClick={refreshAll}>
+            {t('overview.refresh')}
+          </Btn>
+        }
       />
 
       {showProvidersSection && (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-          <h2 style={{ fontSize: 13, fontWeight: 600, color: 'var(--ol-ink-2)', margin: 0 }}>{t('overview.servicesTitle')}</h2>
-          <Btn size="sm" variant="soft" disabled={!onOpenSettings} onClick={() => openSettings('services')}>{t('overview.actions.services')}</Btn>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 8,
+            }}
+          >
+            <h2 style={{ fontSize: 13, fontWeight: 600, color: 'var(--ol-ink-2)', margin: 0 }}>
+              {t('overview.servicesTitle')}
+            </h2>
+            <Btn
+              size="sm"
+              variant="soft"
+              disabled={!onOpenSettings}
+              onClick={() => openSettings('services')}
+            >
+              {t('overview.actions.services')}
+            </Btn>
+          </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns:
+                mobile || pendingProviders.length < 2
+                  ? 'minmax(0, 1fr)'
+                  : 'repeat(2, minmax(0, 1fr))',
+              gap: 12,
+            }}
+          >
+            {pendingProviders.map((provider) => {
+              const nameKey =
+                provider.id &&
+                (provider.kind === 'asr' ? ASR_NAME_KEY_BY_ID : LLM_NAME_KEY_BY_ID)[provider.id];
+              const name = nameKey
+                ? t(`settings.providers.presets.${nameKey}`)
+                : provider.id ||
+                  t(provider.kind === 'omni' ? 'overview.omniName' : 'overview.statusUnknown');
+              return (
+                <ProviderCard
+                  key={provider.kind}
+                  kind={provider.kind}
+                  name={name}
+                  status="notConfigured"
+                  onConfigure={onOpenSettings ? () => openSettings('services') : undefined}
+                />
+              );
+            })}
+            {setup.providers.length === 0 && (
+              <Card padding={16}>
+                <div role="status" style={{ fontSize: 13, color: 'var(--ol-ink-3)' }}>
+                  {t(credsLoading ? 'overview.statusLoading' : 'overview.credentialsLoadError')}
+                </div>
+              </Card>
+            )}
+          </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: mobile || pendingProviders.length < 2 ? 'minmax(0, 1fr)' : 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
-          {pendingProviders.map(provider => {
-            const nameKey = provider.id && (provider.kind === 'asr' ? ASR_NAME_KEY_BY_ID : LLM_NAME_KEY_BY_ID)[provider.id];
-            const name = nameKey ? t(`settings.providers.presets.${nameKey}`) : provider.id || t(provider.kind === 'omni' ? 'overview.omniName' : 'overview.statusUnknown');
-            return (
-              <ProviderCard
-                key={provider.kind}
-                kind={provider.kind}
-                name={name}
-                status="notConfigured"
-                onConfigure={onOpenSettings ? () => openSettings('services') : undefined}
-              />
-            );
-          })}
-          {setup.providers.length === 0 && (
-            <Card padding={16}>
-              <div role="status" style={{ fontSize: 13, color: 'var(--ol-ink-3)' }}>{t(credsLoading ? 'overview.statusLoading' : 'overview.credentialsLoadError')}</div>
-            </Card>
-          )}
-        </div>
-      </div>
       )}
 
       {/* 使用记录：标题 + 四张指标卡为一组。 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
-        <h2 style={{ fontSize: 13, fontWeight: 600, color: 'var(--ol-ink-2)', margin: 0 }}>{t('overview.statsTitle')}</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: mobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
-          <Metric icon="hash" label={t('overview.metricChars')} value={historyError ? '—' : metrics.charsToday.toLocaleString()} trend={historyError ? t('overview.historyLoadError') : t('overview.metricSegments', { count: metrics.segmentsToday })} />
-          <Metric icon="mic" label={t('overview.metricDuration')} value={historyError ? '—' : formatDuration(metrics.totalDurationMs, t)} trend={historyError ? t('overview.historyLoadError') : ''} />
-          <Metric icon="clock" label={t('overview.metricAvg')} value={historyError ? '—' : formatDuration(metrics.avgLatencyMs, t)} trend={historyError ? t('overview.historyLoadError') : metrics.segmentsToday > 0 ? t('overview.metricAvgTrend') : t('overview.metricNoData')} />
-          <Metric icon="bolt" label={t('overview.metricTotal')} value={historyError ? '—' : String(history.length)} trend={historyError ? t('overview.historyLoadError') : t('overview.metricTotalTrend')} />
+        <h2 style={{ fontSize: 13, fontWeight: 600, color: 'var(--ol-ink-2)', margin: 0 }}>
+          {t('overview.statsTitle')}
+        </h2>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: mobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, minmax(0, 1fr))',
+            gap: 12,
+          }}
+        >
+          <Metric
+            icon="hash"
+            label={t('overview.metricChars')}
+            value={historyError ? '—' : metrics.charsToday.toLocaleString()}
+            trend={
+              historyError
+                ? t('overview.historyLoadError')
+                : t('overview.metricSegments', { count: metrics.segmentsToday })
+            }
+          />
+          <Metric
+            icon="mic"
+            label={t('overview.metricDuration')}
+            value={historyError ? '—' : formatDuration(metrics.totalDurationMs, t)}
+            trend={historyError ? t('overview.historyLoadError') : ''}
+          />
+          <Metric
+            icon="clock"
+            label={t('overview.metricAvg')}
+            value={historyError ? '—' : formatDuration(metrics.avgLatencyMs, t)}
+            trend={
+              historyError
+                ? t('overview.historyLoadError')
+                : metrics.segmentsToday > 0
+                  ? t('overview.metricAvgTrend')
+                  : t('overview.metricNoData')
+            }
+          />
+          <Metric
+            icon="bolt"
+            label={t('overview.metricTotal')}
+            value={historyError ? '—' : String(history.length)}
+            trend={historyError ? t('overview.historyLoadError') : t('overview.metricTotalTrend')}
+          />
         </div>
       </div>
 
       {/* 底部行吃掉剩余高度：周期卡图表区自适应拉高，最近识别列表内部滚动。 */}
-      <div style={{ display: 'grid', gridTemplateColumns: mobile ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) minmax(0, 1.4fr)', gap: 12, flex: 1, minHeight: 0 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: mobile ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) minmax(0, 1.4fr)',
+          gap: 12,
+          flex: 1,
+          minHeight: 0,
+        }}
+      >
         <PeriodMetricsCard
           series={series}
           period={period}
@@ -297,25 +395,61 @@ export function Overview({ onOpenHistory, onOpenSettings }: OverviewProps) {
           onRetry={refreshActivity}
         />
 
-        <Card padding={0} style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '12px 18px', borderBottom: '0.5px solid var(--ol-line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ol-ink-2)' }}>{t('overview.recentTitle')}</span>
-            <Btn size="sm" variant="ghost" disabled={!onOpenHistory} onClick={onOpenHistory}>{t('overview.recentAll')}</Btn>
+        <Card
+          padding={0}
+          style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}
+        >
+          <div
+            style={{
+              padding: '12px 18px',
+              borderBottom: '0.5px solid var(--ol-line)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexShrink: 0,
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ol-ink-2)' }}>
+              {t('overview.recentTitle')}
+            </span>
+            <Btn size="sm" variant="ghost" disabled={!onOpenHistory} onClick={onOpenHistory}>
+              {t('overview.recentAll')}
+            </Btn>
           </div>
           <div className="ol-thinscroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
             {historyError ? (
-              <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: 'var(--ol-ink-4)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+              <div
+                style={{
+                  padding: 24,
+                  textAlign: 'center',
+                  fontSize: 12,
+                  color: 'var(--ol-ink-4)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
                 <span>{t('overview.recentLoadFailed')}</span>
-                <Btn size="sm" variant="ghost" onClick={refreshHistory}>{t('overview.historyRetry')}</Btn>
+                <Btn size="sm" variant="ghost" onClick={refreshHistory}>
+                  {t('overview.historyRetry')}
+                </Btn>
               </div>
             ) : (
               <>
                 {history.length === 0 && (
-                  <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: 'var(--ol-ink-4)' }}>
+                  <div
+                    style={{
+                      padding: 24,
+                      textAlign: 'center',
+                      fontSize: 12,
+                      color: 'var(--ol-ink-4)',
+                    }}
+                  >
                     {t('overview.recentEmptyHint')}
                   </div>
                 )}
-                {history.slice(0, 8).map(s => (
+                {history.slice(0, 8).map((s) => (
                   <RecentRow key={s.id} session={s} modeLabel={modeLabel} />
                 ))}
               </>
@@ -324,9 +458,10 @@ export function Overview({ onOpenHistory, onOpenSettings }: OverviewProps) {
         </Card>
       </div>
       {/* Independent activity storage survives history clearing; keep the existing visibility preference. */}
-      {!mobile && prefs?.showOverviewActivityHeatmap !== false && activity && activity.length > 0 && (
-        <ActivityHeatmapCard activity={activity} />
-      )}
+      {!mobile &&
+        prefs?.showOverviewActivityHeatmap !== false &&
+        activity &&
+        activity.length > 0 && <ActivityHeatmapCard activity={activity} />}
     </div>
   );
 }
@@ -345,32 +480,72 @@ function ProviderCard({ kind, name, status, onConfigure }: ProviderCardProps) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div
           style={{
-            width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+            width: 38,
+            height: 38,
+            borderRadius: 10,
+            flexShrink: 0,
             background: 'var(--ol-blue-soft)',
             color: 'var(--ol-blue)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <Icon name={kind === 'asr' ? 'mic' : 'sparkle'} size={18} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
-            <span style={{ fontSize: 12.5, color: 'var(--ol-ink-4)', fontWeight: 600 }}>{t(`overview.${kind}Kind`)}</span>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 8,
+              marginBottom: 4,
+            }}
+          >
+            <span style={{ fontSize: 12.5, color: 'var(--ol-ink-4)', fontWeight: 600 }}>
+              {t(`overview.${kind}Kind`)}
+            </span>
             {status === 'configured' && (
               <Pill tone="ok" size="sm">
-                <span style={{ width: 5, height: 5, borderRadius: 999, background: 'var(--ol-ok)' }} />
+                <span
+                  style={{ width: 5, height: 5, borderRadius: 999, background: 'var(--ol-ok)' }}
+                />
                 {t('overview.statusConfigured')}
               </Pill>
             )}
             {status === 'notConfigured' && (
-              <Pill tone="outline" size="sm">{t('overview.statusNotConfigured')}</Pill>
+              <Pill tone="outline" size="sm">
+                {t('overview.statusNotConfigured')}
+              </Pill>
             )}
           </div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ol-ink)', overflowWrap: 'anywhere' }}>{name}</div>
+          <div
+            style={{
+              fontSize: 15,
+              fontWeight: 600,
+              color: 'var(--ol-ink)',
+              overflowWrap: 'anywhere',
+            }}
+          >
+            {name}
+          </div>
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-        <span style={{ flex: '1 1 160px', fontSize: 13, color: 'var(--ol-ink-3)', lineHeight: 1.5 }}>{t(`overview.providerHelp.${kind}`)}</span>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 8,
+        }}
+      >
+        <span
+          style={{ flex: '1 1 160px', fontSize: 13, color: 'var(--ol-ink-3)', lineHeight: 1.5 }}
+        >
+          {t(`overview.providerHelp.${kind}`)}
+        </span>
         <Btn size="sm" icon="chevRight" disabled={!onConfigure} onClick={onConfigure}>
           {t(status === 'configured' ? 'overview.manageProvider' : 'overview.configureProvider')}
         </Btn>
@@ -397,7 +572,7 @@ function ActivityHeatmapCard({ activity }: { activity: ActivityDay[] }) {
     return {
       endDate: end,
       startDate: start,
-      data: activity.map(day => ({ date: day.date, value: day.count })),
+      data: activity.map((day) => ({ date: day.date, value: day.count })),
       labels: {
         months: Array.from({ length: 12 }, (_, m) => monthFormat.format(new Date(year, m, 1))),
         days: Array.from({ length: 7 }, (_, d) => {
@@ -425,7 +600,7 @@ function ActivityHeatmapCard({ activity }: { activity: ActivityDay[] }) {
         monthLabels={labels.months}
         dayLabels={labels.days}
         dateDisplay={labels.date}
-        valueDisplay={count => t('overview.activityCount', { count })}
+        valueDisplay={(count) => t('overview.activityCount', { count })}
       />
     </Card>
   );
@@ -441,11 +616,30 @@ interface MetricProps {
 function Metric({ icon, label, value, trend }: MetricProps) {
   return (
     <Card padding={14} style={{ minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, color: 'var(--ol-ink-3)' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          marginBottom: 8,
+          color: 'var(--ol-ink-3)',
+        }}
+      >
         <Icon name={icon} size={13} />
         <span style={{ fontSize: 13 }}>{label}</span>
       </div>
-      <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em', color: 'var(--ol-ink)', lineHeight: 1.2, overflowWrap: 'anywhere' }}>{value}</div>
+      <div
+        style={{
+          fontSize: 22,
+          fontWeight: 600,
+          letterSpacing: '-0.02em',
+          color: 'var(--ol-ink)',
+          lineHeight: 1.2,
+          overflowWrap: 'anywhere',
+        }}
+      >
+        {value}
+      </div>
       <div style={{ fontSize: 12, color: 'var(--ol-ink-4)', marginTop: 6 }}>{trend || ' '}</div>
     </Card>
   );
@@ -476,7 +670,7 @@ function SegmentedToggle<T extends string | number>({
         border: '0.5px solid var(--ol-line)',
       }}
     >
-      {options.map(option => {
+      {options.map((option) => {
         const selected = option.value === value;
         return (
           <button
@@ -495,7 +689,8 @@ function SegmentedToggle<T extends string | number>({
               cursor: 'pointer',
               fontFamily: 'inherit',
               whiteSpace: 'nowrap',
-              transition: 'background 0.16s var(--ol-motion-quick), color 0.16s var(--ol-motion-quick)',
+              transition:
+                'background 0.16s var(--ol-motion-quick), color 0.16s var(--ol-motion-quick)',
             }}
           >
             {option.label}
@@ -530,19 +725,32 @@ function PeriodMetricsCard({
   onRetry: () => void;
 }) {
   const { t } = useTranslation();
-  const periodOptions = ACTIVITY_PERIODS.map(days => ({
+  const periodOptions = ACTIVITY_PERIODS.map((days) => ({
     value: days,
     label: t(`overview.period.last${days}Days`),
   }));
-  const metricOptions = ACTIVITY_METRICS.map(id => ({
+  const metricOptions = ACTIVITY_METRICS.map((id) => ({
     value: id,
     label: t(`overview.metricName.${id}`),
   }));
 
   return (
-    <Card padding={18} style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0 }}>
+    <Card
+      padding={18}
+      style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0 }}
+    >
       {/* flexWrap：卡片在 1fr 列里较窄，两组切换器放不下时换行而不是压扁按钮。 */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 12, flexShrink: 0 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
+          flexWrap: 'wrap',
+          marginBottom: 12,
+          flexShrink: 0,
+        }}
+      >
         <SegmentedToggle
           value={period}
           options={periodOptions}
@@ -558,14 +766,36 @@ function PeriodMetricsCard({
       </div>
 
       {loadError ? (
-        <div style={{ minHeight: 132, display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', justifyContent: 'center', textAlign: 'center', fontSize: 12, color: 'var(--ol-ink-4)' }}>
+        <div
+          style={{
+            minHeight: 132,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            fontSize: 12,
+            color: 'var(--ol-ink-4)',
+          }}
+        >
           {t('overview.activityLoadError')}
-          <Btn size="sm" onClick={onRetry}>{t('overview.historyRetry')}</Btn>
+          <Btn size="sm" onClick={onRetry}>
+            {t('overview.historyRetry')}
+          </Btn>
         </div>
       ) : (
         <>
           <div style={{ marginBottom: 12, flexShrink: 0 }}>
-            <div style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', color: 'var(--ol-ink)', lineHeight: 1.1 }}>
+            <div
+              style={{
+                fontSize: 26,
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+                color: 'var(--ol-ink)',
+                lineHeight: 1.1,
+              }}
+            >
               {formatMetricValue(series.total, metric, t)}
             </div>
             <div style={{ fontSize: 12, color: 'var(--ol-ink-4)', marginTop: 5 }}>
@@ -592,7 +822,7 @@ function PeriodChart({
 }) {
   const { t } = useTranslation();
   const { buckets } = series;
-  const max = Math.max(...buckets.map(b => b.value), 1);
+  const max = Math.max(...buckets.map((b) => b.value), 1);
   const dense = buckets.length > 7;
   const lastIndex = buckets.length - 1;
   const midIndex = Math.floor(lastIndex / 2);
@@ -600,17 +830,41 @@ function PeriodChart({
   // 图表区随卡片剩余高度拉伸（单屏固定页）：柱高按容器百分比缩放，不再固定 100px。
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 60 }}>
-      <div style={{ display: 'flex', alignItems: 'stretch', gap: dense ? 2 : 8, flex: 1, minHeight: 0 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'stretch',
+          gap: dense ? 2 : 8,
+          flex: 1,
+          minHeight: 0,
+        }}
+      >
         {buckets.map((bucket, i) => {
           const isToday = i === lastIndex;
           return (
             <div
               key={bucket.date}
               title={`${bucket.date} · ${formatMetricValue(bucket.value, metric, t)}`}
-              style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: 4,
+              }}
             >
               {!dense && (
-                <div style={{ fontSize: 9.5, color: isToday ? 'var(--ol-blue)' : 'var(--ol-ink-4)', fontWeight: isToday ? 600 : 400, flexShrink: 0 }}>
+                <div
+                  style={{
+                    fontSize: 9.5,
+                    color: isToday ? 'var(--ol-blue)' : 'var(--ol-ink-4)',
+                    fontWeight: isToday ? 600 : 400,
+                    flexShrink: 0,
+                  }}
+                >
                   {formatMetricValue(bucket.value, metric, t)}
                 </div>
               )}
@@ -622,17 +876,36 @@ function PeriodChart({
                   borderRadius: dense ? 2 : 4,
                   background: isToday ? 'var(--ol-blue)' : 'var(--ol-ink-4)',
                   opacity: bucket.value === 0 ? 0.15 : isToday ? 1 : 0.85,
-                  transition: 'height 0.18s var(--ol-motion-soft), opacity 0.18s var(--ol-motion-soft)',
+                  transition:
+                    'height 0.18s var(--ol-motion-soft), opacity 0.18s var(--ol-motion-soft)',
                 }}
               />
             </div>
           );
         })}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--ol-ink-4)', marginTop: 8, flexShrink: 0 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontSize: 10,
+          color: 'var(--ol-ink-4)',
+          marginTop: 8,
+          flexShrink: 0,
+        }}
+      >
         {dense
-          ? [0, midIndex, lastIndex].map(i => <span key={i}>{shortDateLabel(buckets[i].date)}</span>)
-          : buckets.map(bucket => <span key={bucket.date}>{weekDayLabel(bucket.date, t('overview.weekDays', { returnObjects: true }) as string[])}</span>)}
+          ? [0, midIndex, lastIndex].map((i) => (
+              <span key={i}>{shortDateLabel(buckets[i].date)}</span>
+            ))
+          : buckets.map((bucket) => (
+              <span key={bucket.date}>
+                {weekDayLabel(
+                  bucket.date,
+                  t('overview.weekDays', { returnObjects: true }) as string[],
+                )}
+              </span>
+            ))}
       </div>
     </div>
   );
@@ -672,7 +945,13 @@ function formatLongDuration(ms: number, t: ReturnType<typeof useTranslation>['t'
   return t('overview.period.hoursMinutes', { hours, minutes });
 }
 
-function RecentRow({ session, modeLabel }: { session: DictationSession; modeLabel: Record<PolishMode, string> }) {
+function RecentRow({
+  session,
+  modeLabel,
+}: {
+  session: DictationSession;
+  modeLabel: Record<PolishMode, string>;
+}) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
@@ -681,7 +960,9 @@ function RecentRow({ session, modeLabel }: { session: DictationSession; modeLabe
       if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
       // 与 History 一致：润色失败/未产出时 finalText 为空，回退到识别原文，
       // 避免复制到空字符串。
-      await navigator.clipboard.writeText(session.finalText.trim() ? session.finalText : session.rawTranscript);
+      await navigator.clipboard.writeText(
+        session.finalText.trim() ? session.finalText : session.rawTranscript,
+      );
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
     } catch (error) {
@@ -690,14 +971,47 @@ function RecentRow({ session, modeLabel }: { session: DictationSession; modeLabe
   };
 
   return (
-    <div style={{ padding: '12px 18px', borderBottom: '0.5px solid var(--ol-line-soft)', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, minWidth: 60 }}>
-        <span style={{ fontSize: 12.5, fontFamily: 'var(--ol-font-mono)', color: 'var(--ol-ink-3)' }}>
+    <div
+      style={{
+        padding: '12px 18px',
+        borderBottom: '0.5px solid var(--ol-line-soft)',
+        display: 'flex',
+        gap: 12,
+        alignItems: 'flex-start',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          gap: 4,
+          minWidth: 60,
+        }}
+      >
+        <span
+          style={{ fontSize: 12.5, fontFamily: 'var(--ol-font-mono)', color: 'var(--ol-ink-3)' }}
+        >
           {formatTime(session.createdAt)}
         </span>
-        <Pill size="sm" tone="default">{modeLabel[session.mode]}</Pill>
+        <Pill size="sm" tone="default">
+          {modeLabel[session.mode]}
+        </Pill>
       </div>
-      <div style={{ flex: 1, fontSize: 14, color: 'var(--ol-ink-2)', whiteSpace: 'pre-line', lineHeight: 1.55, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+      <div
+        style={{
+          flex: 1,
+          fontSize: 14,
+          color: 'var(--ol-ink-2)',
+          whiteSpace: 'pre-line',
+          lineHeight: 1.55,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+        }}
+      >
         {session.finalText.split('\n')[0]}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>

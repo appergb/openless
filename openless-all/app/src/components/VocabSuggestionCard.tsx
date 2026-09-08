@@ -46,16 +46,16 @@ export function VocabSuggestionCard({ suggestions }: VocabSuggestionCardProps) {
     };
   }, [suggestions]);
 
-  const visible = suggestions.filter(s => !resolved.has(s.id));
+  const visible = suggestions.filter((s) => !resolved.has(s.id));
   if (visible.length === 0) return null;
 
   // 勾和叉走同一条乐观更新：先本地隐藏，失败了再放回来让用户重点一次。
   const resolve = async (id: string, commit: (id: string) => Promise<void>) => {
-    setResolved(prev => new Set(prev).add(id));
+    setResolved((prev) => new Set(prev).add(id));
     try {
       await commit(id);
     } catch {
-      setResolved(prev => {
+      setResolved((prev) => {
         const next = new Set(prev);
         next.delete(id);
         return next;
@@ -88,8 +88,7 @@ export function VocabSuggestionCard({ suggestions }: VocabSuggestionCardProps) {
           // 描边用 1px 实边 + 扩散阴影，与胶囊本体同一套写法。早期版本用
           // `0.5px solid`：非整数边框落在半个物理像素里，圆角边缘看着就是糊的。
           border: '1px solid var(--ol-capsule-pill-border)',
-          boxShadow:
-            'var(--ol-capsule-pill-shadow), var(--ol-capsule-pill-inset)',
+          boxShadow: 'var(--ol-capsule-pill-shadow), var(--ol-capsule-pill-inset)',
           color: 'var(--ol-capsule-btn-ink)',
           fontFamily: 'var(--ol-font-sans)',
           // 子元素一律不许溢出圆角。
@@ -108,7 +107,7 @@ export function VocabSuggestionCard({ suggestions }: VocabSuggestionCardProps) {
         </div>
 
         <div style={{ display: 'grid', gap: 8 }}>
-          {visible.map(s => (
+          {visible.map((s) => (
             <div
               key={s.id}
               style={{
@@ -168,7 +167,7 @@ function CardButton({
     <button
       onClick={onClick}
       // 卡片浮在别的 app 上面，按下去不能把焦点从用户正在写的地方抢走。
-      onMouseDown={event => {
+      onMouseDown={(event) => {
         event.preventDefault();
         event.stopPropagation();
       }}
@@ -184,9 +183,7 @@ function CardButton({
         alignItems: 'center',
         justifyContent: 'center',
         background:
-          kind === 'accept'
-            ? 'var(--ol-capsule-btn-bg-confirm)'
-            : 'var(--ol-capsule-btn-bg)',
+          kind === 'accept' ? 'var(--ol-capsule-btn-bg-confirm)' : 'var(--ol-capsule-btn-bg)',
         color: 'var(--ol-capsule-btn-ink)',
         border: '0.8px solid var(--ol-capsule-btn-border)',
         boxShadow: '0 1px 2px rgba(0, 0, 0, 0.06)',
@@ -195,7 +192,7 @@ function CardButton({
           'background 0.16s var(--ol-motion-quick), transform 0.12s var(--ol-motion-quick)',
       }}
     >
-      <Icon name={kind === 'accept' ? "check" : "close"} size={13} strokeWidth={2.2} />
+      <Icon name={kind === 'accept' ? 'check' : 'close'} size={13} strokeWidth={2.2} />
     </button>
   );
 }

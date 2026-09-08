@@ -18,16 +18,16 @@ for (const expected of [
 ]) {
   assert(discovered.includes(expected), `aggregate discovery omitted ${expected}`);
 }
-assert.equal(new Set(discovered).size, discovered.length, 'aggregate discovery must not duplicate tests');
+assert.equal(
+  new Set(discovered).size,
+  discovered.length,
+  'aggregate discovery must not duplicate tests',
+);
 
 const invocations = [];
 const statuses = [0, 7, 0];
 const exitCode = runTestFiles(
-  [
-    'src/lib/passes.test.ts',
-    'scripts/fails.test.mjs',
-    'scripts/must-not-run.test.mjs',
-  ],
+  ['src/lib/passes.test.ts', 'scripts/fails.test.mjs', 'scripts/must-not-run.test.mjs'],
   {
     appRoot: '/app',
     log: () => {},

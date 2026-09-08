@@ -95,9 +95,12 @@ export function ShortcutRecorder({
     clearPressedCodes();
   };
 
-  useEffect(() => () => {
-    resetRecordingState();
-  }, []);
+  useEffect(
+    () => () => {
+      resetRecordingState();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!disabled || !recording) return;
@@ -193,7 +196,10 @@ export function ShortcutRecorder({
     clearPendingModifier();
     const primary = primaryFromKeyboardEvent(e);
     if (primary) {
-      void finish({ primary, modifiers: modifiersFromPressedCodes(pressedCodes.current, sideSpecificModifiers) });
+      void finish({
+        primary,
+        modifiers: modifiersFromPressedCodes(pressedCodes.current, sideSpecificModifiers),
+      });
     }
   };
 
@@ -307,7 +313,7 @@ export function ShortcutRecorder({
             tabIndex={-1}
             onKeyDown={onKeyDown}
             onKeyUp={onKeyUp}
-            ref={el => el?.focus()}
+            ref={(el) => el?.focus()}
             style={{
               minHeight: 36,
               display: 'flex',
@@ -340,7 +346,7 @@ export function ShortcutRecorder({
               <div style={controlsGroupStyle}>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => setMenuOpen(open => !open)}
+                  onClick={() => setMenuOpen((open) => !open)}
                   aria-label={t('settings.recording.comboMenuToggle', 'More options')}
                   aria-expanded={menuOpen}
                   title={t('settings.recording.comboMenuToggle', 'More options')}

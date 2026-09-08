@@ -28,7 +28,13 @@ import { getPlatformCapabilities } from '../../lib/platform';
 import { listChannels } from '../../lib/ipc';
 import type { PlatformCapabilities } from '../../lib/types';
 import { useHotkeySettings } from '../../state/HotkeySettingsContext';
-import { availableServiceViews, resolveServiceView, type ServiceViewId, type AdvancedPage, type AdvancedPageId } from './navigation';
+import {
+  availableServiceViews,
+  resolveServiceView,
+  type ServiceViewId,
+  type AdvancedPage,
+  type AdvancedPageId,
+} from './navigation';
 
 // 各 tab 共用的平台能力查询（决定桌面/移动、是否支持热键与自动更新等 gating）。
 function usePlatformCaps(): PlatformCapabilities | null {
@@ -57,11 +63,22 @@ export function GeneralTab() {
 export function ShortcutsTab() {
   const platformCaps = usePlatformCaps();
   if (!platformCaps?.supportsDesktopHotkey) return null;
-  return <><ShortcutsSection /><SelectionWorkspaceSection /></>;
+  return (
+    <>
+      <ShortcutsSection />
+      <SelectionWorkspaceSection />
+    </>
+  );
 }
 
 export function AppearanceTab() {
-  return <><ThemeSection /><LayoutSection /><LanguageSection /></>;
+  return (
+    <>
+      <ThemeSection />
+      <LayoutSection />
+      <LanguageSection />
+    </>
+  );
 }
 
 // AI 服务与模型：按当前管线和平台能力组织渠道、本地模型及网络设置。
@@ -70,7 +87,8 @@ export function ServicesTab() {
   const { prefs } = useHotkeySettings();
   const platformCaps = usePlatformCaps();
   const showLocalModel = platformCaps?.supportsLocalAsr === true;
-  const multimodal = prefs?.multimodalPipelineEnabled === true && prefs.pipelineMode === 'multimodal';
+  const multimodal =
+    prefs?.multimodalPipelineEnabled === true && prefs.pipelineMode === 'multimodal';
   const [view, setView] = useState<ServiceViewId>('llm');
   const views = availableServiceViews(multimodal, showLocalModel);
   const selectedView = resolveServiceView(view, views);
@@ -79,7 +97,10 @@ export function ServicesTab() {
   // 语言模型 / 语音识别是必配项：tab 上挂状态点 —— 未配置红、已配置黄
   // 。任何渠道增删改/启停后 ChannelList 会广播
   // ol-channels-changed，这里即时重算。
-  const [requiredConfigured, setRequiredConfigured] = useState<{ llm: boolean; asr: boolean }>({ llm: false, asr: false });
+  const [requiredConfigured, setRequiredConfigured] = useState<{ llm: boolean; asr: boolean }>({
+    llm: false,
+    asr: false,
+  });
   useEffect(() => {
     let cancelled = false;
     const load = () => {
@@ -87,32 +108,56 @@ export function ServicesTab() {
         .then(([llm, asr]) => {
           if (cancelled) return;
           setRequiredConfigured({
-            llm: llm.some(channel => channel.enabled),
-            asr: asr.some(channel => channel.enabled),
+            llm: llm.some((channel) => channel.enabled),
+            asr: asr.some((channel) => channel.enabled),
           });
         })
-        .catch(() => { /* 读取失败保持上一次状态，不打扰用户 */ });
+        .catch(() => {
+          /* 读取失败保持上一次状态，不打扰用户 */
+        });
     };
     load();
     window.addEventListener('ol-channels-changed', load);
-    return () => { cancelled = true; window.removeEventListener('ol-channels-changed', load); };
+    return () => {
+      cancelled = true;
+      window.removeEventListener('ol-channels-changed', load);
+    };
   }, []);
 
   return (
     <>
-      <div role="group" aria-label={t('modal.serviceViews.label')} className="ol-service-views ol-thinscroll">
-        {views.map(id => {
+      <div
+        role="group"
+        aria-label={t('modal.serviceViews.label')}
+        className="ol-service-views ol-thinscroll"
+      >
+        {views.map((id) => {
           const required = id === 'llm' || id === 'asr';
-          const configured = id === 'llm' ? requiredConfigured.llm : id === 'asr' ? requiredConfigured.asr : false;
+          const configured =
+            id === 'llm' ? requiredConfigured.llm : id === 'asr' ? requiredConfigured.asr : false;
           return (
             <button
               key={id}
               type="button"
               aria-pressed={selectedView === id}
               onClick={() => setView(id)}
-              title={required ? t(configured ? 'modal.serviceViews.statusConfigured' : 'modal.serviceViews.statusMissing') : undefined}
+              title={
+                required
+                  ? t(
+                      configured
+                        ? 'modal.serviceViews.statusConfigured'
+                        : 'modal.serviceViews.statusMissing',
+                    )
+                  : undefined
+              }
             >
-              {required && <span aria-hidden className="ol-service-status-dot" data-state={configured ? 'ok' : 'missing'} />}
+              {required && (
+                <span
+                  aria-hidden
+                  className="ol-service-status-dot"
+                  data-state={configured ? 'ok' : 'missing'}
+                />
+              )}
               {t(`modal.serviceViews.${id}`)}
             </button>
           );
@@ -123,8 +168,17 @@ export function ServicesTab() {
         {selectedView === 'asr' && <ProvidersSection kind="asr" />}
         {selectedView === 'omni' && <ProvidersSection />}
         {selectedView === 'models' && <LocalModelSection />}
-        {selectedView === 'connections' && <><NetworkSection /><MarketplaceSection /></>}
-        {(selectedView === 'llm' || selectedView === 'asr') && <p className="ol-service-storage-note">{t('settings.providers.credentialStorageNotice')}</p>}
+        {selectedView === 'connections' && (
+          <>
+            <NetworkSection />
+            <MarketplaceSection />
+          </>
+        )}
+        {(selectedView === 'llm' || selectedView === 'asr') && (
+          <p className="ol-service-storage-note">
+            {t('settings.providers.credentialStorageNotice')}
+          </p>
+        )}
       </div>
     </>
   );
@@ -146,11 +200,17 @@ export function PrivacyTab() {
           marginBottom: 2,
         }}
       >
-        <span style={{
-          fontSize: 11, padding: '3px 8px', borderRadius: 999,
-          background: 'var(--ol-surface)',
-          color: 'var(--ol-blue)', fontWeight: 600, flexShrink: 0,
-        }}>
+        <span
+          style={{
+            fontSize: 11,
+            padding: '3px 8px',
+            borderRadius: 999,
+            background: 'var(--ol-surface)',
+            color: 'var(--ol-blue)',
+            fontWeight: 600,
+            flexShrink: 0,
+          }}
+        >
           {t('modal.about.localFirst')}
         </span>
         <span style={{ fontSize: 11.5, color: 'var(--ol-ink-3)', lineHeight: 1.55 }}>
@@ -164,7 +224,11 @@ export function PrivacyTab() {
 }
 
 // 实验功能在右栏各有一个子页；往返保留控制台草稿、检测状态和流式输出。
-export function AdvancedTab({ pages, page, onOpenPage }: {
+export function AdvancedTab({
+  pages,
+  page,
+  onOpenPage,
+}: {
   pages: AdvancedPage[];
   page: AdvancedPageId | null;
   onOpenPage: (page: AdvancedPageId) => void;
@@ -174,7 +238,7 @@ export function AdvancedTab({ pages, page, onOpenPage }: {
     <>
       <div hidden={page !== null}>
         <div className="ol-advanced-settings-list">
-          {pages.map(item => (
+          {pages.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -182,18 +246,28 @@ export function AdvancedTab({ pages, page, onOpenPage }: {
               data-ol-advanced-entry={item.id}
               onClick={() => onOpenPage(item.id)}
             >
-              <span className="ol-advanced-entry-icon"><Icon name={item.icon} size={19} /></span>
+              <span className="ol-advanced-entry-icon">
+                <Icon name={item.icon} size={19} />
+              </span>
               <span className="ol-advanced-entry-copy">
                 <span className="ol-advanced-entry-title">{t(item.titleKey)}</span>
-                <span className="ol-advanced-entry-description">{t(`modal.advancedPages.${item.id}`)}</span>
+                <span className="ol-advanced-entry-description">
+                  {t(`modal.advancedPages.${item.id}`)}
+                </span>
               </span>
               <Icon name="chevRight" size={17} className="ol-advanced-entry-arrow" />
             </button>
           ))}
         </div>
       </div>
-      {pages.map(item => (
-        <section key={item.id} hidden={page !== item.id} className="ol-advanced-settings-detail" aria-label={t(item.titleKey)} data-ol-advanced-page={item.id}>
+      {pages.map((item) => (
+        <section
+          key={item.id}
+          hidden={page !== item.id}
+          className="ol-advanced-settings-detail"
+          aria-label={t(item.titleKey)}
+          data-ol-advanced-page={item.id}
+        >
           {item.id === 'lessComputer' && <CodingAgentSection />}
           {item.id === 'claudeConsole' && <ClaudeConsoleSection />}
           {item.id === 'multimodal' && <MultimodalPipelineSection />}

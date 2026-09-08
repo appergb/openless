@@ -21,11 +21,12 @@ class OpenLessAccessibilityCommandReceiver : BroadcastReceiver() {
                 }
             }
             ACTION_PING -> {
-                val result = if (OpenLessAccessibilityService.instance != null) {
-                    AccessibilityPasteResult.SUCCESS
-                } else {
-                    AccessibilityPasteResult.SERVICE_NOT_CONNECTED
-                }
+                val result =
+                    if (OpenLessAccessibilityService.instance != null) {
+                        AccessibilityPasteResult.SUCCESS
+                    } else {
+                        AccessibilityPasteResult.SERVICE_NOT_CONNECTED
+                    }
                 sendResult(receiver, result)
             }
             ACTION_CAPTURE_SELECTED_TEXT -> {
@@ -59,7 +60,8 @@ class OpenLessAccessibilityCommandReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION_PASTE = "com.openless.app.accessibility.PASTE"
         const val ACTION_PING = "com.openless.app.accessibility.PING"
-        const val ACTION_CAPTURE_SELECTED_TEXT = "com.openless.app.accessibility.CAPTURE_SELECTED_TEXT"
+        const val ACTION_CAPTURE_SELECTED_TEXT =
+            "com.openless.app.accessibility.CAPTURE_SELECTED_TEXT"
         const val EXTRA_RESULT_RECEIVER = "result_receiver"
         const val EXTRA_RESULT_REASON = "result_reason"
         const val EXTRA_PASTE_TEXT = "paste_text"

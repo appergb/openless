@@ -7,7 +7,11 @@ import type { StylePack } from '../lib/types';
 
 const DEFAULT_ICONS = { raw: 'mic', light: 'feather', structured: 'layout', formal: 'doc' };
 
-export function StylePackIconPicker({ pack, onSaved, onStatus }: {
+export function StylePackIconPicker({
+  pack,
+  onSaved,
+  onStatus,
+}: {
   pack: StylePack;
   onSaved: (pack: StylePack) => void;
   onStatus: (failed: boolean, message: string) => void;
@@ -19,9 +23,15 @@ export function StylePackIconPicker({ pack, onSaved, onStatus }: {
   useEffect(() => {
     let cancelled = false;
     void readStylePackIcon(pack.id)
-      .then(value => { if (!cancelled) setSrc(isStyleIconDataUrl(value) ? value : null); })
-      .catch(() => { if (!cancelled) setSrc(null); });
-    return () => { cancelled = true; };
+      .then((value) => {
+        if (!cancelled) setSrc(isStyleIconDataUrl(value) ? value : null);
+      })
+      .catch(() => {
+        if (!cancelled) setSrc(null);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [pack.id, pack.iconPath, pack.updatedAt]);
 
   const save = async (file: File | null) => {
@@ -34,7 +44,14 @@ export function StylePackIconPicker({ pack, onSaved, onStatus }: {
       onSaved(saved);
       onStatus(false, t('style.pack.iconSaved'));
     } catch (error) {
-      onStatus(true, t(error instanceof Error && error.message === 'invalidSvg' ? 'style.pack.iconInvalid' : 'style.pack.iconSaveFailed'));
+      onStatus(
+        true,
+        t(
+          error instanceof Error && error.message === 'invalidSvg'
+            ? 'style.pack.iconInvalid'
+            : 'style.pack.iconSaveFailed',
+        ),
+      );
     } finally {
       setBusy(false);
     }
@@ -42,16 +59,48 @@ export function StylePackIconPicker({ pack, onSaved, onStatus }: {
 
   return (
     <span className="ol-style-icon-picker">
-      <button type="button" className="ol-style-icon-button" data-custom={src ? 'true' : undefined} onClick={() => inputRef.current?.click()} disabled={busy} aria-label={t('style.pack.uploadIcon', { name: pack.name })} title={t('style.pack.uploadIcon', { name: pack.name })}>
-        {src ? <img src={src} width={24} height={24} alt="" onError={() => setSrc(null)} /> : <Icon name={DEFAULT_ICONS[pack.baseMode]} size={21} />}
-        <span className="ol-style-icon-edit"><Icon name="pencil" size={9} /></span>
+      <button
+        type="button"
+        className="ol-style-icon-button"
+        data-custom={src ? 'true' : undefined}
+        onClick={() => inputRef.current?.click()}
+        disabled={busy}
+        aria-label={t('style.pack.uploadIcon', { name: pack.name })}
+        title={t('style.pack.uploadIcon', { name: pack.name })}
+      >
+        {src ? (
+          <img src={src} width={24} height={24} alt="" onError={() => setSrc(null)} />
+        ) : (
+          <Icon name={DEFAULT_ICONS[pack.baseMode]} size={21} />
+        )}
+        <span className="ol-style-icon-edit">
+          <Icon name="pencil" size={9} />
+        </span>
       </button>
-      <input ref={inputRef} type="file" accept=".svg,image/svg+xml" hidden disabled={busy} onChange={event => {
-        const file = event.target.files?.[0];
-        event.target.value = '';
-        if (file) void save(file);
-      }} />
-      {src && <button type="button" className="ol-style-icon-reset" onClick={() => void save(null)} disabled={busy} aria-label={t('style.pack.resetIcon')} title={t('style.pack.resetIcon')}><Icon name="close" size={10} /></button>}
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".svg,image/svg+xml"
+        hidden
+        disabled={busy}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = '';
+          if (file) void save(file);
+        }}
+      />
+      {src && (
+        <button
+          type="button"
+          className="ol-style-icon-reset"
+          onClick={() => void save(null)}
+          disabled={busy}
+          aria-label={t('style.pack.resetIcon')}
+          title={t('style.pack.resetIcon')}
+        >
+          <Icon name="close" size={10} />
+        </button>
+      )}
     </span>
   );
 }

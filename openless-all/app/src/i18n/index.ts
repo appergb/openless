@@ -24,7 +24,8 @@ function detectSystemLocale(): SupportedLocale {
   if (typeof navigator === 'undefined') return 'zh-CN';
   const nav = (navigator.language || '').toLowerCase();
   if (nav.startsWith('zh')) {
-    if (nav.includes('hant') || nav.includes('tw') || nav.includes('hk') || nav.includes('mo')) return 'zh-TW';
+    if (nav.includes('hant') || nav.includes('tw') || nav.includes('hk') || nav.includes('mo'))
+      return 'zh-TW';
     return 'zh-CN';
   }
   if (nav.startsWith('ja')) return 'ja';
@@ -32,7 +33,9 @@ function detectSystemLocale(): SupportedLocale {
   return 'en';
 }
 
-function resolveLocalePreference(pref: SupportedLocale | typeof FOLLOW_SYSTEM_VALUE): SupportedLocale {
+function resolveLocalePreference(
+  pref: SupportedLocale | typeof FOLLOW_SYSTEM_VALUE,
+): SupportedLocale {
   if (pref === FOLLOW_SYSTEM_VALUE) return detectSystemLocale();
   return pref;
 }
@@ -40,7 +43,9 @@ function resolveLocalePreference(pref: SupportedLocale | typeof FOLLOW_SYSTEM_VA
 function getStoredLocale(): SupportedLocale | null {
   if (typeof window === 'undefined') return null;
   const raw = window.localStorage.getItem(LOCALE_STORAGE_KEY);
-  return raw === 'zh-CN' || raw === 'zh-TW' || raw === 'en' || raw === 'ja' || raw === 'ko' ? raw : null;
+  return raw === 'zh-CN' || raw === 'zh-TW' || raw === 'en' || raw === 'ja' || raw === 'ko'
+    ? raw
+    : null;
 }
 
 const initialLng: SupportedLocale = getStoredLocale() ?? detectSystemLocale();
@@ -50,10 +55,10 @@ const initialLng: SupportedLocale = getStoredLocale() ?? detectSystemLocale();
 // 代价：非 zh-CN 用户首屏先显示 zh-CN 一瞬，语言包异步到位后切换；最坏情况（加载失败）
 // 也只停在 zh-CN（可读），不会出现 key 字面量。
 const localeLoaders: Record<Exclude<SupportedLocale, 'zh-CN'>, () => Promise<typeof zhCN>> = {
-  'zh-TW': () => import('./zh-TW').then(m => m.zhTW),
-  en: () => import('./en').then(m => m.en),
-  ja: () => import('./ja').then(m => m.ja),
-  ko: () => import('./ko').then(m => m.ko),
+  'zh-TW': () => import('./zh-TW').then((m) => m.zhTW),
+  en: () => import('./en').then((m) => m.en),
+  ja: () => import('./ja').then((m) => m.ja),
+  ko: () => import('./ko').then((m) => m.ko),
 };
 
 async function ensureLocaleLoaded(lng: SupportedLocale): Promise<void> {

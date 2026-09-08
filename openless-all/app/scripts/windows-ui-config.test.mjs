@@ -21,13 +21,28 @@ const libRs = await readFile(new URL('../src-tauri/src/lib.rs', import.meta.url)
 const coordinatorRs =
   (await readFile(new URL('../src-tauri/src/coordinator.rs', import.meta.url), 'utf-8')) +
   '\n' +
-  (await readFile(new URL('../src-tauri/src/coordinator/capsule_focus.rs', import.meta.url), 'utf-8')) +
+  (await readFile(
+    new URL('../src-tauri/src/coordinator/capsule_focus.rs', import.meta.url),
+    'utf-8',
+  )) +
   '\n' +
   (await readFile(new URL('../src-tauri/src/tauri_coordinator_host.rs', import.meta.url), 'utf-8'));
-const capsuleTsx = await readFile(new URL('../src/components/Capsule.tsx', import.meta.url), 'utf-8');
-const capsuleLayoutTs = await readFile(new URL('../src/lib/capsuleLayout.ts', import.meta.url), 'utf-8');
-const windowChromeTsx = await readFile(new URL('../src/components/WindowChrome.tsx', import.meta.url), 'utf-8');
-const floatingShellTsx = await readFile(new URL('../src/components/FloatingShell.tsx', import.meta.url), 'utf-8');
+const capsuleTsx = await readFile(
+  new URL('../src/components/Capsule.tsx', import.meta.url),
+  'utf-8',
+);
+const capsuleLayoutTs = await readFile(
+  new URL('../src/lib/capsuleLayout.ts', import.meta.url),
+  'utf-8',
+);
+const windowChromeTsx = await readFile(
+  new URL('../src/components/WindowChrome.tsx', import.meta.url),
+  'utf-8',
+);
+const floatingShellTsx = await readFile(
+  new URL('../src/components/FloatingShell.tsx', import.meta.url),
+  'utf-8',
+);
 const themeModeTs = await readFile(new URL('../src/lib/themeMode.ts', import.meta.url), 'utf-8');
 const platformTs = await readFile(new URL('../src/lib/platform.ts', import.meta.url), 'utf-8');
 
@@ -40,9 +55,17 @@ if (!mainWindow) {
 assertEqual(capsuleWindow.width, 460, 'windows capsule config keeps the shared bootstrap width');
 assertEqual(capsuleWindow.height, 180, 'windows capsule config keeps the shared bootstrap height');
 assertEqual(capsuleWindow.transparent, true, 'capsule window should keep transparent visuals');
-assertEqual(capsuleWindow.alwaysOnTop, true, 'capsule window should stay above the focused app while recording');
+assertEqual(
+  capsuleWindow.alwaysOnTop,
+  true,
+  'capsule window should stay above the focused app while recording',
+);
 assertEqual(mainWindow.decorations, true, 'windows main window should keep native decorations');
-assertEqual(mainWindow.visible, false, 'windows main window should stay hidden until the intended first show point');
+assertEqual(
+  mainWindow.visible,
+  false,
+  'windows main window should stay hidden until the intended first show point',
+);
 
 assertMatch(
   libRs,
@@ -77,7 +100,9 @@ assertMatch(
 const tokensCss = await readFile(new URL('../src/styles/tokens.css', import.meta.url), 'utf-8');
 
 if (!/os === 'win' \|\| os === 'android' \? 0 : 14/.test(windowChromeTsx)) {
-  throw new Error('windows main shell should rely on native decorations instead of a frameless chrome shell');
+  throw new Error(
+    'windows main shell should rely on native decorations instead of a frameless chrome shell',
+  );
 }
 
 assertMatch(
@@ -97,7 +122,9 @@ assertMatch(
   'macOS main window should rely on native traffic lights instead of manually moving standardWindowButton frames',
 );
 if (/standardWindowButton|setFrameOrigin: origin|tune_macos_main_window_controls/.test(libRs)) {
-  throw new Error('macOS traffic lights should not be manually repositioned; keep native AppKit button frames visible');
+  throw new Error(
+    'macOS traffic lights should not be manually repositioned; keep native AppKit button frames visible',
+  );
 }
 if (!/className=\"ol-linux-close-btn\"/.test(windowChromeTsx)) {
   throw new Error('linux titlebar should keep the close button treatment');
@@ -141,8 +168,14 @@ assertMatch(
   'windows capsule hide helper should drop topmost participation when inactive',
 );
 
-if (!/export function getCapsuleHostMetrics\(\s*os: OS,\s*translationActive: boolean,\s*\): CapsuleHostMetrics/.test(capsuleLayoutTs)) {
-  throw new Error('capsule layout should define explicit host metrics separate from the visible pill metrics');
+if (
+  !/export function getCapsuleHostMetrics\(\s*os: OS,\s*translationActive: boolean,?\s*\): CapsuleHostMetrics/.test(
+    capsuleLayoutTs,
+  )
+) {
+  throw new Error(
+    'capsule layout should define explicit host metrics separate from the visible pill metrics',
+  );
 }
 
 assertMatch(
@@ -163,11 +196,18 @@ if (!/const hostMetrics = getCapsuleHostMetrics\(os,\s*translation\);/.test(caps
   throw new Error('capsule should derive host metrics from the shared layout contract');
 }
 
-if (!/return\s*\(\s*<div\s*style=\{\{[\s\S]*?width:\s*'100%',[\s\S]*?height:\s*'100%',[\s\S]*?position:\s*'relative',[\s\S]*?display:\s*'flex',[\s\S]*?alignItems:\s*'center',[\s\S]*?justifyContent:\s*'center',[\s\S]*?paddingLeft:\s*hostMetrics\.horizontalInset,[\s\S]*?paddingRight:\s*hostMetrics\.horizontalInset,[\s\S]*?\}\}/.test(capsuleTsx)) {
+if (
+  !/return\s*\(\s*<div\s*style=\{\{[\s\S]*?width:\s*'100%',[\s\S]*?height:\s*'100%',[\s\S]*?position:\s*'relative',[\s\S]*?display:\s*'flex',[\s\S]*?alignItems:\s*'center',[\s\S]*?justifyContent:\s*'center',[\s\S]*?paddingLeft:\s*hostMetrics\.horizontalInset,[\s\S]*?paddingRight:\s*hostMetrics\.horizontalInset,[\s\S]*?\}\}/.test(
+    capsuleTsx,
+  )
+) {
   throw new Error('capsule host should center the pill within the shared layout contract');
 }
 
-if (!/paddingLeft:\s*hostMetrics\.horizontalInset,/.test(capsuleTsx) || !/paddingRight:\s*hostMetrics\.horizontalInset,/.test(capsuleTsx)) {
+if (
+  !/paddingLeft:\s*hostMetrics\.horizontalInset,/.test(capsuleTsx) ||
+  !/paddingRight:\s*hostMetrics\.horizontalInset,/.test(capsuleTsx)
+) {
   throw new Error('capsule host should consume the shared horizontal inset contract');
 }
 

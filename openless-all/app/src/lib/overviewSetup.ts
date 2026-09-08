@@ -2,7 +2,14 @@ import { areProvidersConfigured } from './providerSetup';
 import type { CredentialsStatus } from './types';
 
 export type OverviewSettingsSection = 'general' | 'services' | 'privacy' | 'shortcuts';
-type SetupStep = 'loading' | 'unavailable' | 'services' | 'permissions' | 'shortcuts' | 'recording' | 'tryDictation';
+type SetupStep =
+  | 'loading'
+  | 'unavailable'
+  | 'services'
+  | 'permissions'
+  | 'shortcuts'
+  | 'recording'
+  | 'tryDictation';
 
 interface OverviewProvider {
   kind: 'asr' | 'llm' | 'omni';
@@ -38,14 +45,30 @@ export function getOverviewSetup({
   if (loading) return { step: 'loading', action: null, providers: [] };
   if (error || !credentials) return { step: 'unavailable', action: 'refresh', providers: [] };
 
-  const providers: OverviewProvider[] = credentials.pipelineMode === 'multimodal'
-    ? [{ kind: 'omni', id: omniProvider || null, configured: credentials.omniConfigured === true }]
-    : [
-      { kind: 'asr', id: credentials.activeAsrProvider, configured: credentials.asrConfigured ?? credentials.volcengineConfigured },
-      { kind: 'llm', id: credentials.activeLlmProvider, configured: credentials.llmConfigured ?? credentials.arkConfigured },
-    ];
+  const providers: OverviewProvider[] =
+    credentials.pipelineMode === 'multimodal'
+      ? [
+          {
+            kind: 'omni',
+            id: omniProvider || null,
+            configured: credentials.omniConfigured === true,
+          },
+        ]
+      : [
+          {
+            kind: 'asr',
+            id: credentials.activeAsrProvider,
+            configured: credentials.asrConfigured ?? credentials.volcengineConfigured,
+          },
+          {
+            kind: 'llm',
+            id: credentials.activeLlmProvider,
+            configured: credentials.llmConfigured ?? credentials.arkConfigured,
+          },
+        ];
 
-  if (!areProvidersConfigured(credentials)) return { step: 'services', action: 'services', providers };
+  if (!areProvidersConfigured(credentials))
+    return { step: 'services', action: 'services', providers };
   if (!desktop) return { step: 'recording', action: 'general', providers };
   if (hotkeyAvailable === false) return { step: 'permissions', action: 'privacy', providers };
   if (hotkeyAvailable === null) return { step: 'recording', action: 'general', providers };

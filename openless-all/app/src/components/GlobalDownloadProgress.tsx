@@ -49,33 +49,27 @@ export function GlobalDownloadProgress() {
     let cancelled = false;
     void (async () => {
       const { listen } = await import('@tauri-apps/api/event');
-      const qwenOff = await listen<LocalAsrDownloadProgress>(
-        'local-asr-download-progress',
-        (e) => {
-          const p = e.payload;
-          const key = `qwen3:${p.modelId}`;
-          setItems((prev) => {
-            if (DOWNLOAD_TERMINAL_PHASES.has(p.phase)) {
-              const next = { ...prev };
-              delete next[key];
-              return next;
-            }
-            return {
-              ...prev,
-              [key]: {
-                key,
-                id: p.modelId,
-                name: p.modelId,
-                percent:
-                  p.bytesTotal > 0
-                    ? (p.bytesDownloaded / p.bytesTotal) * 100
-                    : null,
-                engine: 'qwen3' as const,
-              },
-            };
-          });
-        },
-      );
+      const qwenOff = await listen<LocalAsrDownloadProgress>('local-asr-download-progress', (e) => {
+        const p = e.payload;
+        const key = `qwen3:${p.modelId}`;
+        setItems((prev) => {
+          if (DOWNLOAD_TERMINAL_PHASES.has(p.phase)) {
+            const next = { ...prev };
+            delete next[key];
+            return next;
+          }
+          return {
+            ...prev,
+            [key]: {
+              key,
+              id: p.modelId,
+              name: p.modelId,
+              percent: p.bytesTotal > 0 ? (p.bytesDownloaded / p.bytesTotal) * 100 : null,
+              engine: 'qwen3' as const,
+            },
+          };
+        });
+      });
       const sherpaOff = await listen<LocalAsrDownloadProgress>(
         'sherpa-onnx-asr-download-progress',
         (e) => {
@@ -93,10 +87,7 @@ export function GlobalDownloadProgress() {
                 key,
                 id: p.modelId,
                 name: p.modelId,
-                percent:
-                  p.bytesTotal > 0
-                    ? (p.bytesDownloaded / p.bytesTotal) * 100
-                    : null,
+                percent: p.bytesTotal > 0 ? (p.bytesDownloaded / p.bytesTotal) * 100 : null,
                 engine: 'sherpa' as const,
               },
             };
@@ -136,9 +127,7 @@ export function GlobalDownloadProgress() {
       } else {
         unlistens = [qwenOff, sherpaOff, foundryOff];
       }
-    })().catch((err) =>
-      console.warn('[global-download-progress] subscribe failed', err),
-    );
+    })().catch((err) => console.warn('[global-download-progress] subscribe failed', err));
     return () => {
       cancelled = true;
       for (const off of unlistens) off();
@@ -209,9 +198,7 @@ export function GlobalDownloadProgress() {
               }}
             >
               <span style={{ color: 'var(--ol-ink-4)' }}>
-                {item.percent != null
-                  ? `${Math.round(item.percent)}%`
-                  : t('localAsr.downloading')}
+                {item.percent != null ? `${Math.round(item.percent)}%` : t('localAsr.downloading')}
               </span>
               <button
                 type="button"

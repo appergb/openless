@@ -36,7 +36,20 @@ interface HeatmapProps {
   style?: CSSProperties;
 }
 
-const DEFAULT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DEFAULT_MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 const DEFAULT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function isoOf(date: Date): string {
@@ -45,7 +58,15 @@ function isoOf(date: Date): string {
 
 function hexToRgb(hex: string): [number, number, number] {
   const value = hex.replace('#', '');
-  const n = parseInt(value.length === 3 ? value.split('').map(c => c + c).join('') : value, 16);
+  const n = parseInt(
+    value.length === 3
+      ? value
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : value,
+    16,
+  );
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
@@ -74,13 +95,16 @@ export function Heatmap({
   style,
 }: HeatmapProps) {
   const { weeks, max } = useMemo(() => {
-    const counts = new Map(data.map(d => [d.date, d.value]));
+    const counts = new Map(data.map((d) => [d.date, d.value]));
     // 列从 startDate 所在周的周日开始，铺满到 endDate。
     const cursor = new Date(startDate);
     cursor.setDate(cursor.getDate() - cursor.getDay());
     const startIso = isoOf(startDate);
     const endIso = isoOf(endDate);
-    const columns: { days: { iso: string; date: Date; value: number | null }[]; monthStart: number | null }[] = [];
+    const columns: {
+      days: { iso: string; date: Date; value: number | null }[];
+      monthStart: number | null;
+    }[] = [];
     let maxValue = 0;
     let lastMonth = -1;
     // 防御上限：正常 365 天调用约 53 列，远低于此值；超大跨度时钳到 ~5 年，
@@ -94,7 +118,7 @@ export function Heatmap({
         const date = new Date(cursor);
         const iso = isoOf(date);
         const inRange = iso >= startIso && iso <= endIso;
-        const value = inRange ? counts.get(iso) ?? 0 : null;
+        const value = inRange ? (counts.get(iso) ?? 0) : null;
         if (value != null && value > maxValue) maxValue = value;
         // 月份标签挂在「该月 1 日所在列」上。
         if (inRange && date.getDate() === 1 && date.getMonth() !== lastMonth) {

@@ -27,7 +27,7 @@ export function SplashVideo() {
   useEffect(() => {
     let cancelled = false;
     takeSplashPlayback()
-      .then(shouldPlay => {
+      .then((shouldPlay) => {
         if (!cancelled) setPhase(shouldPlay ? 'playing' : 'done');
       })
       .catch(() => {

@@ -28,10 +28,14 @@ export function LocalModelSection() {
         <span className="ol-model-status">{t('localAsr.qwenExperimentalBadge')}</span>
       </header>
       {platformCaps === null ? (
-        <p className="ol-model-muted" role="status">{t('common.loading')}</p>
+        <p className="ol-model-muted" role="status">
+          {t('common.loading')}
+        </p>
       ) : !platformSupported ? (
         <p className="ol-model-muted">{t('settings.advanced.platformNotSupported')}</p>
-      ) : <LocalAsr embedded />}
+      ) : (
+        <LocalAsr embedded />
+      )}
     </section>
   );
 }

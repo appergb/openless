@@ -26,8 +26,12 @@ function fakeElement() {
       toggle: (name, enabled) => (enabled ? classes.add(name) : classes.delete(name)),
       contains: (name) => classes.has(name),
     },
-    addEventListener(type, listener) { this.listeners[type] = listener; },
-    querySelectorAll() { return []; },
+    addEventListener(type, listener) {
+      this.listeners[type] = listener;
+    },
+    querySelectorAll() {
+      return [];
+    },
     focus() {},
     select() {},
   };
@@ -58,8 +62,12 @@ async function openRemotePage({ defaultMode, savedMode } = {}) {
       this.readyState = 1;
       socket = this;
     }
-    send(value) { sent.push(value); }
-    close() { this.readyState = 3; }
+    send(value) {
+      sent.push(value);
+    }
+    close() {
+      this.readyState = 3;
+    }
   }
 
   class FakeAudioWorkletNode {
@@ -77,9 +85,15 @@ async function openRemotePage({ defaultMode, savedMode } = {}) {
       this.sampleRate = 48_000;
       this.audioWorklet = { addModule: () => Promise.resolve() };
     }
-    resume() { return Promise.resolve(); }
-    suspend() { this.state = 'suspended'; }
-    createMediaStreamSource() { return { connect() {}, disconnect() {} }; }
+    resume() {
+      return Promise.resolve();
+    }
+    suspend() {
+      this.state = 'suspended';
+    }
+    createMediaStreamSource() {
+      return { connect() {}, disconnect() {} };
+    }
   }
 
   const document = {
@@ -89,7 +103,9 @@ async function openRemotePage({ defaultMode, savedMode } = {}) {
     getElementById: element,
     querySelectorAll: () => [],
     createElement: fakeElement,
-    addEventListener(type, listener) { documentListeners[type] = listener; },
+    addEventListener(type, listener) {
+      documentListeners[type] = listener;
+    },
     removeEventListener() {},
     execCommand() {},
   };
@@ -127,7 +143,8 @@ async function openRemotePage({ defaultMode, savedMode } = {}) {
   context.window = context;
   // Exercise the embedded HTML script too, so a missing template variable cannot
   // be hidden by setting window properties directly in the test harness.
-  const injectedScript = html.match(/<script>([\s\S]*?)<\/script>/)[1]
+  const injectedScript = html
+    .match(/<script>([\s\S]*?)<\/script>/)[1]
     .replaceAll('%%OL_LANG%%', 'zh-CN')
     .replaceAll('%%OL_DEFAULT_MODE%%', defaultMode ?? '');
   runInNewContext(injectedScript, context, { filename: 'remote-server/assets/index.html' });
@@ -148,7 +165,9 @@ async function openRemotePage({ defaultMode, savedMode } = {}) {
       for (let i = 0; i < 8; i += 1) await Promise.resolve();
       assert.ok(worklet?.port.onmessage, 'audio capture must be running');
     },
-    pcm(bytes) { worklet.port.onmessage({ data: Uint8Array.from(bytes).buffer }); },
+    pcm(bytes) {
+      worklet.port.onmessage({ data: Uint8Array.from(bytes).buffer });
+    },
   };
 }
 
@@ -169,8 +188,11 @@ for (const [defaultMode, savedMode, expected] of [
     expected === 'hold' ? 'none' : 'manipulation',
     `PC default ${defaultMode}, phone choice ${savedMode} must use ${expected}`,
   );
-  assert.equal(page.storage.getItem('ol_remote_mode'), savedMode ?? null,
-    'inheriting a PC default must not create a phone override');
+  assert.equal(
+    page.storage.getItem('ol_remote_mode'),
+    savedMode ?? null,
+    'inheriting a PC default must not create a phone override',
+  );
 }
 
 {
@@ -202,7 +224,10 @@ const sequence = (frame) => {
   });
   const frames = binaryFrames(page.sent);
   assert.deepEqual(frames.map(sequence), [0, 1]);
-  assert.deepEqual(frames.map(payload), [[1, 0, 2, 0], [3, 0]]);
+  assert.deepEqual(frames.map(payload), [
+    [1, 0, 2, 0],
+    [3, 0],
+  ]);
 }
 
 {
@@ -211,7 +236,10 @@ const sequence = (frame) => {
   page.pcm([4, 0, 5, 0]);
   page.element('btn-record').listeners.click();
   assert.equal(binaryFrames(page.sent).length, 0);
-  assert.equal(page.sent.some((value) => typeof value === 'string' && JSON.parse(value).type === 'stop'), false);
+  assert.equal(
+    page.sent.some((value) => typeof value === 'string' && JSON.parse(value).type === 'stop'),
+    false,
+  );
 
   page.socket.onmessage({
     data: JSON.stringify({ type: 'started', sessionId: '10112233-4455-6677-8899-aabbccddeeff' }),
@@ -255,7 +283,9 @@ for (const terminal of ['cancel', 'busy', 'disconnect']) {
   assert.equal(page.element('status-text').textContent, '后端准备中…');
   page.pcm([0, 0]);
   assert.match(page.element('status-text').textContent, /音频缓存已满/);
-  assert.ok(page.sent.some((value) => typeof value === 'string' && JSON.parse(value).type === 'cancel'));
+  assert.ok(
+    page.sent.some((value) => typeof value === 'string' && JSON.parse(value).type === 'cancel'),
+  );
   assert.equal(binaryFrames(page.sent).length, 0);
 }
 

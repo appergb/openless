@@ -94,13 +94,13 @@ pub use providers::*;
 pub use qa::*;
 #[cfg(not(mobile))]
 pub use remote_input::*;
-pub use settings::*;
 #[cfg(all(not(mobile), debug_assertions))]
 pub use selection_polish::*;
 #[cfg(not(mobile))]
 pub use selection_polish_preview::*;
 #[cfg(all(not(mobile), target_os = "windows"))]
 pub use selection_voice::*;
+pub use settings::*;
 #[cfg(not(mobile))]
 // Sherpa 命令只在 Windows 注册；其他桌面目标保留空重导出。
 #[allow(unused_imports)]

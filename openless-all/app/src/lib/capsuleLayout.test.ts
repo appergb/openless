@@ -14,7 +14,11 @@ const winMetrics = getCapsulePillMetrics('win');
 assertEqual(winMetrics.width, 460, 'windows voice orb stage uses the demo-scale width');
 assertEqual(winMetrics.height, 180, 'windows voice orb stage uses the demo-scale height');
 assertEqual(winMetrics.textWidth, 400, 'windows voice orb text stays inside the stage');
-assertEqual(winMetrics.boxSizing, 'border-box', 'windows voice orb stage width is an outer border-box metric');
+assertEqual(
+  winMetrics.boxSizing,
+  'border-box',
+  'windows voice orb stage width is an outer border-box metric',
+);
 
 const winHost = getCapsuleHostMetrics('win', false);
 assertEqual(winHost.width, 460, 'windows voice orb host matches stage width');
@@ -33,10 +37,26 @@ assertEqual(
 );
 
 const winHostWithTranslation = getCapsuleHostMetrics('win', true);
-assertEqual(winHostWithTranslation.width, 460, 'windows translation voice orb keeps the same outer width');
-assertEqual(winHostWithTranslation.height, 180, 'windows translation voice orb keeps the same outer height');
-assertEqual(winHostWithTranslation.horizontalInset, 0, 'windows translation voice orb has no side button inset');
-assertEqual(winHostWithTranslation.boxSizing, 'border-box', 'windows translation host keeps border-box sizing');
+assertEqual(
+  winHostWithTranslation.width,
+  460,
+  'windows translation voice orb keeps the same outer width',
+);
+assertEqual(
+  winHostWithTranslation.height,
+  180,
+  'windows translation voice orb keeps the same outer height',
+);
+assertEqual(
+  winHostWithTranslation.horizontalInset,
+  0,
+  'windows translation voice orb has no side button inset',
+);
+assertEqual(
+  winHostWithTranslation.boxSizing,
+  'border-box',
+  'windows translation host keeps border-box sizing',
+);
 
 const macMetrics = getCapsulePillMetrics('mac');
 assertEqual(macMetrics.width, 460, 'mac voice orb stage uses the demo-scale width');

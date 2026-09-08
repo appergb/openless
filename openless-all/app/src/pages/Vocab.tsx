@@ -84,7 +84,7 @@ export function Vocab() {
     void refresh();
     void loadVocabPresets()
       .then(setPresets)
-      .catch(err => setError(err instanceof Error ? err.message : String(err)));
+      .catch((err) => setError(err instanceof Error ? err.message : String(err)));
     // 订阅后端 vocab:updated：每段口述结束、record_hits 触发后由 coordinator 推送。
     // Vocab 页面打开期间能即时看到命中数累加，无需切到其他 tab 再切回。
     if (!isTauri) return;
@@ -115,7 +115,7 @@ export function Vocab() {
     try {
       const entry = await addVocab(phrase);
       // 乐观插入头部（addVocab 返回新 entry，浏览器 mock 下也能立刻看到）。
-      setEntries(prev => [entry, ...prev]);
+      setEntries((prev) => [entry, ...prev]);
       flashSaved();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -133,8 +133,8 @@ export function Vocab() {
   const onRemove = async (id: string) => {
     await fadeOutCard(id);
     await removeVocab(id);
-    setEntries(prev => prev.filter(e => e.id !== id));
-    setRemovingIds(prev => {
+    setEntries((prev) => prev.filter((e) => e.id !== id));
+    setRemovingIds((prev) => {
       const next = new Set(prev);
       next.delete(id);
       return next;
@@ -145,11 +145,13 @@ export function Vocab() {
     const next = !entry.enabled;
     // 乐观更新 UI；后端失败时回滚 + 让用户看到错误，避免 UI 显示「已禁用」但 ASR/polish
     // 仍在注入此词条造成的诡异状态。issue #60。
-    setEntries(prev => prev.map(e => (e.id === entry.id ? { ...e, enabled: next } : e)));
+    setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, enabled: next } : e)));
     try {
       await setVocabEnabled(entry.id, next);
     } catch (err) {
-      setEntries(prev => prev.map(e => (e.id === entry.id ? { ...e, enabled: entry.enabled } : e)));
+      setEntries((prev) =>
+        prev.map((e) => (e.id === entry.id ? { ...e, enabled: entry.enabled } : e)),
+      );
       setError(err instanceof Error ? err.message : String(err));
     }
   };
@@ -174,7 +176,7 @@ export function Vocab() {
     try {
       await updateVocab(editingEntry.id, phrase);
       // 乐观改名：id / hits / enabled 保持不变（后端 update_vocab 原地改 phrase）。
-      setEntries(prev => prev.map(e => (e.id === editingEntry.id ? { ...e, phrase } : e)));
+      setEntries((prev) => prev.map((e) => (e.id === editingEntry.id ? { ...e, phrase } : e)));
       setEditingEntry(null);
       flashSaved();
     } catch (err) {
@@ -187,7 +189,7 @@ export function Vocab() {
     if (!phrase) return;
     try {
       const entry = await addVocab(phrase);
-      setEntries(prev => [entry, ...prev]);
+      setEntries((prev) => [entry, ...prev]);
       setNewWordDraft('');
       flashSaved();
     } catch (e) {
@@ -196,7 +198,9 @@ export function Vocab() {
   };
 
   const togglePreset = (id: string) => {
-    setSelectedPresetIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
+    setSelectedPresetIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
   };
 
   const startEditPreset = (preset: VocabPreset) => {
@@ -213,14 +217,14 @@ export function Vocab() {
       new Set(
         presetPhrasesDraft
           .split(/[,\n]/)
-          .map(s => s.trim())
+          .map((s) => s.trim())
           .filter(Boolean),
       ),
     );
     const next =
       editingPresetId === NEW_PRESET_DRAFT_ID
         ? [...presets, { id: `user-${Date.now()}`, name, phrases }]
-        : presets.map(p => (p.id === editingPresetId ? { ...p, name, phrases } : p));
+        : presets.map((p) => (p.id === editingPresetId ? { ...p, name, phrases } : p));
     try {
       await persistVocabPresets(next);
       setPresets(next);
@@ -255,7 +259,7 @@ export function Vocab() {
           try {
             const entry = await addVocab(phrase);
             addedPhrases.add(key);
-            setEntries(prev => [entry, ...prev]);
+            setEntries((prev) => [entry, ...prev]);
           } catch {
             failures += 1;
           }
@@ -276,7 +280,7 @@ export function Vocab() {
   };
 
   const applySelectedPresets = async () => {
-    const selected = presets.filter(p => selectedPresetIds.includes(p.id));
+    const selected = presets.filter((p) => selectedPresetIds.includes(p.id));
     if (selected.length === 0) return;
     const failures = await applyPresets(selected);
     await refresh();
@@ -288,7 +292,7 @@ export function Vocab() {
   };
 
   const applyNewWordTemplates = async () => {
-    const selected = presets.filter(p => newWordTemplateIds.includes(p.id));
+    const selected = presets.filter((p) => newWordTemplateIds.includes(p.id));
     if (selected.length === 0) return;
     const failures = await applyPresets(selected);
     setNewWordTemplateIds([]);
@@ -305,25 +309,30 @@ export function Vocab() {
   // 用户随时能看清、能整块撤销，是自动收集能被信任的前提。
   const sourceOf = (entry: DictionaryEntry): Exclude<SourceFilter, 'all'> =>
     entry.note === LEARNED_NOTE ? 'auto' : 'manual';
-  const learnedEntries = entries.filter(e => sourceOf(e) === 'auto');
+  const learnedEntries = entries.filter((e) => sourceOf(e) === 'auto');
 
   /** 删除退场动画（从哪来回到哪去）：先淡出收缩，动画结束再真正删。 */
   const fadeOutCard = async (id: string) => {
     const element = cardRefs.current.get(id);
     if (!element) return;
-    setRemovingIds(prev => new Set(prev).add(id));
+    setRemovingIds((prev) => new Set(prev).add(id));
     try {
       await element.animate(
-        [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(0.92)' }],
+        [
+          { opacity: 1, transform: 'scale(1)' },
+          { opacity: 0, transform: 'scale(0.92)' },
+        ],
         { duration: 160, easing: 'cubic-bezier(0.4, 0, 1, 1)' },
       ).finished;
-    } catch { /* 动画被打断（筛选切换/卸载）不阻塞删除 */ }
+    } catch {
+      /* 动画被打断（筛选切换/卸载）不阻塞删除 */
+    }
   };
 
   const onRemoveAllLearnedEntries = async () => {
     // 逐条删而不是加一条批量后端命令：词条是几十条量级，为此多开一条 IPC 不值得，
     // 而且逐条删失败一条也不影响其余。
-    await Promise.all(learnedEntries.map(entry => fadeOutCard(entry.id)));
+    await Promise.all(learnedEntries.map((entry) => fadeOutCard(entry.id)));
     const removed: string[] = [];
     for (const entry of learnedEntries) {
       try {
@@ -333,13 +342,13 @@ export function Vocab() {
         setError(e instanceof Error ? e.message : String(e));
       }
     }
-    setEntries(prev => prev.filter(e => !removed.includes(e.id)));
+    setEntries((prev) => prev.filter((e) => !removed.includes(e.id)));
     setRemovingIds(new Set());
   };
 
   const needle = query.trim().toLowerCase();
   const visibleEntries = entries.filter(
-    e =>
+    (e) =>
       (filter === 'all' || sourceOf(e) === filter) &&
       (!needle || e.phrase.toLowerCase().includes(needle)),
   );
@@ -370,7 +379,15 @@ export function Vocab() {
         desc={t('vocab.desc')}
         right={
           <div style={{ display: 'flex', gap: 8 }}>
-            <Btn variant="primary" icon="plus" onClick={() => { setNewWordOpen(true); setNewWordDraft(''); setNewWordTemplateIds([]); }}>
+            <Btn
+              variant="primary"
+              icon="plus"
+              onClick={() => {
+                setNewWordOpen(true);
+                setNewWordDraft('');
+                setNewWordTemplateIds([]);
+              }}
+            >
               {t('vocab.newWord')}
             </Btn>
           </div>
@@ -391,11 +408,13 @@ export function Vocab() {
         }}
       >
         <div className="ol-seg" role="tablist" aria-label={t('vocab.title')}>
-          {([
-            { id: 'all', icon: null },
-            { id: 'auto', icon: 'sparkle' },
-            { id: 'manual', icon: 'feather' },
-          ] as const).map(seg => (
+          {(
+            [
+              { id: 'all', icon: null },
+              { id: 'auto', icon: 'sparkle' },
+              { id: 'manual', icon: 'feather' },
+            ] as const
+          ).map((seg) => (
             <button
               key={seg.id}
               type="button"
@@ -420,9 +439,16 @@ export function Vocab() {
             placeholder={t('vocab.searchPlaceholder')}
             aria-label={t('vocab.searchPlaceholder')}
             tabIndex={searchOpen ? 0 : -1}
-            onChange={e => setQuery(e.target.value)}
-            onBlur={() => { if (!query) setSearchOpen(false); }}
-            onKeyDown={e => { if (e.key === 'Escape') { setQuery(''); setSearchOpen(false); } }}
+            onChange={(e) => setQuery(e.target.value)}
+            onBlur={() => {
+              if (!query) setSearchOpen(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setQuery('');
+                setSearchOpen(false);
+              }
+            }}
           />
           <button
             type="button"
@@ -431,10 +457,13 @@ export function Vocab() {
             aria-expanded={searchOpen}
             // 点图标不让输入框失焦：否则 blur 收起与 click 切换竞态，第二次点击
             // 会先收起再被 toggle 重新展开，永远收不起来。
-            onMouseDown={e => e.preventDefault()}
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => {
-              if (searchOpen && query) { setQuery(''); return; }
-              setSearchOpen(prev => !prev);
+              if (searchOpen && query) {
+                setQuery('');
+                return;
+              }
+              setSearchOpen((prev) => !prev);
               if (!searchOpen) {
                 window.setTimeout(() => inputRefSearchFocus(), 60);
               } else {
@@ -490,38 +519,42 @@ export function Vocab() {
         className="ol-thinscroll"
         style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: 2, paddingBottom: 12 }}
       >
-      {/* 词条网格：hover 变灰 + 右侧浮现编辑/删除。 */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: mobile ? 'minmax(0, 1fr)' : 'repeat(auto-fill, minmax(230px, 1fr))',
-          gap: 10,
-          minHeight: 80,
-          alignContent: 'start',
-        }}
-      >
-        {loading && <div style={{ fontSize: 12, color: 'var(--ol-ink-4)' }}>{t('common.loading')}</div>}
-        {!loading && !error && visibleEntries.length === 0 && (
-          <div style={{ fontSize: 12, color: 'var(--ol-ink-4)', gridColumn: '1 / -1' }}>
-            {needle ? t('vocab.searchEmpty') : t('vocab.empty')}
-          </div>
-        )}
-        {visibleEntries.map(entry => (
-          <WordCard
-            key={entry.id}
-            entry={entry}
-            auto={sourceOf(entry) === 'auto'}
-            removing={removingIds.has(entry.id)}
-            cardRef={element => {
-              if (element) cardRefs.current.set(entry.id, element);
-              else cardRefs.current.delete(entry.id);
-            }}
-            onToggle={() => void onToggle(entry)}
-            onEdit={() => openEdit(entry)}
-            onRemove={() => void onRemove(entry.id)}
-          />
-        ))}
-      </div>
+        {/* 词条网格：hover 变灰 + 右侧浮现编辑/删除。 */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: mobile
+              ? 'minmax(0, 1fr)'
+              : 'repeat(auto-fill, minmax(230px, 1fr))',
+            gap: 10,
+            minHeight: 80,
+            alignContent: 'start',
+          }}
+        >
+          {loading && (
+            <div style={{ fontSize: 12, color: 'var(--ol-ink-4)' }}>{t('common.loading')}</div>
+          )}
+          {!loading && !error && visibleEntries.length === 0 && (
+            <div style={{ fontSize: 12, color: 'var(--ol-ink-4)', gridColumn: '1 / -1' }}>
+              {needle ? t('vocab.searchEmpty') : t('vocab.empty')}
+            </div>
+          )}
+          {visibleEntries.map((entry) => (
+            <WordCard
+              key={entry.id}
+              entry={entry}
+              auto={sourceOf(entry) === 'auto'}
+              removing={removingIds.has(entry.id)}
+              cardRef={(element) => {
+                if (element) cardRefs.current.set(entry.id, element);
+                else cardRefs.current.delete(entry.id);
+              }}
+              onToggle={() => void onToggle(entry)}
+              onEdit={() => openEdit(entry)}
+              onRemove={() => void onRemove(entry.id)}
+            />
+          ))}
+        </div>
       </div>
 
       {/* 底部面板：快速添加行 + 提示 + 场景预设固定成一块。场景预设展开时面板
@@ -534,144 +567,254 @@ export function Vocab() {
           boxShadow: '0 -18px 22px -18px rgba(15,17,22,0.14)',
         }}
       >
-      {/* 快速添加行（保留原输入即添加的顺手路径）。 */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <input
-          ref={inputRef}
-          placeholder={t('vocab.placeholder')}
-          onKeyDown={onKeyDown}
-          style={{
-            flex: 1, height: 36, padding: '0 12px',
-            border: '0.5px solid var(--ol-line-strong)',
-            borderRadius: 999, fontSize: 13,
-            fontFamily: 'inherit', outline: 'none',
-            background: 'var(--ol-surface-2)',
-            transition: 'border-color 0.16s var(--ol-motion-quick), box-shadow 0.18s var(--ol-motion-soft), background 0.16s var(--ol-motion-quick)',
-          }}
-        />
-        <Btn variant="primary" icon="plus" onClick={onAdd}>{t('common.add')}</Btn>
-      </div>
-      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--ol-ink-4)' }}>{t('vocab.tip')}</div>
+        {/* 快速添加行（保留原输入即添加的顺手路径）。 */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            ref={inputRef}
+            placeholder={t('vocab.placeholder')}
+            onKeyDown={onKeyDown}
+            style={{
+              flex: 1,
+              height: 36,
+              padding: '0 12px',
+              border: '0.5px solid var(--ol-line-strong)',
+              borderRadius: 999,
+              fontSize: 13,
+              fontFamily: 'inherit',
+              outline: 'none',
+              background: 'var(--ol-surface-2)',
+              transition:
+                'border-color 0.16s var(--ol-motion-quick), box-shadow 0.18s var(--ol-motion-soft), background 0.16s var(--ol-motion-quick)',
+            }}
+          />
+          <Btn variant="primary" icon="plus" onClick={onAdd}>
+            {t('common.add')}
+          </Btn>
+        </div>
+        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--ol-ink-4)' }}>{t('vocab.tip')}</div>
 
-      {/* 场景预设：卡片区块（与「新词」弹窗共享同一份模板数据）。
+        {/* 场景预设：卡片区块（与「新词」弹窗共享同一份模板数据）。
           可展开，顶部给一条分隔线与输入区分开。 */}
-      <div style={{ marginTop: 12, paddingTop: 12, borderTop: '0.5px solid var(--ol-line)', paddingBottom: 8 }}>
-        <Card padding={0}>
-          <Collapsible
-            embedded
-            title={t('vocab.presets.title')}
-            desc={t('vocab.presets.tip')}
-          >
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              {presets.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => togglePreset(p.id)}
-                  style={{
-                    border: '0.5px solid var(--ol-line-strong)',
-                    borderRadius: 999,
-                    padding: '4px 10px',
-                    fontSize: 12,
-                    background: selectedPresetIds.includes(p.id) ? 'var(--ol-blue-soft)' : 'var(--ol-surface-2)',
-                  }}
-                >
-                  {p.name}
-                </button>
-              ))}
-              <Btn size="sm" variant="ghost" onClick={createPreset}>{t('vocab.presets.create')}</Btn>
-              <Btn size="sm" variant="primary" onClick={applySelectedPresets}>{t('vocab.presets.apply')}</Btn>
-            </div>
-            {editingPresetId && (
-              <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
-                <input value={presetNameDraft} onChange={e => setPresetNameDraft(e.target.value)} placeholder={t('vocab.presets.namePlaceholder')} />
-                <textarea value={presetPhrasesDraft} onChange={e => setPresetPhrasesDraft(e.target.value)} placeholder={t('vocab.presets.wordsPlaceholder')} rows={3} />
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <Btn size="sm" variant="primary" onClick={() => void savePreset()}>{t('vocab.presets.save')}</Btn>
-                  <Btn size="sm" variant="ghost" onClick={() => setEditingPresetId(null)}>{t('common.cancel')}</Btn>
-                </div>
-              </div>
-            )}
-            {!editingPresetId && presets.length > 0 && (
-              <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {presets.map(p => (
-                  <Btn key={`${p.id}-edit`} size="sm" variant="ghost" onClick={() => startEditPreset(p)}>
-                    {t('vocab.presets.edit', { name: p.name })}
-                  </Btn>
+        <div
+          style={{
+            marginTop: 12,
+            paddingTop: 12,
+            borderTop: '0.5px solid var(--ol-line)',
+            paddingBottom: 8,
+          }}
+        >
+          <Card padding={0}>
+            <Collapsible embedded title={t('vocab.presets.title')} desc={t('vocab.presets.tip')}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                {presets.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => togglePreset(p.id)}
+                    style={{
+                      border: '0.5px solid var(--ol-line-strong)',
+                      borderRadius: 999,
+                      padding: '4px 10px',
+                      fontSize: 12,
+                      background: selectedPresetIds.includes(p.id)
+                        ? 'var(--ol-blue-soft)'
+                        : 'var(--ol-surface-2)',
+                    }}
+                  >
+                    {p.name}
+                  </button>
                 ))}
+                <Btn size="sm" variant="ghost" onClick={createPreset}>
+                  {t('vocab.presets.create')}
+                </Btn>
+                <Btn size="sm" variant="primary" onClick={applySelectedPresets}>
+                  {t('vocab.presets.apply')}
+                </Btn>
               </div>
-            )}
-          </Collapsible>
-        </Card>
-      </div>
+              {editingPresetId && (
+                <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
+                  <input
+                    value={presetNameDraft}
+                    onChange={(e) => setPresetNameDraft(e.target.value)}
+                    placeholder={t('vocab.presets.namePlaceholder')}
+                  />
+                  <textarea
+                    value={presetPhrasesDraft}
+                    onChange={(e) => setPresetPhrasesDraft(e.target.value)}
+                    placeholder={t('vocab.presets.wordsPlaceholder')}
+                    rows={3}
+                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Btn size="sm" variant="primary" onClick={() => void savePreset()}>
+                      {t('vocab.presets.save')}
+                    </Btn>
+                    <Btn size="sm" variant="ghost" onClick={() => setEditingPresetId(null)}>
+                      {t('common.cancel')}
+                    </Btn>
+                  </div>
+                </div>
+              )}
+              {!editingPresetId && presets.length > 0 && (
+                <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {presets.map((p) => (
+                    <Btn
+                      key={`${p.id}-edit`}
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditPreset(p)}
+                    >
+                      {t('vocab.presets.edit', { name: p.name })}
+                    </Btn>
+                  ))}
+                </div>
+              )}
+            </Collapsible>
+          </Card>
+        </div>
       </div>
 
       {/* 编辑词条弹窗 */}
       {editMount.mounted && (
-        <ModalShell title={t('vocab.editTitle')} closing={editMount.closing} onClose={() => setEditingEntry(null)}>
+        <ModalShell
+          title={t('vocab.editTitle')}
+          closing={editMount.closing}
+          onClose={() => setEditingEntry(null)}
+        >
           <input
             autoFocus
             value={editDraft}
-            onChange={e => { setEditDraft(e.target.value); setEditError(null); }}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void saveEdit(); } }}
+            onChange={(e) => {
+              setEditDraft(e.target.value);
+              setEditError(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                void saveEdit();
+              }
+            }}
             style={{
-              width: '100%', boxSizing: 'border-box', height: 40, padding: '0 12px',
-              border: '1.5px solid var(--ol-ink)', borderRadius: 10,
-              fontSize: 14, fontFamily: 'inherit', outline: 'none',
-              background: 'var(--ol-surface)', color: 'var(--ol-ink)',
+              width: '100%',
+              boxSizing: 'border-box',
+              height: 40,
+              padding: '0 12px',
+              border: '1.5px solid var(--ol-ink)',
+              borderRadius: 10,
+              fontSize: 14,
+              fontFamily: 'inherit',
+              outline: 'none',
+              background: 'var(--ol-surface)',
+              color: 'var(--ol-ink)',
             }}
           />
           {editError && (
-            <div style={{ marginTop: 8, fontSize: 12, color: 'var(--ol-red, #ef4444)' }}>{editError}</div>
+            <div style={{ marginTop: 8, fontSize: 12, color: 'var(--ol-red, #ef4444)' }}>
+              {editError}
+            </div>
           )}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 18 }}>
-            <Btn variant="ghost" onClick={() => setEditingEntry(null)}>{t('common.cancel')}</Btn>
-            <Btn variant="primary" onClick={() => void saveEdit()}>{t('vocab.editSave')}</Btn>
+            <Btn variant="ghost" onClick={() => setEditingEntry(null)}>
+              {t('common.cancel')}
+            </Btn>
+            <Btn variant="primary" onClick={() => void saveEdit()}>
+              {t('vocab.editSave')}
+            </Btn>
           </div>
         </ModalShell>
       )}
 
       {/* 新词弹窗：直接输入 + 预设模板多选 */}
       {newWordMount.mounted && (
-        <ModalShell title={t('vocab.newWordTitle')} desc={t('vocab.newWordDesc')} closing={newWordMount.closing} onClose={() => setNewWordOpen(false)}>
+        <ModalShell
+          title={t('vocab.newWordTitle')}
+          desc={t('vocab.newWordDesc')}
+          closing={newWordMount.closing}
+          onClose={() => setNewWordOpen(false)}
+        >
           <div style={{ display: 'flex', gap: 8 }}>
             <input
               autoFocus
               value={newWordDraft}
-              onChange={e => setNewWordDraft(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void addNewWord(); } }}
+              onChange={(e) => setNewWordDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void addNewWord();
+                }
+              }}
               placeholder={t('vocab.newWordInputPlaceholder')}
               style={{
-                flex: 1, minWidth: 0, height: 38, padding: '0 12px',
-                border: '0.5px solid var(--ol-line-strong)', borderRadius: 999,
-                fontSize: 13.5, fontFamily: 'inherit', outline: 'none',
-                background: 'var(--ol-surface-2)', color: 'var(--ol-ink)',
+                flex: 1,
+                minWidth: 0,
+                height: 38,
+                padding: '0 12px',
+                border: '0.5px solid var(--ol-line-strong)',
+                borderRadius: 999,
+                fontSize: 13.5,
+                fontFamily: 'inherit',
+                outline: 'none',
+                background: 'var(--ol-surface-2)',
+                color: 'var(--ol-ink)',
               }}
             />
-            <Btn variant="primary" icon="plus" onClick={() => void addNewWord()}>{t('common.add')}</Btn>
+            <Btn variant="primary" icon="plus" onClick={() => void addNewWord()}>
+              {t('common.add')}
+            </Btn>
           </div>
           <div style={{ marginTop: 16, fontSize: 12.5, fontWeight: 600, color: 'var(--ol-ink-2)' }}>
             {t('vocab.newWordTemplates')}
           </div>
           <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
-            {presets.map(p => {
+            {presets.map((p) => {
               const checked = newWordTemplateIds.includes(p.id);
               return (
                 <button
                   key={p.id}
                   type="button"
                   aria-pressed={checked}
-                  onClick={() => setNewWordTemplateIds(prev => (prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id]))}
+                  onClick={() =>
+                    setNewWordTemplateIds((prev) =>
+                      prev.includes(p.id) ? prev.filter((x) => x !== p.id) : [...prev, p.id],
+                    )
+                  }
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left',
-                    padding: '10px 12px', borderRadius: 10, fontFamily: 'inherit',
-                    border: checked ? '1px solid var(--ol-blue)' : '0.5px solid var(--ol-line-strong)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    textAlign: 'left',
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    fontFamily: 'inherit',
+                    border: checked
+                      ? '1px solid var(--ol-blue)'
+                      : '0.5px solid var(--ol-line-strong)',
                     background: checked ? 'var(--ol-blue-soft)' : 'var(--ol-surface)',
-                    cursor: 'default', transition: 'background 0.14s var(--ol-motion-quick), border-color 0.14s var(--ol-motion-quick)',
+                    cursor: 'default',
+                    transition:
+                      'background 0.14s var(--ol-motion-quick), border-color 0.14s var(--ol-motion-quick)',
                   }}
                 >
                   <span style={{ minWidth: 0, flex: 1 }}>
-                    <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--ol-ink)' }}>{p.name}</span>
-                    <span style={{ display: 'block', marginTop: 2, fontSize: 11.5, color: 'var(--ol-ink-4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: 'var(--ol-ink)',
+                      }}
+                    >
+                      {p.name}
+                    </span>
+                    <span
+                      style={{
+                        display: 'block',
+                        marginTop: 2,
+                        fontSize: 11.5,
+                        color: 'var(--ol-ink-4)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
                       {p.phrases.join(' · ')}
                     </span>
                   </span>
@@ -684,8 +827,14 @@ export function Vocab() {
             })}
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 18 }}>
-            <Btn variant="ghost" onClick={() => setNewWordOpen(false)}>{t('common.close')}</Btn>
-            <Btn variant="primary" onClick={() => void applyNewWordTemplates()} disabled={newWordTemplateIds.length === 0}>
+            <Btn variant="ghost" onClick={() => setNewWordOpen(false)}>
+              {t('common.close')}
+            </Btn>
+            <Btn
+              variant="primary"
+              onClick={() => void applyNewWordTemplates()}
+              disabled={newWordTemplateIds.length === 0}
+            >
               {t('vocab.newWordAddSelected')}
             </Btn>
           </div>
@@ -723,7 +872,12 @@ function WordCard({ entry, auto, removing, cardRef, onToggle, onEdit, onRemove }
   const { t } = useTranslation();
   const enabled = entry.enabled;
   return (
-    <div ref={cardRef} className="ol-word-card" data-disabled={enabled ? undefined : 'true'} style={removing ? { pointerEvents: 'none' } : undefined}>
+    <div
+      ref={cardRef}
+      className="ol-word-card"
+      data-disabled={enabled ? undefined : 'true'}
+      style={removing ? { pointerEvents: 'none' } : undefined}
+    >
       <span className="ol-word-card-icon" aria-hidden>
         <Icon name={auto ? 'sparkle' : 'feather'} size={14} />
       </span>
@@ -738,12 +892,22 @@ function WordCard({ entry, auto, removing, cardRef, onToggle, onEdit, onRemove }
       <span className="ol-word-card-hits">{entry.hits}</span>
       <span className="ol-word-card-actions">
         <Tooltip content={t('vocab.edit')} placement="top">
-          <button type="button" className="ol-word-card-action" aria-label={t('vocab.edit')} onClick={onEdit}>
+          <button
+            type="button"
+            className="ol-word-card-action"
+            aria-label={t('vocab.edit')}
+            onClick={onEdit}
+          >
             <Icon name="pencil" size={14} />
           </button>
         </Tooltip>
         <Tooltip content={t('common.delete')} placement="top">
-          <button type="button" className="ol-word-card-action" aria-label={t('vocab.removeAria')} onClick={onRemove}>
+          <button
+            type="button"
+            className="ol-word-card-action"
+            aria-label={t('vocab.removeAria')}
+            onClick={onRemove}
+          >
             <Icon name="trash" size={14} />
           </button>
         </Tooltip>
@@ -794,7 +958,7 @@ function ModalShell({ title, desc, closing = false, onClose, children }: ModalSh
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
         style={{
           width: 440,
           maxWidth: '100%',
@@ -808,19 +972,41 @@ function ModalShell({ title, desc, closing = false, onClose, children }: ModalSh
             : 'ol-prompt-pop 0.26s var(--ol-motion-spring)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: desc ? 4 : 14 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 12,
+            marginBottom: desc ? 4 : 14,
+          }}
+        >
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 650, color: 'var(--ol-ink)' }}>{title}</div>
-            {desc && <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--ol-ink-3)', lineHeight: 1.5 }}>{desc}</div>}
+            {desc && (
+              <div
+                style={{ marginTop: 4, fontSize: 12.5, color: 'var(--ol-ink-3)', lineHeight: 1.5 }}
+              >
+                {desc}
+              </div>
+            )}
           </div>
           <button
             type="button"
             aria-label={t('common.close')}
             onClick={onClose}
             style={{
-              width: 26, height: 26, flexShrink: 0, border: 0, borderRadius: 8,
-              background: 'transparent', color: 'var(--ol-ink-4)', cursor: 'default',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 26,
+              height: 26,
+              flexShrink: 0,
+              border: 0,
+              borderRadius: 8,
+              background: 'transparent',
+              color: 'var(--ol-ink-4)',
+              cursor: 'default',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
             <Icon name="close" size={14} />

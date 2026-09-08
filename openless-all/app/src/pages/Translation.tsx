@@ -27,9 +27,12 @@ export function Translation() {
   const [stylePackLoadFailed, setStylePackLoadFailed] = useState(false);
   const statusTimer = useRef<number | null>(null);
 
-  useEffect(() => () => {
-    if (statusTimer.current !== null) window.clearTimeout(statusTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (statusTimer.current !== null) window.clearTimeout(statusTimer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     const activeStylePackId = prefs?.activeStylePackId;
@@ -37,20 +40,22 @@ export function Translation() {
     setActiveStylePackName(null);
     setStylePackLoadFailed(false);
     void listStylePacks()
-      .then(packs => {
+      .then((packs) => {
         if (cancelled) return;
         const activePack =
-          packs.find(pack => pack.active && pack.enabled) ??
-          packs.find(pack => pack.id === activeStylePackId && pack.enabled);
+          packs.find((pack) => pack.active && pack.enabled) ??
+          packs.find((pack) => pack.id === activeStylePackId && pack.enabled);
         setActiveStylePackName(activePack?.name ?? null);
         setStylePackLoadFailed(!activePack);
       })
-      .catch(loadError => {
+      .catch((loadError) => {
         console.warn('[translation] failed to load active style pack', loadError);
         if (!cancelled) setStylePackLoadFailed(true);
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [prefs?.activeStylePackId]);
 
   const showSaveStatus = (state: SaveState, message: string, temporary = false) => {
@@ -80,7 +85,7 @@ export function Translation() {
     } catch (error) {
       console.error('[translation] failed to save preferences', error);
       showSaveStatus('failed', failureMessage);
-      await refresh().catch(refreshError => {
+      await refresh().catch((refreshError) => {
         console.warn('[translation] failed to refresh preferences after save error', refreshError);
       });
     }
@@ -98,7 +103,9 @@ export function Translation() {
               </div>
               <button
                 type="button"
-                onClick={() => { void refresh(); }}
+                onClick={() => {
+                  void refresh();
+                }}
                 disabled={loading}
                 style={{
                   alignSelf: 'flex-start',
@@ -126,19 +133,19 @@ export function Translation() {
 
   const onWorkingLanguagesChange = (workingLanguages: string[]) => {
     void persistPrefs(
-      current => ({ ...current, workingLanguages }),
+      (current) => ({ ...current, workingLanguages }),
       t('translation.save.workingFailed'),
     );
   };
   const toggleWorkingLanguage = (lang: string) => {
     const next = prefs.workingLanguages.includes(lang)
-      ? prefs.workingLanguages.filter(l => l !== lang)
+      ? prefs.workingLanguages.filter((l) => l !== lang)
       : [...prefs.workingLanguages, lang];
     onWorkingLanguagesChange(next);
   };
   const onTargetChange = (translationTargetLanguage: string) => {
     void persistPrefs(
-      current => ({ ...current, translationTargetLanguage }),
+      (current) => ({ ...current, translationTargetLanguage }),
       t('translation.save.targetFailed'),
     );
   };
@@ -153,10 +160,13 @@ export function Translation() {
   );
   const enabled = isTranslationEnabled(prefs.translationTargetLanguage) && !redundantTarget;
 
-  const targetOptions = useMemo(() => ([
-    { value: '', label: t('translation.target.disabled') },
-    ...SUPPORTED_LANGUAGES.map(lang => ({ value: lang, label: lang })),
-  ]), [t]);
+  const targetOptions = useMemo(
+    () => [
+      { value: '', label: t('translation.target.disabled') },
+      ...SUPPORTED_LANGUAGES.map((lang) => ({ value: lang, label: lang })),
+    ],
+    [t],
+  );
 
   return (
     <>
@@ -180,10 +190,14 @@ export function Translation() {
               lineHeight: 1.5,
             }}
           >
-            <span>{t('common.settingsLoadFailed')}：{error}</span>
+            <span>
+              {t('common.settingsLoadFailed')}：{error}
+            </span>
             <button
               type="button"
-              onClick={() => { void refresh(); }}
+              onClick={() => {
+                void refresh();
+              }}
               disabled={loading}
               style={{
                 flex: '0 0 auto',
@@ -210,7 +224,9 @@ export function Translation() {
         <div className="ol-translation-grid">
           {/* 1. 工作语言 */}
           <Card style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 12 }}>{t('translation.working.title')}</div>
+            <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 12 }}>
+              {t('translation.working.title')}
+            </div>
             <div
               style={{
                 display: 'grid',
@@ -218,7 +234,7 @@ export function Translation() {
                 gap: 8,
               }}
             >
-              {SUPPORTED_LANGUAGES.map(lang => {
+              {SUPPORTED_LANGUAGES.map((lang) => {
                 const checked = prefs.workingLanguages.includes(lang);
                 return (
                   <button
@@ -238,7 +254,14 @@ export function Translation() {
 
           {/* 2. 翻译目标语言 */}
           <Card style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 12,
+              }}
+            >
               <div style={{ fontSize: 13.5, fontWeight: 600 }}>{t('translation.target.title')}</div>
               <span
                 style={{
@@ -278,7 +301,9 @@ export function Translation() {
                 <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ol-ink-2)' }}>
                   {t('translation.style.title')}
                 </div>
-                <div style={{ marginTop: 2, fontSize: 12, color: 'var(--ol-ink-4)', lineHeight: 1.5 }}>
+                <div
+                  style={{ marginTop: 2, fontSize: 12, color: 'var(--ol-ink-4)', lineHeight: 1.5 }}
+                >
                   {t('translation.style.desc')}
                 </div>
               </div>
@@ -301,7 +326,7 @@ export function Translation() {
               >
                 {stylePackLoadFailed
                   ? t('translation.style.unavailable')
-                  : activeStylePackName ?? t('common.loading')}
+                  : (activeStylePackName ?? t('common.loading'))}
               </span>
             </div>
             {redundantTarget && (
@@ -326,7 +351,9 @@ export function Translation() {
 
         {/* 3. 使用方法：编号步骤条，宽屏一行铺开、窄屏自动折行 */}
         <Card>
-          <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 12 }}>{t('translation.howto.title')}</div>
+          <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 12 }}>
+            {t('translation.howto.title')}
+          </div>
           <div
             style={{
               display: 'grid',
@@ -361,7 +388,9 @@ export function Translation() {
                 >
                   {index + 1}
                 </span>
-                <span style={{ fontSize: 12.5, color: 'var(--ol-ink-2)', lineHeight: 1.55 }}>{step}</span>
+                <span style={{ fontSize: 12.5, color: 'var(--ol-ink-2)', lineHeight: 1.55 }}>
+                  {step}
+                </span>
               </div>
             ))}
           </div>

@@ -20,8 +20,8 @@ export function LayoutSection() {
       >
         <Toggle
           on={prefs.stackedRowLayout === true}
-          onToggle={next =>
-            void updatePrefs(current => ({ ...current, stackedRowLayout: next }))
+          onToggle={(next) =>
+            void updatePrefs((current) => ({ ...current, stackedRowLayout: next }))
           }
         />
       </SettingRow>
@@ -31,8 +31,8 @@ export function LayoutSection() {
       >
         <Toggle
           on={prefs.conservativeLayout === true}
-          onToggle={next =>
-            void updatePrefs(current => ({ ...current, conservativeLayout: next }))
+          onToggle={(next) =>
+            void updatePrefs((current) => ({ ...current, conservativeLayout: next }))
           }
         />
       </SettingRow>
