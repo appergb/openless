@@ -366,16 +366,3 @@ mod tests {
         assert!(reject_non_dictation_side_specific_shortcuts(&prefs).is_ok());
     }
 }
-
-#[tauri::command]
-pub fn macos_dictation_key_active(coord: CoordinatorState<'_>) -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        return coord.native_dictation_key_active();
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = coord;
-        false
-    }
-}

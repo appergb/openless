@@ -2,14 +2,6 @@
 use super::*;
 
 impl Coordinator {
-    pub fn native_dictation_key_active(&self) -> bool {
-        self.inner
-            .combo_hotkey
-            .lock()
-            .as_ref()
-            .is_some_and(|monitor| monitor.native_dictation_active())
-    }
-
     pub(crate) fn dictation_shortcut_is_busy(&self) -> bool {
         !matches!(
             self.backend().snapshot().dictation.phase,
