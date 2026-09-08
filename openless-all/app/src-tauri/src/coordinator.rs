@@ -34,6 +34,8 @@ mod capsule_focus;
 #[path = "coordinator/dictation_core.rs"]
 mod dictation;
 mod hotkey_loops;
+#[cfg(target_os = "macos")]
+mod native_dictation_key;
 mod qa;
 #[cfg(all(not(mobile), target_os = "windows"))]
 pub(crate) mod selection_voice_session;
@@ -1464,11 +1466,28 @@ impl Coordinator {
         if previous.style_packs != next.style_packs {
             self.try_update_style_pack_hotkey_bindings()?;
         }
-        if previous.dictation != next.dictation || previous.dictation_mode != next.dictation_mode {
-            self.update_hotkey_binding();
-        }
-        if previous.dictation != next.dictation {
-            self.update_combo_hotkey_binding();
+        #[cfg(target_os = "macos")]
+        let native_transition = previous.dictation.primary == crate::macos_dictation_key::PRIMARY
+            || next.dictation.primary == crate::macos_dictation_key::PRIMARY;
+        #[cfg(not(target_os = "macos"))]
+        let native_transition = false;
+        if native_transition {
+            #[cfg(target_os = "macos")]
+            if previous.dictation != next.dictation
+                || previous.dictation_mode != next.dictation_mode
+            {
+                self.try_update_native_dictation_binding()?;
+                self.update_modifier_shortcut_bindings();
+            }
+        } else {
+            if previous.dictation != next.dictation
+                || previous.dictation_mode != next.dictation_mode
+            {
+                self.update_hotkey_binding();
+            }
+            if previous.dictation != next.dictation {
+                self.update_combo_hotkey_binding();
+            }
         }
         if previous.qa != next.qa {
             self.update_qa_hotkey_binding();

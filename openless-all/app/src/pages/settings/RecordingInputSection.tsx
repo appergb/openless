@@ -265,17 +265,18 @@ export function RecordingInputSection() {
           <ShortcutRecorder
             value={prefs.dictationHotkey}
             sideSpecificModifiers
+            allowMacDictationKey={os === 'mac'}
             // 录音快捷键是核心热键，Rust 端不接受 null，不可停用——置灰并提示。
             disableDisabled
             disableHint={t('settings.recording.comboDisableHint')}
             onSave={async binding => {
               await setDictationHotkey(binding);
-              await savePrefs({ ...prefs, dictationHotkey: binding });
+              await refresh();
             }}
             onReset={async () => {
               const binding = defaultDictationHotkey();
               await setDictationHotkey(binding);
-              await savePrefs({ ...prefs, dictationHotkey: binding });
+              await refresh();
             }}
           />
         </SettingRow>

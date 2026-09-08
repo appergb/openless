@@ -31,6 +31,8 @@ mod coordinator;
 mod coordinator_state;
 mod core_adapters;
 mod correction;
+#[cfg(target_os = "macos")]
+mod macos_dictation_key;
 mod qa_adapter;
 mod tauri_coordinator_host;
 // 托盘麦克风设备变更监听：macOS CoreAudio / Windows MMDevice 原生通知（空闲零唤醒），

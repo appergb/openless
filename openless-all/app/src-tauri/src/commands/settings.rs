@@ -576,3 +576,39 @@ pub async fn app_download_and_install_android_update(
         Err("应用内更新仅支持 Android".to_string())
     }
 }
+
+/// Replace the single dictation binding under the existing settings transaction.
+pub(crate) fn replace_dictation_hotkey(
+    coord: &Coordinator,
+    binding: ShortcutBinding,
+) -> Result<(), String> {
+    let _host_guard = coord.lock_settings_host();
+    let mut prefs = coord.backend().get_preferences();
+    crate::shortcut_binding::validate_binding(&binding).map_err(|error| error.to_string())?;
+    reject_bare_shift_dictation_shortcut(&binding)?;
+    #[cfg(target_os = "macos")]
+    {
+        let native = crate::macos_dictation_key::PRIMARY;
+        if prefs.dictation_hotkey.primary == native || binding.primary == native {
+            if coord.dictation_shortcut_is_busy() {
+                return Err("macDictationKeyBusy".into());
+            }
+            if binding == prefs.dictation_hotkey {
+                // No settings effect is generated for an unchanged binding.
+                return coord.try_update_native_dictation_binding();
+            }
+        }
+    }
+    prefs.dictation_hotkey = binding;
+    sync_dictation_hotkey_legacy_fields(&mut prefs);
+    reject_hotkey_collisions(&prefs)?;
+    coord
+        .backend()
+        .update_settings(
+            prefs,
+            openless_core::SettingsUpdateOptions::STRICT,
+            &TauriSettingsRuntime::new(coord),
+        )
+        .map(|_| ())
+        .map_err(|error| error.to_string())
+}

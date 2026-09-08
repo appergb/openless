@@ -2,6 +2,14 @@
 // 添加新 key 时，必须同步更新 en.ts，否则首次切换到 English 会回落到中文残留。
 
 export const zhCN = {
+  macDictationKey: {
+    Changed: '保存期间快捷键已改变，请重试。',
+    label: "Mac 听写键",
+    description: "用麦克风图标键替换当前听写快捷键。退出 OpenLess 后，此键交回 macOS。",
+    Permission: "请在 macOS「隐私与安全性 → 辅助功能」中允许 OpenLess 后重试。",
+    Busy: "请先结束当前听写，再更改快捷键。",
+    Unavailable: "无法启用此快捷键，已保存的绑定未改变。请重试或选择其他键。",
+  },
   app: {
     name: 'OpenLess',
     tagline: '自然说话，完美书写',

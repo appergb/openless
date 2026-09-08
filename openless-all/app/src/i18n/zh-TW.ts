@@ -4,6 +4,14 @@ import type { zhCN } from './zh-CN';
 // 新增 key 時，必須同步更新 en.ts，避免切換到 English 後出現中文殘留。
 
 export const zhTW: typeof zhCN = {
+  macDictationKey: {
+    Changed: '儲存期間快捷鍵已變更，請重試。',
+    label: "Mac 聽寫鍵",
+    description: "用麥克風圖示鍵替換目前的聽寫快捷鍵。結束 OpenLess 後，此鍵交回 macOS。",
+    Permission: "請在 macOS「隱私權與安全性 → 輔助使用」中允許 OpenLess 後重試。",
+    Busy: "請先結束目前的聽寫，再變更快捷鍵。",
+    Unavailable: "無法啟用此快捷鍵，已儲存的綁定未變更。請重試或選擇其他鍵。",
+  },
   app: {
     name: 'OpenLess',
     tagline: '自然說話，完美書寫',

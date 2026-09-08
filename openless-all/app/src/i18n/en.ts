@@ -4,6 +4,14 @@ import type { zhCN } from './zh-CN';
 
 // Type-level guarantee that en mirrors the zh-CN shape.
 export const en: typeof zhCN = {
+  macDictationKey: {
+    Changed: 'The shortcut changed while saving. Please try again.',
+    label: "Mac Dictation key",
+    description: "Replaces the current dictation shortcut with the microphone key. Quitting OpenLess releases it to macOS.",
+    Permission: "Allow OpenLess in macOS Privacy & Security → Accessibility, then retry.",
+    Busy: "Finish the current dictation before changing its shortcut.",
+    Unavailable: "Could not activate this shortcut. The saved binding is unchanged; retry or choose another key.",
+  },
   app: {
     name: 'OpenLess',
     tagline: 'Speak naturally, write perfectly',
