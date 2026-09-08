@@ -243,6 +243,11 @@ fn read_vault_credential(
     key: &openless_core::CredentialKey,
 ) -> Result<Option<String>, openless_core::BackendError> {
     let result = match (key.namespace, key.account.as_str()) {
+        (openless_core::CredentialNamespace::Llm, account)
+            if openless_core::llm_protocol::CONFIG_ACCOUNTS.contains(&account) =>
+        {
+            CredentialsVault::get_llm_protocol_option(key.provider_id.as_deref(), account)
+        }
         (openless_core::CredentialNamespace::Llm, LLM_EXTRA_HEADERS_ACCOUNT) => {
             match key.provider_id.as_deref() {
                 Some(provider) => serde_json::to_string(
@@ -309,6 +314,11 @@ fn write_vault_credential(
     value: &str,
 ) -> Result<(), openless_core::BackendError> {
     let result = match (key.namespace, key.account.as_str()) {
+        (openless_core::CredentialNamespace::Llm, account)
+            if openless_core::llm_protocol::CONFIG_ACCOUNTS.contains(&account) =>
+        {
+            CredentialsVault::set_llm_protocol_option(key.provider_id.as_deref(), account, value)
+        }
         (openless_core::CredentialNamespace::Llm, LLM_EXTRA_HEADERS_ACCOUNT) => {
             match key.provider_id.as_deref() {
                 Some(provider) => {
@@ -738,6 +748,9 @@ fn credential_key(
     provider: Option<String>,
 ) -> Result<openless_core::CredentialKey, String> {
     let namespace = match account {
+        account if openless_core::llm_protocol::CONFIG_ACCOUNTS.contains(&account) => {
+            openless_core::CredentialNamespace::Llm
+        }
         LLM_EXTRA_HEADERS_ACCOUNT | LLM_TEMPERATURE_ACCOUNT => {
             openless_core::CredentialNamespace::Llm
         }
@@ -853,6 +866,11 @@ mod tests {
 
     #[test]
     fn core_llm_accounts_are_supported_by_the_tauri_vault_adapter() {
+        for account in openless_core::llm_protocol::CONFIG_ACCOUNTS {
+            let key = credential_key(account, Some("channel-b".into())).unwrap();
+            assert_eq!(key.namespace, openless_core::CredentialNamespace::Llm);
+            assert_eq!(key.provider_id.as_deref(), Some("channel-b"));
+        }
         for account in [
             openless_core::credentials::LLM_API_KEY_ACCOUNT,
             openless_core::credentials::LLM_MODEL_ACCOUNT,

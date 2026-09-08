@@ -398,9 +398,28 @@ struct CredsLlmEntry {
     temperature: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     extraHeaders: Option<HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    requestFormat: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    messagesThinking: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    maxTokens: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    thinkingBudget: Option<String>,
 }
 
 impl CredsLlmEntry {
+    fn protocol_option(&mut self, account: &str) -> Result<&mut Option<String>> {
+        use openless_core::llm_protocol::*;
+        match account {
+            REQUEST_FORMAT_ACCOUNT => Ok(&mut self.requestFormat),
+            MESSAGES_THINKING_ACCOUNT => Ok(&mut self.messagesThinking),
+            MAX_TOKENS_ACCOUNT => Ok(&mut self.maxTokens),
+            THINKING_BUDGET_ACCOUNT => Ok(&mut self.thinkingBudget),
+            _ => anyhow::bail!("unsupported LLM protocol option"),
+        }
+    }
+
     fn is_empty(&self) -> bool {
         // 同 CredsAsrEntry::is_empty —— 渠道卡片只能由用户显式删除。
         if self.channel.providerType.is_some() {
@@ -416,6 +435,10 @@ impl CredsLlmEntry {
             && self.baseURL.as_deref().unwrap_or("").is_empty()
             && self.model.as_deref().unwrap_or("").is_empty()
             && self.temperature.is_none()
+            && self.requestFormat.is_none()
+            && self.messagesThinking.is_none()
+            && self.maxTokens.is_none()
+            && self.thinkingBudget.is_none()
             && self
                 .extraHeaders
                 .as_ref()
@@ -2360,6 +2383,29 @@ impl CredentialsVault {
         save_credentials(&root)
     }
 
+    pub fn get_llm_protocol_option(id: Option<&str>, account: &str) -> Result<Option<String>> {
+        let _guard = credentials_lock().lock();
+        let mut root = load_credentials_for_update()?;
+        let id = id.unwrap_or(&root.active.llm).to_string();
+        match root.providers.llm.get_mut(&id) {
+            Some(entry) => Ok(entry.protocol_option(account)?.clone()),
+            None => Ok(None),
+        }
+    }
+
+    pub fn set_llm_protocol_option(id: Option<&str>, account: &str, value: &str) -> Result<()> {
+        let _guard = credentials_lock().lock();
+        let mut config = openless_core::llm_protocol::LlmProtocolConfig::default();
+        config.apply(account, value)?;
+        let mut root = load_credentials_for_update()?;
+        let id = id.unwrap_or(&root.active.llm).to_string();
+        let entry = root.providers.llm.entry(id).or_default();
+        *entry.protocol_option(account)? =
+            (!value.trim().is_empty()).then(|| value.trim().to_string());
+        entry.channel.lastTest = None;
+        save_credentials(&root)
+    }
+
     /// 写入指定 LLM 渠道的采样温度，不改变 active 渠道。
     pub fn set_llm_temperature_for_provider(id: &str, value: &str) -> Result<()> {
         let _guard = credentials_lock().lock();
@@ -2440,6 +2486,48 @@ mod tests {
         assert!(chunks
             .iter()
             .all(|chunk| chunk.encode_utf16().count() <= KEYRING_CHUNK_MAX_UTF16_UNITS));
+    }
+
+    #[test]
+    fn llm_protocol_options_survive_vault_reload_and_core_projection() {
+        use openless_core::llm_protocol::*;
+        let mut root = CredsRoot::default();
+        let entry = root.providers.llm.entry("channel-b".into()).or_default();
+        let values = ["messages", "budget", "8192", "2048"];
+        for (account, value) in CONFIG_ACCOUNTS.into_iter().zip(values) {
+            *entry.protocol_option(account).unwrap() = Some(value.into());
+        }
+        assert!(!entry.has_no_content());
+        let serialized = serde_json::to_string(&root).unwrap();
+        let mut restored: CredsRoot = serde_json::from_str(&serialized).unwrap();
+        for (account, value) in CONFIG_ACCOUNTS.into_iter().zip(values) {
+            assert_eq!(
+                restored
+                    .providers
+                    .llm
+                    .get_mut("channel-b")
+                    .unwrap()
+                    .protocol_option(account)
+                    .unwrap()
+                    .as_deref(),
+                Some(value)
+            );
+        }
+        let decoded =
+            openless_core::credentials_legacy::decode_legacy_credentials(&serialized).unwrap();
+        for (account, value) in CONFIG_ACCOUNTS.into_iter().zip(values) {
+            assert!(decoded
+                .secrets
+                .iter()
+                .any(
+                    |(key, secret)| key.provider_id.as_deref() == Some("channel-b")
+                        && key.account == account
+                        && secret.expose_secret() == value
+                ));
+        }
+        let old: CredsLlmEntry = serde_json::from_str(r#"{"apiKey":"old-key"}"#).unwrap();
+        assert!(old.requestFormat.is_none());
+        assert!(!restored.providers.llm.contains_key("channel-a"));
     }
 
     #[test]

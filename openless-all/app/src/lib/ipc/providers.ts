@@ -1,6 +1,7 @@
 import { invokeOrMock } from './shared'
 
 export type ProviderKind = 'asr' | 'llm' | 'omni'
+export type LlmRequestFormat = 'chat_completions' | 'responses' | 'messages'
 
 export type AuthRequirement =
   | 'none'
@@ -20,9 +21,20 @@ export interface ProviderDescriptor {
   authRequirement: AuthRequirement
   validationProbe: string
   staticModels: string[]
+  defaultRequestFormat: LlmRequestFormat | null
+  supportedRequestFormats: LlmRequestFormat[]
 }
 
 /** Core owns protocol, defaults, and credential requirements. */
 export function listProviderDescriptors(kind: ProviderKind): Promise<ProviderDescriptor[]> {
-  return invokeOrMock('list_provider_descriptors', { kind }, () => [])
+  return invokeOrMock('list_provider_descriptors', { kind }, () => kind === 'llm' ? [
+    ['custom', 'customChatCompletions', 'chat_completions'],
+    ['custom_responses', 'customResponses', 'responses'],
+    ['custom_messages', 'customMessages', 'messages'],
+  ].map(([providerType, labelKey, format]) => ({
+    kind, providerType, labelKey, defaultEndpoint: null, defaultModel: null,
+    authRequirement: 'api_key_unless_custom_endpoint', validationProbe: 'llm_text', staticModels: [],
+    defaultRequestFormat: format as LlmRequestFormat,
+    supportedRequestFormats: ['chat_completions', 'responses', 'messages'],
+  })) : [])
 }

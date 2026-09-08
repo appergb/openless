@@ -51,6 +51,8 @@ interface PresetOption {
   defaultModel?: string;
   authRequirement?: ProviderDescriptor['authRequirement'];
   staticModels?: string[];
+  defaultRequestFormat?: ProviderDescriptor['defaultRequestFormat'];
+  supportedRequestFormats?: ProviderDescriptor['supportedRequestFormats'];
 }
 
 /** 「添加渠道」下拉里的供应商清单。本地引擎与 Codex OAuth 也在其中 —— 它们不是预置的
@@ -69,6 +71,8 @@ export function presetsFor(
     defaultModel: descriptor.defaultModel ?? undefined,
     authRequirement: descriptor.authRequirement,
     staticModels: descriptor.staticModels,
+    defaultRequestFormat: descriptor.defaultRequestFormat,
+    supportedRequestFormats: descriptor.supportedRequestFormats,
   }));
   if (kind === 'llm') return descriptorPresets;
   const available = descriptorPresets;
@@ -725,6 +729,7 @@ function ChannelModal({
   const { t } = useTranslation();
   const [name, setName] = useState(channel.name);
   const [providerType, setProviderType] = useState(channel.providerType);
+  const [changingProvider, setChangingProvider] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const saveName = async () => {
@@ -761,16 +766,17 @@ function ChannelModal({
   const changeProvider = async (next: string) => {
     const previous = providerType;
     onUserMutation();
-    setProviderType(next);
+    setChangingProvider(true);
     try {
       await setChannelProviderType(kind, channel.id, next);
       await fillProviderDefaults(next);
+      setProviderType(next);
       await onChanged();
     } catch (error) {
       console.error('[channels] change provider failed', error);
       setProviderType(previous);
       emitSaved('failed', t('common.operationFailed'));
-    }
+    } finally { setChangingProvider(false); }
   };
 
   const remove = async () => {
@@ -796,6 +802,7 @@ function ChannelModal({
       <label style={fieldLabel}>{t('settings.channels.providerLabel')}</label>
       <SelectLite
         value={providerType}
+        disabled={changingProvider}
         onChange={next => void changeProvider(next)}
         options={presets.map(p => ({
           value: p.id,
@@ -818,7 +825,7 @@ function ChannelModal({
       />
 
       {/* key 决定：换供应商时整组凭据字段重挂载，读的是新厂商对应的槽位。 */}
-      <ChannelCredentialFields
+      {!changingProvider && <ChannelCredentialFields
         key={`${channel.id}:${providerType}`}
         kind={kind}
         providerType={providerType}
@@ -826,7 +833,7 @@ function ChannelModal({
         descriptor={descriptor}
         onTested={() => void onChanged()}
         onUserMutation={onUserMutation}
-      />
+      />}
 
       {isLocalEngine && (
         <div style={{ fontSize: 11.5, color: 'var(--ol-ink-4)', lineHeight: 1.6, marginTop: 6 }}>

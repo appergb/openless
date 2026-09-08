@@ -29,6 +29,8 @@ const coreAsr = presetsFor('asr', 'win', true, undefined, [{
   authRequirement: 'endpoint_model_optional_api_key',
   validationProbe: 'asr_silence',
   staticModels: [],
+  defaultRequestFormat: null,
+  supportedRequestFormats: [],
 }]);
 
 if (coreAsr.length !== 1 || coreAsr[0].authRequirement !== 'endpoint_model_optional_api_key') {

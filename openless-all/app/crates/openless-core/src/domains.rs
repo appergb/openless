@@ -44,6 +44,8 @@ pub enum ProviderKind {
 #[serde(rename_all = "camelCase")]
 pub struct ProviderRequest {
     pub kind: ProviderKind,
+    #[serde(default)]
+    pub thinking_enabled: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub channel_id: Option<String>,
 }

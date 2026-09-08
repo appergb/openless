@@ -101,6 +101,10 @@ struct LegacyEntry {
     xfyun_api_key: Option<String>,
     temperature: Option<f64>,
     extra_headers: Option<BTreeMap<String, String>>,
+    request_format: Option<String>,
+    messages_thinking: Option<String>,
+    max_tokens: Option<String>,
+    thinking_budget: Option<String>,
 }
 
 impl Default for LegacyEntry {
@@ -125,6 +129,10 @@ impl Default for LegacyEntry {
             xfyun_api_key: None,
             temperature: None,
             extra_headers: None,
+            request_format: None,
+            messages_thinking: None,
+            max_tokens: None,
+            thinking_budget: None,
         }
     }
 }
@@ -145,6 +153,10 @@ impl LegacyEntry {
             &self.advanced_config,
             &self.xfyun_app_id,
             &self.xfyun_api_key,
+            &self.request_format,
+            &self.messages_thinking,
+            &self.max_tokens,
+            &self.thinking_budget,
         ]
         .into_iter()
         .any(|value| value.as_deref().is_some_and(|value| !value.is_empty()))
@@ -347,6 +359,15 @@ fn decode_entry(
         (endpoint, entry.base_url),
         (model, entry.model),
     ];
+    if namespace == CredentialNamespace::Llm {
+        use crate::llm_protocol::*;
+        fields.extend([
+            (REQUEST_FORMAT_ACCOUNT, entry.request_format),
+            (MESSAGES_THINKING_ACCOUNT, entry.messages_thinking),
+            (MAX_TOKENS_ACCOUNT, entry.max_tokens),
+            (THINKING_BUDGET_ACCOUNT, entry.thinking_budget),
+        ]);
+    }
     if namespace == CredentialNamespace::Asr {
         fields.extend([
             (VOLCENGINE_APP_KEY_ACCOUNT, entry.app_key),
