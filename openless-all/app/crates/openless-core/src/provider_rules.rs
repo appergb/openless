@@ -62,6 +62,7 @@ const LLM_PROVIDER_TYPES: &[(&str, &str)] = &[
     ("codingPlanX", "codingPlanX"),
     ("minimax", "minimax"),
     ("stepfun", "stepfun"),
+    ("opencode", "opencode"),
     ("custom", "custom"),
 ];
 
@@ -478,6 +479,7 @@ pub fn default_llm_endpoint(provider_type: &str) -> Option<&'static str> {
         "codingPlanX" => Some("https://api.codingplanx.ai/v1"),
         "minimax" => Some("https://api.minimaxi.com/v1"),
         "stepfun" => Some("https://api.stepfun.com/v1"),
+        "opencode" => Some("https://opencode.ai/zen/v1"),
         _ => None,
     }
 }
@@ -485,7 +487,7 @@ pub fn default_llm_endpoint(provider_type: &str) -> Option<&'static str> {
 pub fn default_llm_model(provider_type: &str) -> Option<&'static str> {
     match provider_type {
         "ark" => Some("deepseek-v3-2"),
-        "deepseek" => Some("deepseek-v4-flash"),
+        "deepseek" | "opencode" => Some("deepseek-v4-flash"),
         "siliconflow" => Some("Qwen/Qwen2.5-7B-Instruct"),
         "atlascloud" => Some("qwen/qwen3.5-flash"),
         "openai" | "cometapi" => Some("gpt-4o"),
@@ -971,6 +973,48 @@ mod tests {
         );
         assert!(parse_extra_headers(r#"{"x-trace":"enabled"}"#).is_ok());
         assert!(parse_extra_headers(r#"{"authorization":"secret"}"#).is_err());
+    }
+
+    #[test]
+    fn opencode_descriptor_supplies_defaults_and_requires_key_at_default_endpoint() {
+        assert!(crate::cloud_providers::SHARED_CLOUD_LLM_PROVIDER_TYPES.contains(&"opencode"));
+        let descriptors = provider_descriptors(ProviderKind::Llm);
+        let opencode_index = descriptors
+            .iter()
+            .position(|descriptor| descriptor.provider_type.as_str() == "opencode")
+            .unwrap();
+        let custom_index = descriptors
+            .iter()
+            .position(|descriptor| descriptor.provider_type.as_str() == "custom")
+            .unwrap();
+        assert!(opencode_index < custom_index);
+
+        let descriptor = &descriptors[opencode_index];
+        assert_eq!(descriptor.label_key, "opencode");
+        assert_eq!(
+            descriptor.default_endpoint.as_deref(),
+            Some("https://opencode.ai/zen/v1")
+        );
+        assert_eq!(
+            descriptor.default_model.as_deref(),
+            Some("deepseek-v4-flash")
+        );
+        assert_eq!(descriptor.validation_probe, ValidationProbe::LlmText);
+        assert!(api_key_required(
+            ProviderKind::Llm,
+            "opencode",
+            Some("https://opencode.ai/zen/v1/chat/completions/")
+        ));
+
+        let mut configuration = CredentialConfiguration {
+            llm_endpoint: true,
+            llm_endpoint_matches_default: true,
+            llm_model: true,
+            ..CredentialConfiguration::default()
+        };
+        assert!(!llm_configured("opencode", &configuration));
+        configuration.llm_api_key = true;
+        assert!(llm_configured("opencode", &configuration));
     }
 
     #[test]

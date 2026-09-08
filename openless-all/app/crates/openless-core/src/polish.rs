@@ -176,6 +176,7 @@ fn is_builtin_llm_provider(provider_id: &str) -> bool {
             | "codingPlanX"
             | "minimax"
             | "stepfun"
+            | "opencode"
     )
 }
 
@@ -1818,8 +1819,8 @@ pub(crate) enum ThinkingControl {
 
 pub(crate) fn openai_compatible_thinking_control(provider_id: &str) -> Option<ThinkingControl> {
     match provider_id.trim() {
-        "deepseek" => Some(ThinkingControl::DeepSeekThinking),
-        // provider_id 预设(见 ProvidersSection.tsx::LLM_PRESETS)。
+        "deepseek" | "opencode" => Some(ThinkingControl::DeepSeekThinking),
+        // Built-in provider IDs are registered in provider_rules.
         "minimax" => Some(ThinkingControl::MiniMaxThinking),
         "openrouterFree" => Some(ThinkingControl::OpenRouterReasoning),
         "alibabaCoding" => Some(ThinkingControl::EnableThinking),
@@ -1854,7 +1855,7 @@ pub(crate) fn openai_compatible_thinking_control_for_base_url(
     if host.contains("minimax") {
         return Some(ThinkingControl::MiniMaxThinking);
     }
-    if host.contains("deepseek") {
+    if host.contains("deepseek") || host.contains("opencode.ai") {
         return Some(ThinkingControl::DeepSeekThinking);
     }
     if host.contains("openrouter") {
@@ -2967,6 +2968,50 @@ mod tests {
         let body = provider.chat_body(false, vec![json!({ "role": "user", "content": "hi" })]);
 
         assert_eq!(body["thinking"]["type"], "disabled");
+    }
+
+    #[test]
+    fn openai_chat_body_adds_deepseek_thinking_toggle_for_opencode() {
+        let config = OpenAICompatibleConfig::new(
+            "opencode",
+            "OpenCode Zen",
+            "https://opencode.ai/zen/v1",
+            "k",
+            "deepseek-v4-flash",
+        );
+        let provider = OpenAICompatibleLLMProvider::new(config.clone());
+        let body = provider.chat_body(false, vec![json!({ "role": "user", "content": "hi" })]);
+        assert_eq!(body["thinking"]["type"], "disabled");
+        assert_eq!(body["temperature"], DEFAULT_TEMPERATURE);
+
+        let provider = OpenAICompatibleLLMProvider::new(config.with_thinking_enabled(true));
+        let body = provider.chat_body(false, vec![json!({ "role": "user", "content": "hi" })]);
+        assert_eq!(body["thinking"]["type"], "enabled");
+    }
+
+    #[test]
+    fn openai_chat_body_falls_back_to_base_url_for_custom_opencode_endpoint() {
+        for thinking_enabled in [false, true] {
+            let provider = OpenAICompatibleLLMProvider::new(
+                OpenAICompatibleConfig::new(
+                    "custom",
+                    "Custom",
+                    "https://opencode.ai/zen/go/v1",
+                    "k",
+                    "deepseek-v4-flash",
+                )
+                .with_thinking_enabled(thinking_enabled),
+            );
+            let body = provider.chat_body(false, vec![json!({ "role": "user", "content": "hi" })]);
+            assert_eq!(
+                body["thinking"]["type"],
+                if thinking_enabled {
+                    "enabled"
+                } else {
+                    "disabled"
+                }
+            );
+        }
     }
 
     #[test]

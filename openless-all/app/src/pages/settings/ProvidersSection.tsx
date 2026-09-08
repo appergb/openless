@@ -90,7 +90,7 @@ export const LLM_LABELS = [
   ['codex_oauth', 'codexOAuth'], ['mimo', 'mimo'], ['cometapi', 'cometapi'],
   ['openrouterFree', 'openrouterFree'], ['alibabaCoding', 'alibabaCoding'],
   ['codingPlanX', 'codingPlanX'], ['minimax', 'minimax'], ['stepfun', 'stepfun'],
-  ['custom', 'custom'],
+  ['opencode', 'opencode'], ['custom', 'custom'],
 ].map(([id, nameKey]) => ({ id, nameKey })) as readonly { id: string; nameKey: string }[];
 
 // 多模态（Omni）模型预设（issue #902）：一个模型同时接收「提示词 + 音频」一步输出
