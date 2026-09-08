@@ -20,7 +20,7 @@ pub async fn set_dictation_hotkey(
 ) -> Result<(), String> {
     let coord = Arc::clone(coord.inner());
     tauri::async_runtime::spawn_blocking(move || {
-        super::settings::replace_dictation_hotkey(&coord, binding, None)
+        super::settings::replace_dictation_hotkey(&coord, binding)
     })
     .await
     .map_err(|error| error.to_string())?
@@ -130,7 +130,7 @@ pub async fn set_combo_hotkey(
     crate::combo_hotkey::validate_binding(&shortcut).map_err(|error| error.to_string())?;
     let coord = Arc::clone(coord.inner());
     tauri::async_runtime::spawn_blocking(move || {
-        super::settings::replace_dictation_hotkey(&coord, shortcut, None)
+        super::settings::replace_dictation_hotkey(&coord, shortcut)
     })
     .await
     .map_err(|error| error.to_string())?
@@ -364,62 +364,6 @@ mod tests {
             ..Default::default()
         };
         assert!(reject_non_dictation_side_specific_shortcuts(&prefs).is_ok());
-    }
-}
-
-#[tauri::command]
-pub async fn test_macos_dictation_key(coord: CoordinatorState<'_>) -> Result<(), String> {
-    #[cfg(target_os = "macos")]
-    {
-        let coord = Arc::clone(coord.inner());
-        return tauri::async_runtime::spawn_blocking(move || {
-            let test = crate::macos_dictation_key::TestGuard::begin()?;
-            if coord.dictation_key_setup_is_busy() {
-                return Err("macDictationKeyBusy".into());
-            }
-            test.wait()
-        })
-        .await
-        .map_err(|e| e.to_string())?;
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = coord;
-        Err("macDictationKeyUnavailable".into())
-    }
-}
-
-#[tauri::command]
-pub fn cancel_macos_dictation_key_test() {
-    #[cfg(target_os = "macos")]
-    crate::macos_dictation_key::cancel_test();
-}
-
-#[tauri::command]
-pub async fn activate_macos_dictation_key(
-    coord: CoordinatorState<'_>,
-    expected_binding: ShortcutBinding,
-) -> Result<(), String> {
-    #[cfg(target_os = "macos")]
-    {
-        let coord = Arc::clone(coord.inner());
-        return tauri::async_runtime::spawn_blocking(move || {
-            super::settings::replace_dictation_hotkey(
-                &coord,
-                ShortcutBinding {
-                    primary: crate::macos_dictation_key::PRIMARY.into(),
-                    modifiers: vec![],
-                },
-                Some(expected_binding),
-            )
-        })
-        .await
-        .map_err(|e| e.to_string())?;
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = (coord, expected_binding);
-        Err("macDictationKeyUnavailable".into())
     }
 }
 

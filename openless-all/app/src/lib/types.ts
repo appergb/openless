@@ -342,7 +342,6 @@ export interface StylePackRuntimeDiagnostics {
 export interface UserPreferences {
   hotkey: HotkeyBinding;
   dictationHotkey: ShortcutBinding;
-  previousDictationHotkey?: ShortcutBinding | null;
   defaultMode: PolishMode;
   enabledModes: PolishMode[];
   activeStylePackId: string;

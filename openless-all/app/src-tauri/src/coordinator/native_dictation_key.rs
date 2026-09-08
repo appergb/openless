@@ -10,7 +10,7 @@ impl Coordinator {
             .is_some_and(|monitor| monitor.native_dictation_active())
     }
 
-    pub(crate) fn dictation_key_setup_is_busy(&self) -> bool {
+    pub(crate) fn dictation_shortcut_is_busy(&self) -> bool {
         !matches!(
             self.backend().snapshot().dictation.phase,
             openless_core::DictationPhase::Idle
@@ -46,16 +46,26 @@ impl Coordinator {
                     inner.combo_hotkey.lock().take();
                     inner.side_aware_combo.lock().take();
                 } else if crate::shortcut_binding::binding_requires_side_aware_hook(&binding) {
-                    let (tx, rx) = mpsc::channel();
-                    let monitor =
-                        crate::side_aware_combo::SideAwareComboMonitor::start(binding, tx)
+                    let mut slot = inner.side_aware_combo.lock();
+                    if let Some(monitor) = slot.as_ref() {
+                        // A failed native registration leaves this route alive.
+                        // Reuse its sender: dropping an old side-aware handle
+                        // after creating another would clear the singleton route.
+                        monitor
+                            .update_binding(binding)
                             .map_err(|error| error.to_string())?;
-                    let bridge_inner = Arc::clone(&inner);
-                    std::thread::Builder::new()
-                        .name("openless-side-combo-bridge".into())
-                        .spawn(move || combo_hotkey_bridge_loop(bridge_inner, rx))
-                        .map_err(|error| error.to_string())?;
-                    *inner.side_aware_combo.lock() = Some(monitor);
+                    } else {
+                        let (tx, rx) = mpsc::channel();
+                        let monitor =
+                            crate::side_aware_combo::SideAwareComboMonitor::start(binding, tx)
+                                .map_err(|error| error.to_string())?;
+                        let bridge_inner = Arc::clone(&inner);
+                        std::thread::Builder::new()
+                            .name("openless-side-combo-bridge".into())
+                            .spawn(move || combo_hotkey_bridge_loop(bridge_inner, rx))
+                            .map_err(|error| error.to_string())?;
+                        *slot = Some(monitor);
+                    }
                     inner.combo_hotkey.lock().take();
                 } else {
                     let mut slot = inner.combo_hotkey.lock();
@@ -83,7 +93,6 @@ impl Coordinator {
                         keys: None,
                     });
                 }
-                reset_shortcut_held_state(&inner);
                 Ok(())
             })();
             let _ = done_tx.send(result);

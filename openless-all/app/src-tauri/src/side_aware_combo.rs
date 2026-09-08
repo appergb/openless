@@ -186,19 +186,7 @@ impl SideAwareComboMonitor {
 
         #[cfg(not(target_os = "linux"))]
         {
-            if binding.modifiers.is_empty()
-                || binding
-                    .modifiers
-                    .iter()
-                    .any(|tag| !is_side_specific_modifier_tag(tag))
-            {
-                return Err(crate::combo_hotkey::ComboHotkeyError::UnsupportedModifier(
-                    "binding is not side-specific".into(),
-                ));
-            }
-            crate::shortcut_binding::parse_primary(&binding.primary).map_err(|e| {
-                crate::combo_hotkey::ComboHotkeyError::UnsupportedKey(e.to_string())
-            })?;
+            validate_side_binding(&binding)?;
 
             let slot = ACTIVE_MONITOR.get_or_init(|| RwLock::new(None));
             let mut guard = slot.write().expect("side combo monitor lock poisoned");
@@ -208,6 +196,51 @@ impl SideAwareComboMonitor {
             });
             Ok(Self)
         }
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn validate_side_binding(
+    binding: &ShortcutBinding,
+) -> Result<(), crate::combo_hotkey::ComboHotkeyError> {
+    if binding.modifiers.is_empty()
+        || binding
+            .modifiers
+            .iter()
+            .any(|tag| !is_side_specific_modifier_tag(tag))
+    {
+        return Err(crate::combo_hotkey::ComboHotkeyError::UnsupportedModifier(
+            "binding is not side-specific".into(),
+        ));
+    }
+    crate::shortcut_binding::parse_primary(&binding.primary)
+        .map_err(|e| crate::combo_hotkey::ComboHotkeyError::UnsupportedKey(e.to_string()))?;
+
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+impl SideAwareComboMonitor {
+    /// Update the existing route without replacing its handle or event sender.
+    /// Used when a failed native-key switch restores an already-live shortcut.
+    pub(crate) fn update_binding(
+        &self,
+        binding: ShortcutBinding,
+    ) -> Result<(), crate::combo_hotkey::ComboHotkeyError> {
+        validate_side_binding(&binding)?;
+        let slot = ACTIVE_MONITOR.get().ok_or_else(|| {
+            crate::combo_hotkey::ComboHotkeyError::RegisterFailed(
+                "side-aware listener is unavailable".into(),
+            )
+        })?;
+        let active = slot.read().expect("side combo monitor lock poisoned");
+        let active = active.as_ref().ok_or_else(|| {
+            crate::combo_hotkey::ComboHotkeyError::RegisterFailed(
+                "side-aware listener is unavailable".into(),
+            )
+        })?;
+        *active.state.lock() = SideAwareComboState::new(binding);
+        Ok(())
     }
 }
 
@@ -551,6 +584,58 @@ pub mod platform {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn restoring_live_side_binding_preserves_its_event_route() {
+        use std::sync::mpsc;
+        let binding = ShortcutBinding {
+            primary: "D".into(),
+            modifiers: vec!["ctrl-right".into()],
+        };
+        let (tx, rx) = mpsc::channel();
+        let monitor = SideAwareComboMonitor::start(binding.clone(), tx).unwrap();
+        let press_and_release = |primary: &str| {
+            handle_side_modifier(SideModifier::CtrlRight, true);
+            handle_primary_key(primary, true);
+            handle_primary_key(primary, false);
+            handle_side_modifier(SideModifier::CtrlRight, false);
+            assert!(matches!(
+                rx.try_recv(),
+                Ok(ComboHotkeyEvent::Pressed { .. })
+            ));
+            assert!(matches!(
+                rx.try_recv(),
+                Ok(ComboHotkeyEvent::Released { .. })
+            ));
+            assert!(rx.try_recv().is_err());
+        };
+        press_and_release("D");
+        // Native registration failed before removing this monitor. The reverse
+        // transaction must reuse the live route, even on repeated restoration.
+        monitor.update_binding(binding.clone()).unwrap();
+        monitor.update_binding(binding).unwrap();
+        press_and_release("D");
+        assert!(monitor
+            .update_binding(ShortcutBinding {
+                primary: "F21".into(),
+                modifiers: vec!["ctrl-right".into()]
+            })
+            .is_err());
+        press_and_release("D");
+        monitor
+            .update_binding(ShortcutBinding {
+                primary: "F20".into(),
+                modifiers: vec!["ctrl-right".into()],
+            })
+            .unwrap();
+        press_and_release("F20");
+        drop(monitor);
+        assert!(matches!(
+            rx.try_recv(),
+            Err(mpsc::TryRecvError::Disconnected)
+        ));
+    }
 
     #[test]
     fn extended_macos_function_keys_use_carbon_keycodes() {

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MacDictationKeySetup } from '../../components/MacDictationKeySetup';
 import { ShortcutRecorder } from '../../components/ShortcutRecorder';
 import { SelectLite } from '../../components/ui/SelectLite';
 import {
@@ -102,18 +101,18 @@ export function ShortcutsSection() {
           <ShortcutRecorder
             value={prefs.dictationHotkey}
             sideSpecificModifiers
+            allowMacDictationKey={os === 'mac'}
             // 与「录音与输入」页一致：核心热键不可停用，置灰并提示。
             disableDisabled
             disableHint={t('settings.recording.comboDisableHint')}
             onSave={async binding => {
               await setDictationHotkey(binding);
-              await savePrefs({ ...prefs, dictationHotkey: binding });
+              await refresh();
             }}
           />
           <div style={{ fontSize: 11, color: 'var(--ol-ink-4)' }}>
             {hotkeyModeSuffix(hotkey.mode)}
           </div>
-          {os === 'mac' && <MacDictationKeySetup binding={prefs.dictationHotkey} previousBinding={prefs.previousDictationHotkey} onChanged={refresh} />}
         </div>
       </SettingRow>
       <SettingRow label={t('translation.hotkey.title', 'Translation shortcut')}>

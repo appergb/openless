@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
+import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
 import { formatComboParts, modifiersFromPressedCodes } from '../lib/hotkey';
 import { functionKeyPrimaryFromEvent } from '../lib/hotkeyRecorder';
@@ -29,6 +30,7 @@ export function ShortcutRecorder({
   resetLabel,
   comboOnly = false,
   sideSpecificModifiers = false,
+  allowMacDictationKey = false,
 }: {
   value: ShortcutBinding | null;
   onSave: (binding: ShortcutBinding) => Promise<void>;
@@ -46,11 +48,26 @@ export function ShortcutRecorder({
   comboOnly?: boolean;
   /** 听写 start/stop 专用：录制 cmd-left / ctrl-right 等侧向修饰键。 */
   sideSpecificModifiers?: boolean;
+  /** macOS dictation only: choose the dedicated key as the single trigger. */
+  allowMacDictationKey?: boolean;
 }) {
   const { t } = useTranslation();
   const [recording, setRecording] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const nativeSelected = allowMacDictationKey && value?.primary === 'MacDictationKey';
+  const [nativeActive, setNativeActive] = useState<boolean | null>(null);
+  const nativeError = error && ['Permission', 'Busy', 'Unavailable', 'Changed'].find(kind => error.includes(`macDictationKey${kind}`));
+  useEffect(() => {
+    if (!nativeSelected) { setNativeActive(null); return; }
+    let cancelled = false;
+    const read = () => void invoke<boolean>('macos_dictation_key_active')
+      .then(active => { if (!cancelled) setNativeActive(active); })
+      .catch(() => { if (!cancelled) setNativeActive(false); });
+    read();
+    const timer = window.setInterval(read, 2000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [nativeSelected]);
   const pendingModifier = useRef<ShortcutBinding | null>(null);
   const pendingTimer = useRef<number | null>(null);
   const pressedCodes = useRef<Set<string>>(new Set());
@@ -107,8 +124,9 @@ export function ShortcutRecorder({
       resetRecordingState();
       setRecording(false);
       setError(null);
-    } catch {
-      setError(t('settings.recording.comboConflict'));
+    } catch (reason) {
+      const message = String(reason);
+      setError(message.includes('macDictationKey') ? message : t('settings.recording.comboConflict'));
     }
   };
 
@@ -206,10 +224,15 @@ export function ShortcutRecorder({
     }
   };
 
-  const doReset = () => {
+  const doReset = async () => {
     setMenuOpen(false);
     setError(null);
-    if (onReset) void onReset();
+    try {
+      await onReset?.();
+    } catch (reason) {
+      const message = String(reason);
+      setError(message.includes('macDictationKey') ? message : t('settings.recording.comboConflict'));
+    }
   };
 
   const doDisable = () => {
@@ -355,11 +378,26 @@ export function ShortcutRecorder({
                 <motion.div
                   key="menu"
                   initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: MENU_HEIGHT, opacity: 1 }}
+                  animate={{ height: allowMacDictationKey ? MENU_HEIGHT * 2 : MENU_HEIGHT, opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.16, ease: menuEase }}
                   style={{ overflow: 'hidden' }}
                 >
+                  {allowMacDictationKey && <div style={menuRowStyle}>
+                    <button
+                      type="button"
+                      aria-pressed={nativeSelected}
+                      disabled={disabled || (nativeSelected && nativeActive === true)}
+                      title={t('macDictationKey.description')}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        void finish({ primary: 'MacDictationKey', modifiers: [] });
+                      }}
+                      style={nativeSelected && nativeActive ? disabledMenuButtonStyle : menuButtonStyle}
+                    >
+                      {t(nativeSelected && nativeActive === false ? 'macDictationKey.retry' : 'macDictationKey.label')}
+                    </button>
+                  </div>}
                   <div style={menuRowStyle}>
                     <motion.button
                       initial={{ y: 4, opacity: 0 }}
@@ -404,7 +442,14 @@ export function ShortcutRecorder({
           </motion.div>
         )}
       </AnimatePresence>
-      {error && <div style={{ fontSize: 11, color: 'var(--ol-red, #ef4444)' }}>{error}</div>}
+      {nativeSelected && <div role="status" style={{ fontSize: 11, color: 'var(--ol-ink-4)' }}>
+        {t(`macDictationKey.${nativeActive === null ? 'checking' : nativeActive ? 'active' : 'inactive'}`)}
+      </div>}
+      {error && <div role="alert" style={{ fontSize: 11, color: 'var(--ol-red, #ef4444)' }}>{nativeError ? t(`macDictationKey.${nativeError}`) : error}</div>}
+      {nativeError === 'Permission' && <button type="button" style={menuButtonStyle}
+        onClick={() => void invoke('open_system_settings', { pane: 'accessibility' })}>
+        {t('macDictationKey.permissionSettings')}
+      </button>}
     </div>
   );
 }

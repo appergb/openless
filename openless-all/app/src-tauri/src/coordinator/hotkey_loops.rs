@@ -30,7 +30,7 @@ fn esc_cancel_bridge_loop_with(
     cancel: impl Fn(&Arc<Inner>),
 ) {
     while rx.recv().is_ok() {
-        if shortcut_recording_is_active(&inner) {
+        if inner.shortcut_recording_active.load(Ordering::SeqCst) {
             continue;
         }
         cancel(&inner);
@@ -45,7 +45,7 @@ pub(super) fn combo_abort_bridge_loop(
     handler: fn(&Arc<Inner>, crate::hotkey::HotkeyCombinedEdge),
 ) {
     while let Ok(edge) = rx.recv() {
-        if shortcut_recording_is_active(&inner) {
+        if inner.shortcut_recording_active.load(Ordering::SeqCst) {
             continue;
         }
         handler(&inner, edge);
@@ -300,7 +300,7 @@ pub(super) fn qa_hotkey_supervisor_loop(inner: Arc<Inner>) {
 
 pub(super) fn qa_hotkey_bridge_loop(inner: Arc<Inner>, rx: mpsc::Receiver<QaHotkeyEvent>) {
     while let Ok(evt) = rx.recv() {
-        if shortcut_recording_is_active(&inner) {
+        if inner.shortcut_recording_active.load(Ordering::SeqCst) {
             continue;
         }
         let inner_cloned = Arc::clone(&inner);
@@ -407,7 +407,7 @@ fn update_selection_polish_hotkey_on_main_thread(
 #[cfg(not(mobile))]
 fn selection_polish_hotkey_bridge_loop(inner: Arc<Inner>, rx: mpsc::Receiver<ComboHotkeyEvent>) {
     while let Ok(event) = rx.recv() {
-        if shortcut_recording_is_active(&inner) {
+        if inner.shortcut_recording_active.load(Ordering::SeqCst) {
             continue;
         }
         match event {
@@ -605,7 +605,7 @@ pub(super) fn update_coding_agent_hotkey_binding_now(inner: &Arc<Inner>) -> Resu
             let combo_tx = spawn_combo_abort_bridge(inner, cancel_less_computer_press);
             let monitor = HotkeyMonitor::start(modifier_binding, tx, cancel_tx, combo_tx)
                 .map_err(|error| error.to_string())?;
-            monitor.set_recording_active(shortcut_recording_is_active(&inner));
+            monitor.set_recording_active(inner.shortcut_recording_active.load(Ordering::SeqCst));
             let bridge_inner = Arc::clone(inner);
             std::thread::Builder::new()
                 .name("openless-less-computer-modifier-bridge".into())
@@ -690,7 +690,7 @@ pub(super) fn less_computer_modifier_bridge_loop(
     rx: mpsc::Receiver<HotkeyEvent>,
 ) {
     while let Ok(evt) = rx.recv() {
-        if shortcut_recording_is_active(&inner) {
+        if inner.shortcut_recording_active.load(Ordering::SeqCst) {
             continue;
         }
         let inner_cloned = Arc::clone(&inner);
@@ -1048,7 +1048,7 @@ pub(super) fn less_computer_combo_bridge_loop(
 ) {
     let mut owned_session = None;
     while let Ok(evt) = rx.recv() {
-        if shortcut_recording_is_active(&inner) {
+        if inner.shortcut_recording_active.load(Ordering::SeqCst) {
             continue;
         }
         let inner_cloned = Arc::clone(&inner);
@@ -1200,30 +1200,6 @@ pub(super) fn take_coding_agent_combo_hotkey_on_main_thread(inner: &Arc<Inner>) 
     }
 }
 
-#[cfg(target_os = "macos")]
-pub(super) fn combo_hotkey_supervisor_loop(inner: Arc<Inner>) {
-    let coord = Coordinator {
-        inner: Arc::clone(&inner),
-    };
-    let mut attempts = 0_u32;
-    while !inner.shutdown.load(Ordering::SeqCst) {
-        match coord.try_update_native_dictation_binding() {
-            Ok(()) => {
-                log::info!("[coord] combo hotkey listener installed on main thread");
-                return;
-            }
-            Err(error) => {
-                attempts += 1;
-                if attempts <= 3 || attempts % 10 == 0 {
-                    log::warn!("[coord] combo hotkey registration #{attempts} failed: {error}");
-                }
-                std::thread::sleep(std::time::Duration::from_secs(3));
-            }
-        }
-    }
-}
-
-#[cfg(not(target_os = "macos"))]
 pub(super) fn combo_hotkey_supervisor_loop(inner: Arc<Inner>) {
     let mut attempts: u32 = 0;
     loop {
@@ -1339,7 +1315,7 @@ pub(super) fn combo_hotkey_supervisor_loop(inner: Arc<Inner>) {
 pub(super) fn combo_hotkey_bridge_loop(inner: Arc<Inner>, rx: mpsc::Receiver<ComboHotkeyEvent>) {
     let mut current_press_id = 0;
     while let Ok(evt) = rx.recv() {
-        if shortcut_recording_is_active(&inner) {
+        if inner.shortcut_recording_active.load(Ordering::SeqCst) {
             continue;
         }
         let inner_cloned = Arc::clone(&inner);
@@ -1462,7 +1438,7 @@ pub(super) fn translation_hotkey_bridge_loop(
     rx: mpsc::Receiver<ComboHotkeyEvent>,
 ) {
     while let Ok(evt) = rx.recv() {
-        if shortcut_recording_is_active(&inner) {
+        if inner.shortcut_recording_active.load(Ordering::SeqCst) {
             continue;
         }
         if matches!(evt, ComboHotkeyEvent::Pressed { .. }) {
@@ -1559,7 +1535,7 @@ pub(super) fn action_hotkey_bridge_loop(
     kind: ActionHotkeyKind,
 ) {
     while let Ok(evt) = rx.recv() {
-        if shortcut_recording_is_active(&inner) {
+        if inner.shortcut_recording_active.load(Ordering::SeqCst) {
             continue;
         }
         if matches!(evt, ComboHotkeyEvent::Pressed { .. }) {
@@ -1853,7 +1829,7 @@ pub(super) fn style_pack_hotkey_bridge_loop(
     pack_id: String,
 ) {
     while let Ok(evt) = rx.recv() {
-        if shortcut_recording_is_active(&inner) {
+        if inner.shortcut_recording_active.load(Ordering::SeqCst) {
             continue;
         }
         if matches!(evt, ComboHotkeyEvent::Pressed { .. }) {
@@ -1974,7 +1950,7 @@ pub(super) async fn arm_translation_if_effective(inner: &Arc<Inner>) -> bool {
 
 pub(super) fn hotkey_bridge_loop(inner: Arc<Inner>, rx: mpsc::Receiver<HotkeyEvent>) {
     while let Ok(evt) = rx.recv() {
-        if shortcut_recording_is_active(&inner) {
+        if inner.shortcut_recording_active.load(Ordering::SeqCst) {
             // 录制态：仅上报「录制 Fn」事件给前端（recorder 在录入态检测到 Fn 按下，
             // 浏览器不向网页层下发 Fn keydown，由 CGEventTap 上报），其余热键事件
             // 一律跳过，避免录制期间误触发听写。
@@ -2102,7 +2078,7 @@ pub(super) async fn handle_window_hotkey_event(
     code: String,
     repeat: bool,
 ) -> Result<(), String> {
-    if shortcut_recording_is_active(&inner) {
+    if inner.shortcut_recording_active.load(Ordering::SeqCst) {
         return Ok(());
     }
     if event_type == "keydown" && key == "Escape" {
@@ -2982,12 +2958,4 @@ mod tests {
         drop(tx);
         handle.join().unwrap();
     }
-}
-
-fn shortcut_recording_is_active(inner: &Inner) -> bool {
-    #[cfg(target_os = "macos")]
-    if crate::macos_dictation_key::test_active() {
-        return true;
-    }
-    inner.shortcut_recording_active.load(Ordering::SeqCst)
 }
