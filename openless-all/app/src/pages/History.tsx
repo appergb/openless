@@ -14,18 +14,7 @@ import type { DictationSession, PolishMode, StylePack } from '../lib/types';
 import { countCodePoints } from '../lib/unicode';
 import { useHotkeySettings } from '../state/HotkeySettingsContext';
 import { Btn, Card, PageHeader, Pill } from './_atoms';
-import { chipSelectedStyle } from './settings/shared';
-
-function useFilters(): Array<{ id: 'all' | PolishMode; label: string }> {
-  const { t } = useTranslation();
-  return [
-    { id: 'all', label: t('history.filterAll') },
-    { id: 'raw', label: t('style.modes.raw.name') },
-    { id: 'light', label: t('style.modes.light.name') },
-    { id: 'structured', label: t('style.modes.structured.name') },
-    { id: 'formal', label: t('style.modes.formal.name') },
-  ];
-}
+import { SelectLite } from '../components/ui/SelectLite';
 
 function useModeLabel(): Record<PolishMode, string> {
   const { t } = useTranslation();
@@ -67,9 +56,7 @@ function styleLabelFor(
 export function History() {
   const { t } = useTranslation();
   const os = detectOS();
-  const FILTERS = useFilters();
   const MODE_LABEL = useModeLabel();
-  const [filter, setFilter] = useState<'all' | PolishMode>('all');
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [items, setItems] = useState<DictationSession[]>([]);
@@ -179,16 +166,15 @@ export function History() {
   }, [refresh]);
 
   const filtered = useMemo(() => {
-    const byMode = filter === 'all' ? items : items.filter(s => s.mode === filter);
     const q = debouncedQuery.trim().toLowerCase();
-    if (!q) return byMode;
+    if (!q) return items;
     // 按原始转写 + 润色后文本匹配关键词，覆盖用户能想起的两种内容。
-    return byMode.filter(
+    return items.filter(
       s =>
         s.rawTranscript.toLowerCase().includes(q) ||
         s.finalText.toLowerCase().includes(q),
     );
-  }, [items, filter, debouncedQuery]);
+  }, [items, debouncedQuery]);
   const item = useMemo(
     () => filtered.find(s => s.id === selectedId) || filtered[0],
     [filtered, selectedId],
@@ -336,47 +322,34 @@ export function History() {
       <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '300px 1fr', gap: 14, flex: 1, minHeight: 0 }}>
         {( !mobile || !mobileDetailOpen) && (
         <Card padding={0} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ padding: '12px 14px', borderBottom: '0.5px solid var(--ol-line)' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '6px 10px', fontSize: 12,
-              border: '0.5px solid var(--ol-line-strong)', borderRadius: 8,
-              background: 'var(--ol-surface-2)', color: 'var(--ol-ink-3)',
-            }}>
-              <Icon name="search" size={12} />
-              <input
-                ref={searchInputRef}
-                type="search"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder={t('history.searchPlaceholder', { shortcut: searchShortcut })}
-                aria-label={t('history.searchPlaceholder', { shortcut: searchShortcut })}
-                style={{
-                  flex: 1, minWidth: 0,
-                  outline: 'none', border: 0, background: 'transparent',
-                  fontSize: 12, color: 'var(--ol-ink-1)', fontFamily: 'inherit',
-                }}
-              />
-            </div>
-            <div style={{ marginTop: 6, fontSize: 11, color: 'var(--ol-ink-4)' }}>
-              {t('history.summary', { total: items.length, shown: filtered.length })}
-            </div>
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 10 }}>
-              {FILTERS.map(f => (
-                <button
-                  key={f.id}
-                  onClick={() => setFilter(f.id)}
+          {/* 2.0 UI 走查：左列整体是一个滚动容器，搜索框吸顶且自带不透明底 ——
+              列表内容直接从搜索框下方滚过去；样式筛选 chips 与「共 N 条」计数行
+              删掉，只保留搜索。 */}
+          <div className="ol-thinscroll" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+            <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--ol-surface)', padding: '12px 14px' }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '6px 10px', fontSize: 12,
+                border: '0.5px solid var(--ol-line-strong)', borderRadius: 8,
+                background: 'var(--ol-surface-2)', color: 'var(--ol-ink-3)',
+              }}>
+                <Icon name="search" size={12} />
+                <input
+                  ref={searchInputRef}
+                  type="search"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder={t('history.searchPlaceholder', { shortcut: searchShortcut })}
+                  aria-label={t('history.searchPlaceholder', { shortcut: searchShortcut })}
                   style={{
-                    padding: '3px 9px', fontSize: 11, borderRadius: 999,
-                    ...chipSelectedStyle(filter === f.id),
-                    cursor: 'default', fontFamily: 'inherit', fontWeight: 500,
-                    transition: 'background 0.16s var(--ol-motion-quick), color 0.16s var(--ol-motion-quick), border-color 0.16s var(--ol-motion-quick)',
+                    flex: 1, minWidth: 0,
+                    outline: 'none', border: 0, background: 'transparent',
+                    fontSize: 12, color: 'var(--ol-ink-1)', fontFamily: 'inherit',
                   }}
-                >{f.label}</button>
-              ))}
+                />
+              </div>
             </div>
-          </div>
-          <div className="ol-thinscroll" style={{ flex: 1, overflow: 'auto', padding: 6 }}>
+            <div style={{ padding: 6 }}>
             {actionError && (
               <div style={{ margin: 8, padding: '9px 10px', borderRadius: 8, background: 'rgba(239,68,68,0.08)', color: 'var(--ol-red, #ef4444)', fontSize: 12, lineHeight: 1.45 }}>
                 {actionError}
@@ -403,14 +376,18 @@ export function History() {
                   setSelectedId(s.id);
                   if (mobile) setMobileDetailOpen(true);
                 }}
+                // 2.0 UI 走查：选中项不再用蓝色左条 + 淡蓝底 —— 与渠道行同一套
+                // 中性语言：圆角 + 灰底 + 细描边。
                 style={{
                   width: '100%', padding: '10px 12px', textAlign: 'left',
                   display: 'flex', flexDirection: 'column', gap: 4,
-                  border: 0, borderRadius: 8,
-                  background: selectedId === s.id ? 'rgba(37,99,235,0.06)' : 'transparent',
-                  boxShadow: selectedId === s.id ? 'inset 2px 0 0 var(--ol-blue)' : 'none',
-                  cursor: 'default', fontFamily: 'inherit', marginBottom: 1,
-                  transition: 'background 0.16s var(--ol-motion-quick), box-shadow 0.18s var(--ol-motion-soft)',
+                  border: '0.5px solid', borderColor: selectedId === s.id ? 'var(--ol-line)' : 'transparent',
+                  borderRadius: 10,
+                  background: selectedId === s.id ? 'var(--ol-surface-2)' : 'transparent',
+                  cursor: 'default', fontFamily: 'inherit', marginBottom: 4,
+                  transition: 'background 0.16s var(--ol-motion-quick), border-color 0.16s var(--ol-motion-quick)',
+                  // 搜索过滤/新记录插入时，进入结果的行淡入轻降（2.0 UI 走查）。
+                  animation: 'ol-item-in 0.22s var(--ol-motion-spring) both',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -432,6 +409,7 @@ export function History() {
                 </div>
               </button>
             ))}
+            </div>
           </div>
         </Card>
         )}
@@ -554,7 +532,8 @@ export function History() {
                     {item.rawTranscript || t('history.rawEmpty')}
                   </p>
                 </div>
-                <div style={{ minWidth: 0, padding: 14, border: '0.5px solid var(--ol-blue)', borderRadius: 10, background: 'var(--ol-blue-soft)' }}>
+                {/* 润色结果框同样去蓝：中性 surface-2 底 + 细线描边（2.0 UI 走查）。 */}
+                <div style={{ minWidth: 0, padding: 14, border: '0.5px solid var(--ol-line)', borderRadius: 10, background: 'var(--ol-surface-2)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
                     <span style={{ display: 'flex', minWidth: 0 }} title={styleLabel(item)}>
                       <Pill size="sm" tone="blue" style={TRUNCATED_PILL_STYLE}>{styleLabel(item)}</Pill>
@@ -698,18 +677,26 @@ function RepolishPanel({ session, mobile, allPacks, packsError }: {
 
   return (
     <div style={{ marginTop: 18, paddingTop: 14, borderTop: '0.5px solid var(--ol-line-soft)' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ol-ink-2)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: 'var(--ol-ink-2)' }}>
           {t('history.repolish.title')}
+          {/* 2.0 UI 走查：常驻说明文字收进「?」徽章，悬停/聚焦才展开全文（与设置页同款）。 */}
+          <Tooltip content={t('history.repolish.hint')} wrap placement="bottom" focusable>
+            <span style={{
+              width: 16, height: 16, borderRadius: 999,
+              background: 'var(--ol-control-muted)', color: 'var(--ol-ink-3)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'help',
+            }}>
+              <Icon name="help" size={10} />
+            </span>
+          </Tooltip>
         </span>
         {results.length > 0 && (
           <Btn size="sm" variant="ghost" onClick={() => setResults([])}>
             {t('history.repolish.clear')}
           </Btn>
         )}
-      </div>
-      <div style={{ fontSize: 11, color: 'var(--ol-ink-4)', lineHeight: 1.55, marginBottom: 12 }}>
-        {t('history.repolish.hint')}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: results.length > 0 ? 14 : 0 }}>
@@ -731,26 +718,15 @@ function RepolishPanel({ session, mobile, allPacks, packsError }: {
           <span style={{ fontSize: 11, color: 'var(--ol-ink-4)' }}>{t('history.repolish.noPacks')}</span>
         ) : (
           <>
-            <select
+            {/* 2.0 UI 走查：统一用官方 SelectLite，不再混用原生 <select>。 */}
+            <SelectLite
               value={selectedPackId}
-              onChange={e => setSelectedPackId(e.target.value)}
-              aria-label={t('history.repolish.pickStyle')}
+              onChange={setSelectedPackId}
+              ariaLabel={t('history.repolish.pickStyle')}
               disabled={!packs || running !== null}
-              style={{
-                padding: '4px 8px',
-                fontSize: 11.5,
-                fontFamily: 'inherit',
-                color: 'var(--ol-ink-2)',
-                background: 'var(--ol-surface-2)',
-                border: '0.5px solid var(--ol-line-strong)',
-                borderRadius: 8,
-                maxWidth: mobile ? 160 : 220,
-              }}
-            >
-              {(packs ?? []).map(pack => (
-                <option key={pack.id} value={pack.id}>{packDisplayName(pack, MODE_LABEL)}</option>
-              ))}
-            </select>
+              options={(packs ?? []).map(pack => ({ value: pack.id, label: packDisplayName(pack, MODE_LABEL) }))}
+              style={{ maxWidth: mobile ? 160 : 220, minWidth: 0, height: 30, fontSize: 13 }}
+            />
             <Btn
               variant="ghost"
               size="sm"

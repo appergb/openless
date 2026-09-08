@@ -26,6 +26,12 @@ pub fn set_vocab_enabled(core: CoreState<'_>, id: String, enabled: bool) -> Resu
 }
 
 #[tauri::command]
+pub fn update_vocab(core: CoreState<'_>, id: String, phrase: String) -> Result<(), String> {
+    core.update_vocabulary_phrase(&id, phrase)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn list_correction_rules(core: CoreState<'_>) -> Result<Vec<CorrectionRule>, String> {
     core.list_correction_rules().map_err(|e| e.to_string())
 }

@@ -12,9 +12,11 @@ interface PageHeaderProps {
   desc?: string;
   right?: ReactNode;
   titleRight?: ReactNode;
+  /** 概览等单屏页用：收紧标题与下方内容的间距（2.0 UI 走查：上方留白过多）。 */
+  compact?: boolean;
 }
 
-export function PageHeader({ kicker, title, desc, right, titleRight }: PageHeaderProps) {
+export function PageHeader({ kicker, title, desc, right, titleRight, compact = false }: PageHeaderProps) {
   const mobile = useMobileLayout();
   const readable = useReadableLayout();
   const conservative = useConservativeLayout();
@@ -26,7 +28,7 @@ export function PageHeader({ kicker, title, desc, right, titleRight }: PageHeade
       alignItems: 'flex-start',
       justifyContent: 'space-between',
       gap: stackLayout ? 12 : mobile ? 12 : 24,
-      marginBottom: stackLayout ? 16 : mobile ? 16 : 24,
+      marginBottom: compact ? 8 : stackLayout ? 16 : mobile ? 16 : 24,
       flexWrap: 'wrap',
       flexShrink: 0,
     }}>
@@ -145,8 +147,8 @@ export function Btn({ children, variant = 'ghost', size = 'md', icon, style, onC
   };
   const v = variants[variant];
   const sizes: Record<BtnSize, { padding: string; fontSize: number }> = {
-    sm: { padding: '5px 10px', fontSize: 12 },
-    md: { padding: '7px 14px', fontSize: 12.5 },
+    sm: { padding: '5px 10px', fontSize: 13 },
+    md: { padding: '7px 14px', fontSize: 13.5 },
   };
   return (
     <button

@@ -111,7 +111,9 @@
      light/dark 取值不同需保持主题感知。 */
   --ol-panel-glass-bg: rgba(255, 255, 255, 0.94);
 
-  --ol-sidebar-bg: #fafafa;
+  /* 2.0 UI 走查（参考 Codex 侧栏）：侧栏底色与右侧纯白内容区拉开明确层次，
+     此前 #fafafa 对白底几乎无区分。 */
+  --ol-sidebar-bg: #f0f0f1;
   --ol-sidebar-border: #e4e4e7;
   --ol-sidebar-brand-bg: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0.36));
   --ol-sidebar-brand-border: rgba(255,255,255,0.50);
@@ -125,7 +127,7 @@
   --ol-sidebar-settings-active-bg: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.48));
   --ol-nav-hover-bg: rgba(0, 0, 0, 0.04);
 
-  --ol-settings-rail-bg: #fafafa;
+  --ol-settings-rail-bg: #f0f0f1;
   --ol-settings-rail-border: rgba(255,255,255,0.52);
   --ol-settings-links-border: rgba(255,255,255,0.46);
   --ol-settings-content-bg: #ffffff;
@@ -390,6 +392,11 @@ body {
 .ol-noscrollbar { scrollbar-width: none; }
 
 /* Thin scrollbar */
+/* 2.0 UI 走查：内容变长出现 6px 细滚动条的瞬间会把内容宽度挤窄一格，整页「抽搐」。
+   scrollbar-gutter: stable 让滚动条槽位常驻预留，滚动条出现/消失不再触发布局回流。 */
+.ol-thinscroll { scrollbar-gutter: stable; }
+/* 概览是 overflow:hidden 的单屏固定页，永远不会有滚动条 —— 不占槽位。 */
+.ol-thinscroll[data-ol-page-fixed] { scrollbar-gutter: auto; }
 .ol-thinscroll::-webkit-scrollbar { width: 6px; height: 6px; }
 .ol-thinscroll::-webkit-scrollbar-track { background: transparent; }
 .ol-thinscroll::-webkit-scrollbar-thumb {

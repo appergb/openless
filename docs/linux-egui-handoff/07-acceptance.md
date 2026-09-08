@@ -1,6 +1,6 @@
 # 07：验收与证据
 
-状态：canonical（2026-09-07 以源码为准重写）；更新：2026-09-07。
+状态：canonical（2026-09-07 以源码为准重写）；更新：2026-09-08。
 
 ## 1. 两个不同的完成门
 
@@ -11,7 +11,7 @@
 
 | 验证 | 命令 |
 | --- | --- |
-| 格式 | `cargo fmt --check`（openless-core / linux-egui / src-tauri） |
+| 格式 | 根 workspace：`cargo fmt --all --check`（openless-core / linux-egui）；Tauri：`cargo fmt --manifest-path src-tauri/Cargo.toml --check` |
 | Core | `cargo test -p openless-core --locked` |
 | Linux Host/合同 | `cargo test -p openless-linux-egui --locked` |
 | Linux 目标编译 | `cargo check -p openless-linux-egui --all-targets --target x86_64-unknown-linux-gnu --locked`（需配置好带 `core/std` 的目标工具链） |

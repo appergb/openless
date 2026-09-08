@@ -1,6 +1,7 @@
 // 共享在设置各 section 间的原子（SettingRow / Toggle / inputStyle）和纯 i18n 标签。
 
 import type { CSSProperties, ReactNode } from "react"
+import { Icon } from "../../components/Icon"
 import { Tooltip } from "../../components/Tooltip"
 import { useMobileLayout, useReadableLayout, useConservativeLayout } from "../../lib/useMobileLayout"
 
@@ -70,7 +71,7 @@ export function SettingRow({
     const conservative = useConservativeLayout()
     const stackLayout = mobile || readable || conservative
     const labelStyle: CSSProperties = {
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: 500,
         color: "var(--ol-ink)",
         minWidth: 0,
@@ -79,7 +80,7 @@ export function SettingRow({
         <div
             style={{
                 display: "grid",
-                gridTemplateColumns: stackLayout ? "minmax(0, 1fr)" : "minmax(0, 180px) minmax(0, 1fr)",
+                gridTemplateColumns: stackLayout ? "minmax(0, 1fr)" : "minmax(0, 200px) minmax(0, 1fr)",
                 gap: stackLayout ? 8 : 16,
                 padding: stackLayout ? "12px 0" : "14px 0",
                 borderTop: "0.5px solid var(--ol-line-soft)",
@@ -87,8 +88,32 @@ export function SettingRow({
             }}
         >
             <div style={{ minWidth: 0, alignSelf: "center" }}>
-                <div style={labelStyle}>{label}</div>
-                {desc && <div style={{ fontSize: 12, color: "var(--ol-ink-3)", lineHeight: 1.55, marginTop: 5, overflowWrap: "anywhere" }}>{desc}</div>}
+                {/* 2.0 UI 走查：行内长说明不再常驻占位，统一收进标题旁的「?」，
+                    悬停 / 点击弹出（与「录音与输入」标题的提示同一交互语言）。 */}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                    <span style={{ ...labelStyle, minWidth: 0 }}>{label}</span>
+                    {desc && (
+                        <Tooltip content={desc} wrap placement="bottom" focusable>
+                            <span
+                                aria-label={desc}
+                                style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: 16,
+                                    height: 16,
+                                    borderRadius: 999,
+                                    border: "0.5px solid var(--ol-line-strong)",
+                                    color: "var(--ol-ink-4)",
+                                    cursor: "help",
+                                    flexShrink: 0,
+                                }}
+                            >
+                                <Icon name="help" size={10} />
+                            </span>
+                        </Tooltip>
+                    )}
+                </div>
             </div>
             <div
                 className="ol-flex-row"
@@ -121,7 +146,10 @@ export function Toggle({
             onClick={() => onToggle?.(!on)}
             style={{
                 position: "relative",
-                flex: "0 0 36px",
+                // 2.0 UI 走查：此前写死 flex: 0 0 36px，在列方向的设置行包装里
+                // flex-basis 作用在高度上，开关被拉成 36×36 的圆球（开机自启行）。
+                // 宽高由 width/height 显式锁定，flex 只负责不伸不缩。
+                flex: "0 0 auto",
                 width: 36,
                 minWidth: 36,
                 maxWidth: 36,
@@ -189,7 +217,7 @@ export const inputStyle: CSSProperties = {
     padding: "0 10px",
     border: "0.5px solid var(--ol-line-strong)",
     borderRadius: 8,
-    fontSize: 12.5,
+    fontSize: 13.5,
     fontFamily: "inherit",
     outline: "none",
     // 与 SelectLite 触发器同底色：此前用 --ol-surface-2（浅灰）会让所有输入框/

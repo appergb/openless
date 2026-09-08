@@ -1,12 +1,14 @@
 # OpenLess 文档入口
 
-状态：canonical；更新：2026-09-07。本目录 2026-09-07 以源代码为唯一依据重写（基于本地 `beta` `639c2fbf`）；文档与代码冲突时，以代码为准修文档，不保留历史叙述。
+状态：canonical；更新：2026-09-08。实现说明与当前源码保持一致；范围、接口合同和验收要求由各自文档维护。各专项文档的更新时间与状态单独标注。
 
 ## 范围与架构
 
 - [2.0 范围](2.0-requirements.md)：平台边界、版本锚点与完成条件。
 - [架构](architecture.md)：Core / 平台 Host / 界面分层、模块地图与验证入口。
+- [目录与工程结构](structure.md)：仓库与应用工作目录、构建清单、源码定位和生成目录。
 - [桌面验收清单](2.0-desktop-acceptance.md)：功能域 → 源码入口 → 必须的真实证据。
+- [发布规范](../RELEASING.md)：分支、渠道、版本同步和平台发布条件。
 
 ## Linux 接入交接（egui，目录内互链）
 
@@ -29,6 +31,6 @@
 ## 验证入口（在 `openless-all/app` 执行）
 
 - `npm test`：构建 React + 全部前端/合同测试（含 Core 快捷键回归）。
-- `cargo fmt --check`：openless-core、linux-egui、src-tauri 三 crate。
+- `cargo fmt --all --check`：根 workspace 的 openless-core、linux-egui；Tauri 单独执行 `cargo fmt --manifest-path src-tauri/Cargo.toml --check`。
 - `cargo test -p openless-core --locked`、`cargo test -p openless-linux-egui --locked`。
-- `src-tauri` 被 workspace exclude，按平台独立构建；macOS 构建需 `git submodule update --init --recursive`。
+- `src-tauri` 及 `backend-tests` 被 workspace exclude，按平台独立构建。源码构建 Tauri 前初始化子模块：`git submodule update --init --recursive`；Core/Linux 独立检查不依赖 Tauri 子模块。

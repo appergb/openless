@@ -149,6 +149,43 @@ impl DictionaryStore {
         Ok(())
     }
 
+    /// Rename an entry in place so its id / hits / enabled state survive the edit.
+    /// Empty phrases and phrases colliding with another entry are rejected.
+    pub fn update_phrase(&self, id: &str, phrase: String) -> Result<(), BackendError> {
+        let phrase = phrase.trim().to_string();
+        if phrase.is_empty() {
+            return Err(BackendError::new(
+                BackendErrorCode::InvalidArgument,
+                "dictionary phrase is empty",
+            ));
+        }
+        let _guard = self.lock_store()?;
+        let mut entries = self.read_locked()?;
+        if entries
+            .iter()
+            .any(|entry| entry.id != id && entry.phrase == phrase)
+        {
+            return Err(BackendError::new(
+                BackendErrorCode::InvalidArgument,
+                "dictionary phrase already exists",
+            ));
+        }
+        let entry = entries
+            .iter_mut()
+            .find(|entry| entry.id == id)
+            .ok_or_else(|| {
+                BackendError::new(
+                    BackendErrorCode::InvalidArgument,
+                    "dictionary entry not found",
+                )
+            })?;
+        if entry.phrase != phrase {
+            entry.phrase = phrase;
+            self.write_locked(&entries)?;
+        }
+        Ok(())
+    }
+
     /// Count case-insensitive, non-overlapping occurrences in final output.
     pub fn record_hits(&self, text: &str) -> Result<u64, BackendError> {
         if text.is_empty() {

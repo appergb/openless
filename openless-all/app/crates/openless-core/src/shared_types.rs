@@ -677,6 +677,12 @@ pub struct UserPreferences {
     /// Android: floating overlay control diameter in dp.
     #[serde(default = "default_android_overlay_size_dp")]
     pub android_overlay_size_dp: u32,
+    /// 开屏 PV 的主版本世代标记（如 "2"）。空串 = 从未播过。启动时 Rust 比较
+    /// 此标记与当前应用主版本：不一致则写回并播一次开屏动画，之后同一世代内
+    /// （2.x 补丁/小版本升级、重启）不再播放。由 `take_splash_playback` 消费，
+    /// `update_settings` 保存时永远沿用当前值，防止客户端整档提交把它冲掉。
+    #[serde(default)]
+    pub splash_seen_version: String,
 }
 
 impl UserPreferences {
@@ -933,6 +939,8 @@ struct UserPreferencesWire {
     android_overlay_cancel_swipe_direction: AndroidOverlayCancelSwipeDirection,
     #[serde(default = "default_android_overlay_size_dp")]
     android_overlay_size_dp: u32,
+    #[serde(default)]
+    splash_seen_version: String,
 }
 
 fn deserialize_selection_polish_hotkey<'de, D>(
@@ -1077,6 +1085,7 @@ impl Default for UserPreferencesWire {
             android_overlay_left_swipe_action: prefs.android_overlay_left_swipe_action,
             android_overlay_cancel_swipe_direction: prefs.android_overlay_cancel_swipe_direction,
             android_overlay_size_dp: prefs.android_overlay_size_dp,
+            splash_seen_version: prefs.splash_seen_version,
         }
     }
 }
@@ -1243,6 +1252,7 @@ impl<'de> Deserialize<'de> for UserPreferences {
             android_overlay_size_dp: normalize_android_overlay_size_dp(
                 wire.android_overlay_size_dp,
             ),
+            splash_seen_version: wire.splash_seen_version,
         })
     }
 }
@@ -1580,6 +1590,7 @@ impl Default for UserPreferences {
             android_overlay_cancel_swipe_direction: default_android_overlay_cancel_swipe_direction(
             ),
             android_overlay_size_dp: default_android_overlay_size_dp(),
+            splash_seen_version: String::new(),
         }
     }
 }

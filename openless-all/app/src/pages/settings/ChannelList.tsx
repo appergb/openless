@@ -7,7 +7,7 @@
 // 卡片解决的两件事：同一家厂商可以存多把 key；key 之间切换只是拖一下顺序，
 // 而不是把旧 key 覆盖掉。
 
-import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { Modal } from '../../components/ui/Modal';
@@ -31,6 +31,7 @@ import {
   type ProviderDescriptor,
 } from '../../lib/ipc';
 import { emitSaved } from '../../lib/savedEvent';
+import { useExitMount } from '../../lib/useExitMount';
 import { useMobileLayout, useReadableLayout, useConservativeLayout } from '../../lib/useMobileLayout';
 import { useHotkeySettings } from '../../state/HotkeySettingsContext';
 import { getPlatformCapabilities } from '../../lib/platform';
@@ -209,6 +210,9 @@ export function ChannelList({
       const list = await listChannels(kind);
       setChannels(list);
       setLoaded(true);
+      // 广播给服务分类 tab：语言模型/语音识别是必配项，tab 上的红/黄状态点
+      // 需要在任何增删改/启停后即时刷新。
+      window.dispatchEvent(new CustomEvent('ol-channels-changed', { detail: { kind } }));
       // 卡片上要显示每张卡当前的模型名 —— 凭据按渠道隔离，只能逐个读。
       // 渠道数量是个位数，并发读一轮的开销可以忽略。
       const account = modelAccountFor(kind);
@@ -324,16 +328,70 @@ export function ChannelList({
     channelsRef.current = channels;
   }, [channels]);
 
+  // 2.0 UI 走查：添加/删除/拖序都会让行位置突变，此前没有任何过渡。
+  // FLIP：每次 channels 变化后对比各行上边缘，位移的行从旧位置滑到新位置，
+  // 新出现的行淡入下沉进场；被拖的行保留抬升 scale，避免动画盖掉拖拽态。
+  const prevRowTops = useRef(new Map<string, number>());
+  useLayoutEffect(() => {
+    // 同样只量布局位置（offsetTop）：rect.top 会被上一帧仍在飞行的 FLIP
+    // transform 污染，量出来的位移差是错的，动画本身也会跟着抖。
+    const nextTops = new Map<string, number>();
+    rowsRef.current.forEach((element, id) => nextTops.set(id, element.offsetTop));
+    rowsRef.current.forEach((element, id) => {
+      const current = nextTops.get(id);
+      if (current == null) return;
+      const previous = prevRowTops.current.get(id);
+      const isDragging = dragIdRef.current === id;
+      const lift = isDragging ? ' scale(1.012)' : '';
+      if (previous == null) {
+        element.animate(
+          [
+            { opacity: 0, transform: `translateY(-8px)${isDragging ? '' : ' scale(0.98)'}` },
+            { opacity: 1, transform: 'none' },
+          ],
+          { duration: 260, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+        );
+      } else if (Math.abs(previous - current) > 1) {
+        element.animate(
+          [
+            { transform: `translateY(${previous - current}px)${lift}` },
+            { transform: `translateY(0)${lift}` },
+          ],
+          { duration: 300, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+        );
+      }
+    });
+    prevRowTops.current = nextTops;
+  }, [channels]);
+
   const dragCleanupRef = useRef<(() => void) | null>(null);
 
-  /** 指针移到哪张卡片上，就把被拖的那张插到那个位置 —— 卡片实时跟手。 */
+  /** 指针移到哪张卡片上，就把被拖的那张插到那个位置 —— 卡片实时跟手。
+   *  命中测试必须用布局坐标（offsetTop）而不是 getBoundingClientRect：拖动时
+   *  FLIP 滑位动画正在飞行，rect 里掺着动画 transform，会把动画反馈进命中
+   *  判定 —— 同一指针位置交替命中两张卡、顺序来回翻转，整栏疯狂抽搐
+   *  （2.0 UI 走查修复）。offsetTop 只反映布局位置，不受 transform/动画影响。 */
   const moveDragTo = (pointerY: number) => {
     const dragId = dragIdRef.current;
     if (!dragId) return;
     let targetId: string | null = null;
     for (const [id, element] of rowsRef.current) {
-      const rect = element.getBoundingClientRect();
-      if (pointerY >= rect.top && pointerY <= rect.bottom) {
+      if (id === dragId) continue;
+      const parent = element.offsetParent as HTMLElement | null;
+      let top: number;
+      let bottom: number;
+      let y: number;
+      if (parent) {
+        top = element.offsetTop;
+        bottom = top + element.offsetHeight;
+        y = pointerY - parent.getBoundingClientRect().top;
+      } else {
+        const rect = element.getBoundingClientRect();
+        top = rect.top;
+        bottom = rect.bottom;
+        y = pointerY;
+      }
+      if (y >= top && y <= bottom) {
         targetId = id;
         break;
       }
@@ -366,6 +424,7 @@ export function ChannelList({
   const endDrag = async () => {
     dragCleanupRef.current?.();
     dragCleanupRef.current = null;
+    document.body.style.cursor = '';
     const dragId = dragIdRef.current;
     dragIdRef.current = null;
     setDraggingId(null);
@@ -395,6 +454,8 @@ export function ChannelList({
     dragIdRef.current = id;
     orderAtDragStartRef.current = channelsRef.current.map(c => c.id);
     setDraggingId(id);
+    // 拖动期间整页光标保持 grabbing：指针滑出手柄后也能看出「正在拖」。
+    document.body.style.cursor = 'grabbing';
 
     const onMove = (moveEvent: PointerEvent) => moveDragTo(moveEvent.clientY);
     const onUp = () => void endDrag();
@@ -408,12 +469,23 @@ export function ChannelList({
     };
   };
 
-  // 组件卸载（比如关掉设置面板）时别把 window 监听留在外面。
-  useEffect(() => () => dragCleanupRef.current?.(), []);
+  // 组件卸载（比如关掉设置面板）时别把 window 监听 / grabbing 光标留在外面。
+  useEffect(() => () => {
+    dragCleanupRef.current?.();
+    document.body.style.cursor = '';
+  }, []);
 
   const editingChannel =
     channels.find(c => c.id === (draftId ?? editingId)) ?? null;
   const isDraft = draftId != null;
+
+  // 弹窗退场门控（2.0 UI 走查「从哪来回到哪去」）：closing 动画期间保留最后一次
+  // 打开的 channel/isDraft，避免动画播一半内容先消失、标题从「添加」闪回「编辑」。
+  const dialogMount = useExitMount(editingChannel !== null);
+  const lastDialogRef = useRef<{ channel: Channel; isDraft: boolean } | null>(null);
+  if (editingChannel) lastDialogRef.current = { channel: editingChannel, isDraft };
+  const dialogChannel = editingChannel ?? lastDialogRef.current?.channel ?? null;
+  const dialogIsDraft = editingChannel ? isDraft : lastDialogRef.current?.isDraft ?? false;
 
   const markDraftTouched = () => {
     if (draftId != null) draftTouchedRef.current = true;
@@ -457,7 +529,9 @@ export function ChannelList({
         </div>
       )}
 
-      <div style={{ borderTop: channels.length ? '1px solid var(--ol-line)' : undefined }}>
+      {/* 2.0 UI 走查：生效渠道不再用蓝底 + 左侧竖条（「当前使用」徽章已经说明问题，
+          整行染色太花哨）；行改为圆角卡片，选中态只用中性灰底 + 细描边。 */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: channels.length ? 12 : 0 }}>
         {channels.map(channel => {
           const isActive = channel.id === activeId;
           const providerLabel = presetLabel(kind, channel.providerType, t, descriptors);
@@ -473,11 +547,18 @@ export function ChannelList({
               }}
               style={{
                 display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '14px 20px',
-                padding: '18px 8px', borderBottom: '1px solid var(--ol-line)',
-                background: isActive ? 'var(--ol-blue-soft)' : 'transparent',
-                boxShadow: isActive ? 'inset 3px 0 var(--ol-blue)' : undefined,
-                opacity: draggingId === channel.id ? 0.55 : 1,
-                transition: draggingId ? undefined : 'background 0.16s var(--ol-motion-quick)',
+                padding: '14px 12px', borderRadius: 12,
+                // 拖动态：轻微抬升（scale + 大阴影 + 强描边 + 提高层级），
+                // 让「哪张在被拖、拖到哪了」一目了然（2.0 UI 走查）。
+                border: '0.5px solid',
+                borderColor: draggingId === channel.id ? 'var(--ol-line-strong)' : isActive ? 'var(--ol-line)' : 'transparent',
+                background: isActive ? 'var(--ol-surface-2)' : 'transparent',
+                position: 'relative',
+                zIndex: draggingId === channel.id ? 2 : undefined,
+                transform: draggingId === channel.id ? 'scale(1.012)' : undefined,
+                boxShadow: draggingId === channel.id ? 'var(--ol-shadow-lg)' : undefined,
+                opacity: draggingId === channel.id ? 0.96 : 1,
+                transition: draggingId ? undefined : 'background 0.16s var(--ol-motion-quick), border-color 0.16s var(--ol-motion-quick), transform 0.18s var(--ol-motion-spring), box-shadow 0.18s var(--ol-motion-soft)',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minWidth: 0, flex: preferenceStack ? '1 1 100%' : '1 1 260px' }}>
@@ -486,7 +567,7 @@ export function ChannelList({
                   onClick={e => e.stopPropagation()}
                   title={t('settings.channels.dragHint')}
                   aria-label={t('settings.channels.dragHint')}
-                  style={{ color: 'var(--ol-ink-4)', fontSize: 18, flexShrink: 0, cursor: draggingId === channel.id ? 'grabbing' : 'grab', touchAction: 'none', padding: '0 4px', userSelect: 'none' }}
+                  style={{ color: draggingId === channel.id ? 'var(--ol-ink)' : 'var(--ol-ink-4)', fontSize: 18, flexShrink: 0, cursor: draggingId === channel.id ? 'grabbing' : 'grab', touchAction: 'none', padding: '0 4px', userSelect: 'none', transition: 'color 0.16s var(--ol-motion-quick)' }}
                 >⠿</span>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
@@ -527,13 +608,15 @@ export function ChannelList({
         })}
       </div>
 
-      {editingChannel && (
+      {dialogMount.mounted && dialogChannel && (
         <ChannelModal
+          key={dialogChannel.id}
           kind={kind}
-          channel={editingChannel}
-          presets={presetsFor(kind, os, supportsQwen3Mlx, editingChannel.providerType, descriptors)}
-          isDraft={isDraft}
+          channel={dialogChannel}
+          presets={presetsFor(kind, os, supportsQwen3Mlx, dialogChannel.providerType, descriptors)}
+          isDraft={dialogIsDraft}
           mobile={mobile}
+          closing={dialogMount.closing}
           onClose={() => void closeModal()}
           onChanged={refresh}
           onUserMutation={markDraftTouched}
@@ -622,6 +705,7 @@ function ChannelModal({
   presets,
   isDraft,
   mobile,
+  closing = false,
   onClose,
   onChanged,
   onUserMutation,
@@ -632,6 +716,8 @@ function ChannelModal({
   /** 新建流程中的草稿卡片：标题用「添加渠道」，未触碰时允许回收。 */
   isDraft: boolean;
   mobile: boolean;
+  /** 退场中：透传给 Modal 反向播放入场动画（useExitMount 门控卸载）。 */
+  closing?: boolean;
   onClose: () => void;
   onChanged: () => void | Promise<void>;
   /** 用户对草稿做了有意义的操作；必须在异步写入前同步触发。 */
@@ -751,10 +837,18 @@ function ChannelModal({
   const isLocalEngine = descriptor?.authRequirement === 'none';
 
   return (
-    <Modal onClose={onClose} zIndex={1000} width={mobile ? '100%' : 'min(780px, 100%)'}>
+    <Modal onClose={onClose} zIndex={1000} closing={closing} width={mobile ? '100%' : 'min(780px, 100%)'}>
       <div ref={dialogRef} className="ol-channel-dialog" role="dialog" aria-label={t(isDraft ? 'settings.channels.createTitle' : 'settings.channels.editTitle')} tabIndex={-1} onKeyDown={onDialogKeyDown} style={{ minWidth: 0, outline: 'none' }}>
         <style>{`.ol-channel-dialog :is(input, button, [role="combobox"]):focus-visible { outline: 2px solid var(--ol-blue); outline-offset: 3px; }`}</style>
-        <header style={{ marginBottom: 24, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        {/* 关闭按钮钉在弹窗右上角（2.0 UI 走查）：Modal 卡片本身就是滚动容器，
+            header 用 sticky 吸顶；负 margin + 等量 padding 让不透明底铺到卡片边缘，
+            顶部圆角与卡片一致，内容从 header 下面滚过去。 */}
+        <header style={{
+          position: 'sticky', top: 0, zIndex: 3,
+          margin: '-22px -22px 24px', padding: '22px 22px 0',
+          background: 'var(--ol-surface)', borderRadius: '16px 16px 0 0',
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16,
+        }}>
           <div>
           <h2 style={{ margin: 0, fontSize: 21, fontWeight: 600, color: 'var(--ol-ink)' }}>{t(isDraft ? 'settings.channels.createTitle' : 'settings.channels.editTitle')}</h2>
           <p style={{ margin: '8px 0 0', fontSize: 12, lineHeight: 1.6, color: 'var(--ol-ink-3)' }}>{t('settings.channels.autoSaveHint')}</p>

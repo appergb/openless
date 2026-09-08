@@ -205,132 +205,166 @@ export function Translation() {
 
         <SavedToast saveState={saveState} message={saveMessage} />
 
-        {/* 1. 工作语言 */}
-        <Card>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{t('translation.working.title')}</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {SUPPORTED_LANGUAGES.map(lang => {
-              const checked = prefs.workingLanguages.includes(lang);
-              return (
-                <button
-                  key={lang}
-                  onClick={() => toggleWorkingLanguage(lang)}
-                  style={{
-                    padding: '6px 12px',
-                    fontSize: 12.5,
-                    fontWeight: checked ? 600 : 500,
-                    border: 0,
-                    borderRadius: 999,
-                    background: checked ? 'var(--ol-blue)' : 'rgba(0,0,0,0.05)',
-                    color: checked ? '#fff' : 'var(--ol-ink-2)',
-                    cursor: 'default',
-                    fontFamily: 'inherit',
-                    transition: 'background 0.12s ease-out, color 0.12s ease-out',
-                  }}
-                >
-                  {lang}
-                </button>
-              );
-            })}
-          </div>
-        </Card>
-
-        {/* 2. 翻译目标语言 */}
-        <Card>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>{t('translation.target.title')}</div>
-            <span
+        {/* 2.0 UI 走查：宽屏下「工作语言 / 目标语言」并排两栏（窄屏自动叠成一栏），
+            语言 chips 用对齐的均匀网格代替自由换行，避免参差的标签云。 */}
+        <div className="ol-translation-grid">
+          {/* 1. 工作语言 */}
+          <Card style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 12 }}>{t('translation.working.title')}</div>
+            <div
               style={{
-                padding: '2px 8px',
-                fontSize: 10.5,
-                fontWeight: 600,
-                letterSpacing: '0.04em',
-                borderRadius: 999,
-                background: enabled ? 'rgba(37,99,235,0.10)' : 'rgba(0,0,0,0.05)',
-                color: enabled ? 'var(--ol-blue)' : 'var(--ol-ink-4)',
-                textTransform: 'uppercase',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))',
+                gap: 8,
               }}
             >
-              {enabled ? t('translation.statusEnabled') : t('translation.statusDisabled')}
-            </span>
-          </div>
-          <SelectLite
-            value={prefs.translationTargetLanguage}
-            onChange={onTargetChange}
-            options={targetOptions}
-            placeholder={t('translation.target.disabled')}
-            ariaLabel={t('translation.target.title')}
-            style={{ width: '100%', maxWidth: 360, fontSize: 13 }}
-          />
+              {SUPPORTED_LANGUAGES.map(lang => {
+                const checked = prefs.workingLanguages.includes(lang);
+                return (
+                  <button
+                    key={lang}
+                    type="button"
+                    className="ol-chip"
+                    aria-pressed={checked}
+                    title={lang}
+                    onClick={() => toggleWorkingLanguage(lang)}
+                  >
+                    {lang}
+                  </button>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* 2. 翻译目标语言 */}
+          <Card style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 600 }}>{t('translation.target.title')}</div>
+              <span
+                style={{
+                  padding: '2px 8px',
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  letterSpacing: '0.04em',
+                  borderRadius: 999,
+                  background: enabled ? 'var(--ol-blue-soft)' : 'var(--ol-control-muted)',
+                  color: enabled ? 'var(--ol-blue)' : 'var(--ol-ink-4)',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {enabled ? t('translation.statusEnabled') : t('translation.statusDisabled')}
+              </span>
+            </div>
+            <SelectLite
+              value={prefs.translationTargetLanguage}
+              onChange={onTargetChange}
+              options={targetOptions}
+              placeholder={t('translation.target.disabled')}
+              ariaLabel={t('translation.target.title')}
+              style={{ width: '100%', fontSize: 13 }}
+            />
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginTop: 12,
+                paddingTop: 12,
+                borderTop: '0.5px solid var(--ol-line)',
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ol-ink-2)' }}>
+                  {t('translation.style.title')}
+                </div>
+                <div style={{ marginTop: 2, fontSize: 12, color: 'var(--ol-ink-4)', lineHeight: 1.5 }}>
+                  {t('translation.style.desc')}
+                </div>
+              </div>
+              <span
+                role="status"
+                title={stylePackLoadFailed ? undefined : (activeStylePackName ?? undefined)}
+                style={{
+                  flex: '0 0 auto',
+                  maxWidth: 180,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  padding: '3px 9px',
+                  borderRadius: 999,
+                  background: 'var(--ol-blue-soft)',
+                  color: 'var(--ol-blue)',
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                }}
+              >
+                {stylePackLoadFailed
+                  ? t('translation.style.unavailable')
+                  : activeStylePackName ?? t('common.loading')}
+              </span>
+            </div>
+            {redundantTarget && (
+              <div
+                role="status"
+                style={{
+                  marginTop: 10,
+                  padding: '8px 12px',
+                  borderRadius: 10,
+                  border: '0.5px solid rgba(217,119,6,0.24)',
+                  background: 'rgba(217,119,6,0.08)',
+                  color: 'var(--ol-warn, #b45309)',
+                  fontSize: 12,
+                  lineHeight: 1.55,
+                }}
+              >
+                {t('translation.target.sameAsWorking')}
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* 3. 使用方法：编号步骤条，宽屏一行铺开、窄屏自动折行 */}
+        <Card>
+          <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 12 }}>{t('translation.howto.title')}</div>
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
-              marginTop: 12,
-              paddingTop: 12,
-              borderTop: '0.5px solid var(--ol-line)',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+              gap: '12px 14px',
             }}
           >
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ol-ink-2)' }}>
-                {t('translation.style.title')}
+            {[
+              t('translation.howto.step1', { trigger: triggerLabel }),
+              t('translation.howto.step2', { trigger: triggerLabel }),
+              t('translation.howto.step3', { shortcut: translationHotkeyLabel }),
+              t('translation.howto.step4', { trigger: triggerLabel }),
+              t('translation.howto.step5'),
+            ].map((step, index) => (
+              <div key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <span
+                  style={{
+                    flex: '0 0 auto',
+                    width: 18,
+                    height: 18,
+                    marginTop: 1,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '50%',
+                    background: 'var(--ol-blue-soft)',
+                    color: 'var(--ol-blue)',
+                    fontSize: 11,
+                    fontWeight: 650,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {index + 1}
+                </span>
+                <span style={{ fontSize: 12.5, color: 'var(--ol-ink-2)', lineHeight: 1.55 }}>{step}</span>
               </div>
-              <div style={{ marginTop: 2, fontSize: 11.5, color: 'var(--ol-ink-4)', lineHeight: 1.5 }}>
-                {t('translation.style.desc')}
-              </div>
-            </div>
-            <span
-              role="status"
-              style={{
-                flex: '0 0 auto',
-                maxWidth: 180,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                padding: '3px 9px',
-                borderRadius: 999,
-                background: 'rgba(37,99,235,0.08)',
-                color: 'var(--ol-blue)',
-                fontSize: 11,
-                fontWeight: 600,
-              }}
-            >
-              {stylePackLoadFailed
-                ? t('translation.style.unavailable')
-                : activeStylePackName ?? t('common.loading')}
-            </span>
+            ))}
           </div>
-          {redundantTarget && (
-            <div
-              role="status"
-              style={{
-                marginTop: 10,
-                padding: '8px 12px',
-                borderRadius: 10,
-                border: '0.5px solid rgba(217,119,6,0.24)',
-                background: 'rgba(217,119,6,0.08)',
-                color: 'var(--ol-warn, #b45309)',
-                fontSize: 11.5,
-                lineHeight: 1.55,
-              }}
-            >
-              {t('translation.target.sameAsWorking')}
-            </div>
-          )}
-        </Card>
-
-        {/* 3. 使用方法 */}
-        <Card>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{t('translation.howto.title')}</div>
-          <ol style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, color: 'var(--ol-ink-2)', lineHeight: 1.7 }}>
-            <li>{t('translation.howto.step1', { trigger: triggerLabel })}</li>
-            <li>{t('translation.howto.step2', { trigger: triggerLabel })}</li>
-            <li>{t('translation.howto.step3', { shortcut: translationHotkeyLabel })}</li>
-            <li>{t('translation.howto.step4')}</li>
-            <li>{t('translation.howto.step5')}</li>
-          </ol>
         </Card>
       </div>
     </>

@@ -54,6 +54,8 @@ export const ICONS: Record<string, string> = {
   more: 'M5 12h.01M12 12h.01M19 12h.01', // More (horizontal dots)
   play: 'M5 3l14 9-14 9V3z', // Play
   download: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3', // Download
+  pencil: 'M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z', // Edit (pencil)
+  feather: 'M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5zM16 8L2 22M17.5 15H9', // Feather (dictionary word)
 };
 
 export interface IconProps {

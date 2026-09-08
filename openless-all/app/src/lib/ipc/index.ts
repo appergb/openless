@@ -73,6 +73,7 @@ export {
     addVocab,
     removeVocab,
     setVocabEnabled,
+    updateVocab,
     listCorrectionRules,
     addCorrectionRule,
     acceptPendingCorrection,
@@ -264,6 +265,9 @@ export {
     readMarketplaceDetailCache,
     writeMarketplaceDetailCache,
 } from "./marketplace-cache"
+
+// splash（2.0 开屏 PV 首启标记）
+export { takeSplashPlayback, SPLASH_MAJOR } from "./splash"
 
 // utils
 export { openExternal, exportErrorLog, logClientError, debugReadCursorContext } from "./utils"

@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
+import { SplashVideo } from "./components/SplashVideo";
 import { detectOS } from "./components/WindowChrome";
 import i18n from "./i18n"; // 副作用：触发 i18next init
 import { initThemeMode } from "./lib/themeMode";
@@ -17,6 +18,9 @@ const isSelectionPolishPreview = windowKind === "selection-polish-preview";
 const isSelectionVoiceIntent = windowKind === "selection-voice-intent";
 const isLessComputer = windowKind === "less-computer";
 const isLessComputerGlow = windowKind === "less-computer-glow";
+// 开屏 PV 只属于主窗口（无 ?window= 参数的路由）：胶囊 / QA / Less Computer 等
+// 辅助窗口共用同一份前端产物，但绝不能抢占或重复消费开屏。
+const isMainWindow = !windowKind;
 const osQuery = params.get("os") as OS | null;
 const os = osQuery ?? detectOS();
 document.documentElement.dataset.olPlatform = os;
@@ -27,6 +31,7 @@ const root = ReactDOM.createRoot(document.getElementById("root")!);
 const renderApp = () => {
   root.render(
     <React.StrictMode>
+      {isMainWindow && <SplashVideo />}
       <App
         isCapsule={isCapsule}
         isQa={isQa}

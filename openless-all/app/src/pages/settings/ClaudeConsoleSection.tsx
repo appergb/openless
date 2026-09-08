@@ -15,6 +15,7 @@ import {
   type CodingAgentPermissionMode,
 } from '../../lib/ipc'
 import { Tooltip } from '../../components/Tooltip'
+import { SelectLite } from '../../components/ui/SelectLite'
 import { Btn, Card } from '../_atoms'
 import { SectionDesc, SectionTitle, SettingRow, inputStyle } from './shared'
 
@@ -220,17 +221,14 @@ export function ClaudeConsoleSection() {
       </SettingRow>
 
       <SettingRow label={t('settings.codingConsole.permissionMode')}>
-        <select
+        {/* 2.0 UI 走查：统一官方 SelectLite。 */}
+        <SelectLite
           value={permMode}
-          onChange={e => setPermMode(e.target.value as CodingAgentPermissionMode)}
-          style={{ ...inputStyle, maxWidth: 220, cursor: 'pointer' }}
-        >
-          {PERMISSION_MODES.map(m => (
-            <option key={m} value={m}>
-              {t(`settings.codingConsole.mode.${m}`)}
-            </option>
-          ))}
-        </select>
+          onChange={v => setPermMode(v as CodingAgentPermissionMode)}
+          ariaLabel={t('settings.codingConsole.permissionMode')}
+          options={PERMISSION_MODES.map(m => ({ value: m, label: t(`settings.codingConsole.mode.${m}`) }))}
+          style={{ maxWidth: 220, minWidth: 160 }}
+        />
       </SettingRow>
 
       <div style={{ paddingTop: 14, borderTop: '0.5px solid var(--ol-line-soft)' }}>

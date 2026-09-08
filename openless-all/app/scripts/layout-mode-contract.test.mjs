@@ -26,7 +26,11 @@ assert.match(css, /\.ol-conservative-stack/);
 
 assert.match(stackedLayout, /stackedRowLayout\?: boolean/);
 assert.doesNotMatch(stackedLayout, /mobile\s*\|\|/);
-assert.match(shared, /flex:\s*"0 0 36px"/);
+// Toggle 尺寸契约：宽 36 由 width/minWidth/maxWidth 锁定，flex 只声明不伸缩。
+// 旧断言锁的是 flex:"0 0 36px"——该写法在列方向容器里把 flex-basis 作用到高度，
+// 开机自启行因此变成 36×36 圆球（2.0 UI 走查修复），故改为锁 "0 0 auto"。
+assert.match(shared, /flex:\s*"0 0 auto"/);
+assert.match(shared, /width:\s*36/);
 assert.match(shared, /minWidth:\s*36/);
 assert.match(shared, /maxWidth:\s*36/);
 assert.match(pageAtoms, /preferenceStack\s*\?/);

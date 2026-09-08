@@ -231,6 +231,9 @@ export function ShortcutRecorder({
     flexDirection: 'column',
     gap: 6,
     width: '100%',
+    // 2.0 UI 走查：设置行里的快捷键录制控件不再拉满整行（此前「Right ⌃」值贴左、
+    // 下拉箭头甩到最右缘），与输入框同宽上限，紧凑地跟在标签列之后。
+    maxWidth: 360,
   };
   const recorderRowStyle: CSSProperties = {
     display: 'flex',

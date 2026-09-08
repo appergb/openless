@@ -58,7 +58,7 @@ const DEFAULT_TRIGGER_STYLE: CSSProperties = {
   gap: 8,
   padding: '0 10px',
   height: 32,
-  fontSize: 12.5,
+  fontSize: 13.5,
   fontFamily: 'inherit',
   borderRadius: 8,
   border: '0.5px solid var(--ol-line-strong)',
@@ -331,7 +331,7 @@ export function SelectLite({
             boxShadow: 'var(--ol-select-popover-shadow)',
             zIndex: 9999,
             fontFamily: 'inherit',
-            fontSize: 12.5,
+            fontSize: 13.5,
             animation: leaving
               ? 'ol-select-pop-out .14s cubic-bezier(.4,.0,.7,.2) forwards'
               : 'ol-select-pop .14s var(--ol-motion-quick) both',

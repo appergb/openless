@@ -14,9 +14,12 @@ interface ModalProps {
   zIndex?: number;
   /** 卡片宽度，默认 'min(560px, 100%)'。 */
   width?: string;
+  /** true 时反向播放入场动画（2.0 UI 走查「从哪来回到哪去」）；调用方用
+   *  useExitMount 门控卸载时机，动画播完再 unmount。 */
+  closing?: boolean;
 }
 
-export function Modal({ children, onClose, zIndex = 50, width = 'min(560px, 100%)' }: ModalProps) {
+export function Modal({ children, onClose, zIndex = 50, width = 'min(560px, 100%)', closing = false }: ModalProps) {
   // Portal 到 document.body：弹窗常从设置 / 市场等面板内部触发，而窗口 chrome
   // （WindowChrome）和页面容器带常驻 `will-change: transform`，会创建 containing
   // block —— 直接渲染的话 backdrop 的 `position: fixed` 会相对那个祖先而非视口定位，
@@ -33,7 +36,7 @@ export function Modal({ children, onClose, zIndex = 50, width = 'min(560px, 100%
         placeItems: 'center',
         zIndex,
         padding: 20,
-        animation: 'ol-modal-backdrop-in 0.18s var(--ol-motion-soft)',
+        animation: closing ? 'ol-modal-backdrop-in 0.18s var(--ol-motion-soft) reverse both' : 'ol-modal-backdrop-in 0.18s var(--ol-motion-soft)',
       }}
     >
       <div
@@ -47,7 +50,7 @@ export function Modal({ children, onClose, zIndex = 50, width = 'min(560px, 100%
           border: '0.5px solid var(--ol-line-strong)',
           boxShadow: '0 18px 42px rgba(0,0,0,0.18)',
           padding: 22,
-          animation: 'ol-modal-card-in 0.24s var(--ol-motion-spring)',
+          animation: closing ? 'ol-modal-card-in 0.18s var(--ol-motion-soft) reverse both' : 'ol-modal-card-in 0.24s var(--ol-motion-spring)',
         }}
       >
         {children}

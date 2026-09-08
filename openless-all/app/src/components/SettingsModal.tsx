@@ -1,5 +1,5 @@
 // Settings keeps one navigation level; every category reuses the existing settings consumers.
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { SavedToast } from './SavedToast';
@@ -17,6 +17,9 @@ interface SettingsModalProps {
   os: OS;
   onClose: () => void;
   initialSettingsSection?: SettingsSectionId;
+  /** true 时反向播放入场动画（2.0 UI 走查「从哪来回到哪去」）；由 FloatingShell
+   *  的 useExitMount 门控，动画播完才真正卸载。 */
+  closing?: boolean;
 }
 
 const LINKS = [
@@ -24,7 +27,7 @@ const LINKS = [
   { id: 'releaseNotes', icon: 'doc', href: 'https://github.com/Open-Less/openless/releases' },
 ];
 
-export function SettingsModal({ os, onClose, initialSettingsSection }: SettingsModalProps) {
+export function SettingsModal({ os, onClose, initialSettingsSection, closing = false }: SettingsModalProps) {
   const { t } = useTranslation();
   const mobile = useMobileLayout();
   const conservative = useConservativeLayout();
@@ -48,6 +51,19 @@ export function SettingsModal({ os, onClose, initialSettingsSection }: SettingsM
   }));
   const searching = query.trim().length > 0;
   const results = searchSettingsSections(sections, query);
+
+  // 2.0 UI 走查：桌面端设置侧栏的选中蓝框改为滑动指示块——切换分类时蓝框沿
+  // 列表平滑移动到目标项（spring 曲线），而不是生硬地瞬间换底色。
+  const railNavRef = useRef<HTMLElement>(null);
+  const railBtnRefs = useRef(new Map<SettingsSectionId, HTMLButtonElement>());
+  const [railThumb, setRailThumb] = useState<{ top: number; height: number } | null>(null);
+  useLayoutEffect(() => {
+    if (mobile || searching) { setRailThumb(null); return; }
+    const nav = railNavRef.current;
+    const btn = railBtnRefs.current.get(section);
+    if (!nav || !btn) { setRailThumb(null); return; }
+    setRailThumb({ top: btn.offsetTop, height: btn.offsetHeight });
+  }, [section, searching, mobile, sections.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -110,10 +126,22 @@ export function SettingsModal({ os, onClose, initialSettingsSection }: SettingsM
     }
   };
 
+  // 搜索框：桌面端放在侧栏顶部（仿 macOS 系统设置的「搜索在导航栏上方」布局，
+  // 2.0 UI 走查）；移动端仍留在标题栏下方整行。
+  const searchBox = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8, border: '0.5px solid var(--ol-line-strong)', background: 'var(--ol-surface)', minWidth: 0 }}>
+      <Icon name="search" size={15} />
+      <input ref={searchRef} type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('modal.searchPlaceholder')} aria-label={t('modal.searchPlaceholder')} style={{ width: '100%', minWidth: 0, border: 0, outline: 'none', background: 'transparent', color: 'var(--ol-ink)', font: 'inherit', fontSize: 14 }} />
+      {query && <button type="button" aria-label={t('modal.clearSearch')} onClick={() => { setQuery(''); searchRef.current?.focus(); }} style={{ ...iconButtonStyle, width: 22, height: 22 }}><Icon name="close" size={12} /></button>}
+    </div>
+  );
+
   return (
     <div
       onClick={mobile ? undefined : onClose}
-      style={{ position: mobile ? 'fixed' : 'absolute', inset: 0, background: mobile ? 'var(--ol-surface)' : 'var(--ol-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: mobile ? 0 : 20, zIndex: mobile ? 70 : 50 }}
+      // 打开动画：遮罩淡入 + 面板弹入（global.css ol-modal-* keyframes，纯
+      // opacity/transform，合成器友好）。2.0 UI 走查：此前设置面板是瞬间出现的。
+      style={{ position: mobile ? 'fixed' : 'absolute', inset: 0, background: mobile ? 'var(--ol-surface)' : 'var(--ol-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: mobile ? 0 : 20, zIndex: mobile ? 70 : 50, animation: mobile ? undefined : closing ? 'ol-modal-backdrop-in 0.18s var(--ol-motion-soft) reverse both' : 'ol-modal-backdrop-in 0.2s var(--ol-motion-soft) both' }}
     >
       <div
         ref={surfaceRef}
@@ -125,34 +153,76 @@ export function SettingsModal({ os, onClose, initialSettingsSection }: SettingsM
         data-ol-mobile={mobile ? 'true' : undefined}
         onClick={event => event.stopPropagation()}
         onKeyDown={handleKeyDown}
-        style={{ width: '100%', maxWidth: mobile ? undefined : 1020, height: '100%', maxHeight: mobile ? undefined : 760, minHeight: 0, background: 'var(--ol-settings-content-bg)', borderRadius: mobile ? 0 : 14, border: mobile ? 'none' : '0.5px solid var(--ol-line)', boxShadow: mobile ? 'none' : 'var(--ol-shadow-xl)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        style={{ width: '100%', maxWidth: mobile ? undefined : 1020, height: '100%', maxHeight: mobile ? undefined : 760, minHeight: 0, background: 'var(--ol-settings-content-bg)', borderRadius: mobile ? 0 : 14, border: mobile ? 'none' : '0.5px solid var(--ol-line)', boxShadow: mobile ? 'none' : 'var(--ol-shadow-xl)', display: 'flex', flexDirection: 'column', overflow: 'hidden', animation: mobile
+          ? closing ? 'ol-mobile-sheet-up 0.22s var(--ol-motion-soft) reverse both' : 'ol-mobile-sheet-up 0.26s var(--ol-motion-spring) both'
+          : closing ? 'ol-modal-card-in 0.2s var(--ol-motion-soft) reverse both' : 'ol-modal-card-in 0.28s var(--ol-motion-spring) both' }}
       >
-        <header style={{ display: 'flex', alignItems: 'center', flexWrap: mobile ? 'wrap' : 'nowrap', gap: 12, padding: mobile ? 'calc(12px + env(safe-area-inset-top, 0px)) 16px 12px' : '16px 20px', borderBottom: '0.5px solid var(--ol-line-soft)', flexShrink: 0 }}>
-          <div style={{ flex: mobile ? 1 : '0 0 168px', order: 0, fontSize: 16, fontWeight: 650 }}>{t('shell.footer.settings')}</div>
-          {!mobile && <span style={{ order: 2, color: 'var(--ol-ink-3)', fontSize: 12 }}>{t('modal.autoSaveHint')}</span>}
-          <button ref={closeRef} type="button" onClick={onClose} aria-label={t('common.close')} style={{ ...iconButtonStyle, order: mobile ? 1 : 3, marginLeft: mobile ? undefined : 'auto' }}><Icon name="close" size={17} /></button>
-          <div style={{ order: mobile ? 2 : 1, flex: mobile ? '1 0 100%' : 1, maxWidth: mobile ? undefined : 420, display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8, border: '0.5px solid var(--ol-line-strong)', background: 'var(--ol-surface)', minWidth: 0 }}>
-            <Icon name="search" size={15} />
-            <input ref={searchRef} type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('modal.searchPlaceholder')} aria-label={t('modal.searchPlaceholder')} style={{ width: '100%', minWidth: 0, border: 0, outline: 'none', background: 'transparent', color: 'var(--ol-ink)', font: 'inherit', fontSize: 13 }} />
-            {query && <button type="button" aria-label={t('modal.clearSearch')} onClick={() => { setQuery(''); searchRef.current?.focus(); }} style={{ ...iconButtonStyle, width: 22, height: 22 }}><Icon name="close" size={12} /></button>}
-          </div>
-        </header>
+        {/* 桌面端不再有横跨两栏的标题栏（2.0 UI 走查：去掉「第三条横栏」）；
+            左侧栏与右侧内容各自通到顶，标题/自动保存/关闭并入右栏顶部。
+            移动端保留整宽 header（标题 + 关闭 + 整行搜索）。 */}
+        {mobile && (
+          <header style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12, padding: 'calc(12px + env(safe-area-inset-top, 0px)) 16px 12px', borderBottom: '0.5px solid var(--ol-line-soft)', flexShrink: 0 }}>
+            <div style={{ flex: 1, order: 0, fontSize: 17, fontWeight: 650 }}>{t('shell.footer.settings')}</div>
+            <button ref={closeRef} type="button" onClick={onClose} aria-label={t('common.close')} style={{ ...iconButtonStyle, order: 1 }}><Icon name="close" size={17} /></button>
+            <div style={{ order: 2, flex: '1 0 100%', minWidth: 0 }}>{searchBox}</div>
+          </header>
+        )}
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: mobile ? 'column' : 'row' }}>
-          <aside style={{ width: mobile ? undefined : 200, flexShrink: 0, minHeight: 0, overflow: 'auto', padding: mobile ? '8px 12px' : '16px 12px', background: 'var(--ol-settings-rail-bg)', borderRight: mobile ? undefined : '0.5px solid var(--ol-line-soft)', borderBottom: mobile ? '0.5px solid var(--ol-line-soft)' : undefined }}>
-            <nav aria-label={t('modal.categoriesLabel')} className="ol-thinscroll" style={{ display: 'flex', flexDirection: mobile ? 'row' : 'column', gap: 4, overflowX: mobile ? 'auto' : undefined }}>
-              {sections.map(item => (
-                <button key={item.id} type="button" aria-current={!searching && section === item.id ? 'page' : undefined} onClick={() => selectSection(item.id)} className={!searching && section === item.id ? 'ol-nav-btn ol-nav-btn-active' : 'ol-nav-btn'} style={{ ...navButtonStyle, flexShrink: 0, padding: mobile ? '8px 10px' : '10px', whiteSpace: 'nowrap', background: !searching && section === item.id ? 'var(--ol-blue-soft)' : 'transparent', color: !searching && section === item.id ? 'var(--ol-blue)' : 'var(--ol-ink-2)', fontWeight: !searching && section === item.id ? 600 : 400 }}>
-                  {!mobile && <Icon name={item.icon} size={15} />}{item.title}
-                </button>
-              ))}
+          <aside style={{ width: mobile ? undefined : 232, flexShrink: 0, minHeight: 0, overflow: 'auto', padding: mobile ? '8px 12px' : '16px 12px', background: 'var(--ol-settings-rail-bg)', borderRight: mobile ? undefined : '0.5px solid var(--ol-line-soft)', borderBottom: mobile ? '0.5px solid var(--ol-line-soft)' : undefined, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {!mobile && searchBox}
+            <nav ref={railNavRef} aria-label={t('modal.categoriesLabel')} className="ol-thinscroll" style={{ position: 'relative', display: 'flex', flexDirection: mobile ? 'row' : 'column', gap: 4, overflowX: mobile ? 'auto' : undefined }}>
+              {/* 滑动蓝框：top/height 跟随当前分类按钮，spring 曲线过渡。 */}
+              {!mobile && railThumb && (
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    top: railThumb.top,
+                    height: railThumb.height,
+                    borderRadius: 8,
+                    background: 'var(--ol-blue-soft)',
+                    pointerEvents: 'none',
+                    transition: 'top 0.26s var(--ol-motion-spring), height 0.2s var(--ol-motion-soft)',
+                  }}
+                />
+              )}
+              {sections.map(item => {
+                const active = !searching && section === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-current={active ? 'page' : undefined}
+                    ref={el => { if (el) railBtnRefs.current.set(item.id, el); else railBtnRefs.current.delete(item.id); }}
+                    onClick={() => selectSection(item.id)}
+                    className={mobile ? (active ? 'ol-nav-btn ol-nav-btn-active' : 'ol-nav-btn') : 'ol-settings-rail-btn'}
+                    style={mobile
+                      ? { ...navButtonStyle, flexShrink: 0, padding: '8px 10px', whiteSpace: 'nowrap', background: active ? 'var(--ol-blue-soft)' : 'transparent', color: active ? 'var(--ol-blue)' : 'var(--ol-ink-2)', fontWeight: active ? 600 : 400 }
+                      : { ...navButtonStyle, position: 'relative', zIndex: 1, flexShrink: 0, padding: '10px', whiteSpace: 'nowrap' }}
+                  >
+                    {!mobile && <Icon name={item.icon} size={16} />}{item.title}
+                  </button>
+                );
+              })}
             </nav>
             {!mobile && <HelpLinks />}
           </aside>
           <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
             <SavedToast saveState={savedToast.state} message={savedToast.message} slideFrom="top" offsetStyle={{ position: 'absolute', top: 12, right: 16 }} />
-            <div style={{ padding: mobile ? '18px 16px 12px' : '24px 28px 16px', flexShrink: 0 }}>
-              <h2 ref={headingRef} tabIndex={-1} style={{ margin: 0, fontSize: mobile ? 20 : 24, fontWeight: 650, letterSpacing: '-0.025em', outline: 'none' }}>{searching ? t('modal.searchResults') : t(`modal.sections.${section}`)}</h2>
-              <p style={{ margin: '7px 0 0', fontSize: 12.5, lineHeight: 1.6, color: 'var(--ol-ink-3)' }} aria-live="polite">{searching ? t('modal.searchCount', { count: results.length }) : t(`modal.descriptions.${section}`)}</p>
+            {/* 桌面端：分类标题 + 自动保存提示 + 关闭按钮组成右栏自己的顶栏
+                （仿系统设置：工具条只属于内容区，不再横跨左栏）。 */}
+            {!mobile && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 24px 0', flexShrink: 0 }}>
+                <h2 ref={headingRef} tabIndex={-1} style={{ margin: 0, flex: 1, minWidth: 0, fontSize: 21, fontWeight: 650, letterSpacing: '-0.025em', outline: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{searching ? t('modal.searchResults') : t(`modal.sections.${section}`)}</h2>
+                <span style={{ color: 'var(--ol-ink-3)', fontSize: 12, flexShrink: 0 }}>{t('modal.autoSaveHint')}</span>
+                <button ref={closeRef} type="button" onClick={onClose} aria-label={t('common.close')} style={iconButtonStyle}><Icon name="close" size={17} /></button>
+              </div>
+            )}
+            <div style={{ padding: mobile ? '18px 16px 12px' : '8px 28px 12px', flexShrink: 0 }}>
+              {mobile && <h2 ref={headingRef} tabIndex={-1} style={{ margin: 0, fontSize: 20, fontWeight: 650, letterSpacing: '-0.025em', outline: 'none' }}>{searching ? t('modal.searchResults') : t(`modal.sections.${section}`)}</h2>}
+              <p style={{ margin: mobile ? '7px 0 0' : 0, fontSize: 13, lineHeight: 1.6, color: 'var(--ol-ink-3)' }} aria-live="polite">{searching ? t('modal.searchCount', { count: results.length }) : t(`modal.descriptions.${section}`)}</p>
             </div>
             <div ref={scrollRef} className={['ol-thinscroll', conservative ? 'ol-conservative-scope' : ''].join(' ')} style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: mobile ? '0 16px calc(20px + env(safe-area-inset-bottom, 0px))' : '0 28px 28px' }}>
               {searching && <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -163,7 +233,9 @@ export function SettingsModal({ os, onClose, initialSettingsSection }: SettingsM
                 </button>)}
                 {results.length === 0 && <div style={{ padding: '24px 16px', border: '0.5px solid var(--ol-line)', borderRadius: 10, textAlign: 'center' }}><p style={{ fontSize: 13, color: 'var(--ol-ink-3)' }}>{t('modal.noResults')}</p><button type="button" onClick={() => { setQuery(''); searchRef.current?.focus(); }} style={{ ...navButtonStyle, margin: '12px auto 0', color: 'var(--ol-blue)' }}>{t('modal.clearSearch')}</button></div>}
               </div>}
-              <div key={section} style={{ display: searching ? 'none' : 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* key={section} 重挂载 → 每次切换分类播放轻微淡入（ol-tab-fade），
+                  与 tab 切换动画语言一致（2.0 UI 走查：补全动效）。 */}
+              <div key={section} style={{ display: searching ? 'none' : 'flex', flexDirection: 'column', gap: 16, animation: 'ol-tab-fade 0.22s var(--ol-motion-soft) both' }}>
                 {section === 'general' && <GeneralTab />}
                 {section === 'shortcuts' && <ShortcutsTab />}
                 {section === 'appearance' && <AppearanceTab />}
@@ -187,4 +259,4 @@ function HelpLinks() {
 }
 
 const iconButtonStyle: CSSProperties = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: 30, height: 30, padding: 0, border: 0, borderRadius: 8, background: 'transparent', color: 'var(--ol-ink-3)', cursor: 'pointer' };
-const navButtonStyle: CSSProperties = { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', border: 0, borderRadius: 8, background: 'transparent', color: 'var(--ol-ink-2)', font: 'inherit', fontSize: 13, cursor: 'pointer', textAlign: 'left' };
+const navButtonStyle: CSSProperties = { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', border: 0, borderRadius: 8, background: 'transparent', color: 'var(--ol-ink-2)', font: 'inherit', fontSize: 14, cursor: 'pointer', textAlign: 'left' };

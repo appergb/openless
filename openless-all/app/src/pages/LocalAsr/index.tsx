@@ -256,6 +256,9 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
     const sherpaRefreshTimer = useRef<number | null>(null)
     const sherpaDownloadRefreshTimer = useRef<number | null>(null)
     const foundrySelectionDirty = useRef(false)
+    // foundry 三个 SelectLite 共用的行容器：SelectLite 的 onChange 拿不到
+    // e.currentTarget，滚动保持改从这个容器元素向上找 .ol-thinscroll。
+    const foundryControlsRef = useRef<HTMLDivElement>(null)
     const selectedFoundryAliasRef =
         useRef<FoundryLocalAsrModelAlias>("whisper-small")
     const sherpaSelectionDirty = useRef(false)
@@ -2171,28 +2174,23 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                         {t("localAsr.mirrorDesc")}
                                     </div>
                                 </div>
-                                <select
+                                {/* 2.0 UI 走查：统一官方 SelectLite。 */}
+                                <SelectLite
                                     value={settings?.mirror ?? "huggingface"}
-                                    onChange={(e) =>
-                                        void handleMirrorChange(e.target.value)
-                                    }
-                                    style={{
-                                        fontSize: 13,
-                                        padding: "6px 10px",
-                                        borderRadius: 8,
-                                        border: "0.5px solid rgba(0,0,0,0.12)",
-                                        background: "var(--ol-surface)",
-                                        color: "var(--ol-ink)",
-                                        minWidth: 200,
-                                    }}
-                                >
-                                    <option value="huggingface">
-                                        {t("localAsr.mirrorHuggingface")}
-                                    </option>
-                                    <option value="hf-mirror">
-                                        {t("localAsr.mirrorHfMirror")}
-                                    </option>
-                                </select>
+                                    onChange={(v) => void handleMirrorChange(v)}
+                                    ariaLabel={t("localAsr.mirrorLabel")}
+                                    options={[
+                                        {
+                                            value: "huggingface",
+                                            label: t("localAsr.mirrorHuggingface"),
+                                        },
+                                        {
+                                            value: "hf-mirror",
+                                            label: t("localAsr.mirrorHfMirror"),
+                                        },
+                                    ]}
+                                    style={{ fontSize: 13, height: 31, minWidth: 200 }}
+                                />
                             </div>
                         </div>
                         {/* 运行时设置卡：内存中的引擎状态 + 多久释放 + 立即释放 */}
@@ -2294,41 +2292,24 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                                 {t("localAsr.keepLoadedDesc")}
                                             </div>
                                         </div>
-                                        <select
-                                            value={
-                                                engineStatus?.keepLoadedSecs ?? 300
+                                        {/* 2.0 UI 走查：统一官方 SelectLite。 */}
+                                        <SelectLite
+                                            value={String(
+                                                engineStatus?.keepLoadedSecs ?? 300,
+                                            )}
+                                            onChange={(v) =>
+                                                void handleKeepLoadedChange(Number(v))
                                             }
-                                            onChange={(e) =>
-                                                void handleKeepLoadedChange(
-                                                    Number(e.target.value),
-                                                )
-                                            }
-                                            style={{
-                                                fontSize: 13,
-                                                padding: "6px 10px",
-                                                borderRadius: 8,
-                                                border: "0.5px solid rgba(0,0,0,0.12)",
-                                                background: "var(--ol-surface)",
-                                                color: "var(--ol-ink)",
-                                                minWidth: 200,
-                                            }}
-                                        >
-                                            <option value={0}>
-                                                {t("localAsr.keepImmediate")}
-                                            </option>
-                                            <option value={60}>
-                                                {t("localAsr.keep1min")}
-                                            </option>
-                                            <option value={300}>
-                                                {t("localAsr.keep5min")}
-                                            </option>
-                                            <option value={1800}>
-                                                {t("localAsr.keep30min")}
-                                            </option>
-                                            <option value={86400}>
-                                                {t("localAsr.keepForever")}
-                                            </option>
-                                        </select>
+                                            ariaLabel={t("localAsr.keepLoadedLabel")}
+                                            options={[
+                                                { value: "0", label: t("localAsr.keepImmediate") },
+                                                { value: "60", label: t("localAsr.keep1min") },
+                                                { value: "300", label: t("localAsr.keep5min") },
+                                                { value: "1800", label: t("localAsr.keep30min") },
+                                                { value: "86400", label: t("localAsr.keepForever") },
+                                            ]}
+                                            style={{ fontSize: 13, height: 31, minWidth: 200 }}
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -2573,6 +2554,7 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                 </div>
                             </div>
                             <div
+                                ref={foundryControlsRef}
                                 style={{
                                     display: "flex",
                                     gap: 10,
@@ -2590,32 +2572,25 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                     }}
                                 >
                                     {t("localAsr.foundrySelectedModel")}
-                                    <select
+                                    {/* 2.0 UI 走查：统一官方 SelectLite；滚动保持
+                                        改从行容器 ref 向上找滚动祖先。 */}
+                                    <SelectLite
                                         value={selectedFoundryAlias}
-                                        onChange={(e) => {
+                                        onChange={(v) => {
                                             const restoreScroll =
                                                 preserveEmbeddedScroll(
-                                                    e.currentTarget,
+                                                    foundryControlsRef.current,
                                                 )
-                                            const nextAlias = e.target
-                                                .value as FoundryLocalAsrModelAlias
+                                            const nextAlias =
+                                                v as FoundryLocalAsrModelAlias
                                             foundrySelectionDirty.current = true
                                             setCurrentFoundryAlias(nextAlias)
                                             void refreshFoundryModelDir(nextAlias)
                                             restoreScroll()
                                         }}
                                         disabled={foundryBusy !== null}
-                                        style={{
-                                            fontSize: 13,
-                                            padding: "6px 10px",
-                                            borderRadius: 8,
-                                            border: "0.5px solid rgba(0,0,0,0.12)",
-                                            background: "var(--ol-surface)",
-                                            color: "var(--ol-ink)",
-                                            minWidth: 260,
-                                        }}
-                                    >
-                                        {FOUNDRY_LOCAL_ASR_MODELS.map(
+                                        ariaLabel={t("localAsr.foundrySelectedModel")}
+                                        options={FOUNDRY_LOCAL_ASR_MODELS.map(
                                             (model) => {
                                                 const catalog =
                                                     foundryCatalog.find(
@@ -2627,20 +2602,22 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                                     formatFoundrySizeMb(
                                                         catalog?.fileSizeMb,
                                                     )
-                                                return (
-                                                    <option
-                                                        key={model.alias}
-                                                        value={model.alias}
-                                                    >
-                                                        {t(model.labelKey)}
-                                                        {sizeMb
+                                                return {
+                                                    value: model.alias,
+                                                    label: `${t(model.labelKey)}${
+                                                        sizeMb
                                                             ? ` · ${t("localAsr.foundryApproxSizeMb", { mb: sizeMb })}`
-                                                            : ""}
-                                                    </option>
-                                                )
+                                                            : ""
+                                                    }`,
+                                                }
                                             },
                                         )}
-                                    </select>
+                                        style={{
+                                            fontSize: 13,
+                                            height: 31,
+                                            minWidth: 260,
+                                        }}
+                                    />
                                 </label>
                                 <label
                                     style={{
@@ -2652,46 +2629,49 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                     }}
                                 >
                                     {t("localAsr.foundryRuntimeSourceLabel")}
-                                    <select
+                                    {/* 2.0 UI 走查：统一官方 SelectLite。 */}
+                                    <SelectLite
                                         value={selectedFoundryRuntimeSource}
-                                        onChange={(e) => {
+                                        onChange={(v) => {
                                             const restoreScroll =
                                                 preserveEmbeddedScroll(
-                                                    e.currentTarget,
+                                                    foundryControlsRef.current,
                                                 )
                                             void handleFoundryRuntimeSourceChange(
-                                                e.target
-                                                    .value as FoundryRuntimeSource,
+                                                v as FoundryRuntimeSource,
                                                 restoreScroll,
                                             )
                                         }}
                                         disabled={foundryBusy !== null}
+                                        ariaLabel={t(
+                                            "localAsr.foundryRuntimeSourceLabel",
+                                        )}
+                                        options={[
+                                            {
+                                                value: "auto",
+                                                label: t(
+                                                    "localAsr.foundryRuntimeSourceAuto",
+                                                ),
+                                            },
+                                            {
+                                                value: "nuget",
+                                                label: t(
+                                                    "localAsr.foundryRuntimeSourceNuget",
+                                                ),
+                                            },
+                                            {
+                                                value: "ort-nightly",
+                                                label: t(
+                                                    "localAsr.foundryRuntimeSourceOrtNightly",
+                                                ),
+                                            },
+                                        ]}
                                         style={{
                                             fontSize: 13,
-                                            padding: "6px 10px",
-                                            borderRadius: 8,
-                                            border: "0.5px solid rgba(0,0,0,0.12)",
-                                            background: "var(--ol-surface)",
-                                            color: "var(--ol-ink)",
+                                            height: 31,
                                             minWidth: 200,
                                         }}
-                                    >
-                                        <option value="auto">
-                                            {t(
-                                                "localAsr.foundryRuntimeSourceAuto",
-                                            )}
-                                        </option>
-                                        <option value="nuget">
-                                            {t(
-                                                "localAsr.foundryRuntimeSourceNuget",
-                                            )}
-                                        </option>
-                                        <option value="ort-nightly">
-                                            {t(
-                                                "localAsr.foundryRuntimeSourceOrtNightly",
-                                            )}
-                                        </option>
-                                    </select>
+                                    />
                                 </label>
                                 <label
                                     style={{
@@ -2703,40 +2683,49 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                     }}
                                 >
                                     {t("localAsr.foundryLanguageLabel")}
-                                    <select
+                                    {/* 2.0 UI 走查：统一官方 SelectLite。 */}
+                                    <SelectLite
                                         value={selectedFoundryLanguageHint}
-                                        onChange={(e) => {
+                                        onChange={(v) => {
                                             const restoreScroll =
                                                 preserveEmbeddedScroll(
-                                                    e.currentTarget,
+                                                    foundryControlsRef.current,
                                                 )
                                             void handleFoundryLanguageChange(
-                                                e.target
-                                                    .value as FoundryLocalAsrLanguageHint,
+                                                v as FoundryLocalAsrLanguageHint,
                                                 restoreScroll,
                                             )
                                         }}
                                         disabled={foundryBusy !== null}
+                                        ariaLabel={t(
+                                            "localAsr.foundryLanguageLabel",
+                                        )}
+                                        options={[
+                                            {
+                                                value: "",
+                                                label: t(
+                                                    "localAsr.foundryLanguageAuto",
+                                                ),
+                                            },
+                                            {
+                                                value: "zh",
+                                                label: t(
+                                                    "localAsr.foundryLanguageZh",
+                                                ),
+                                            },
+                                            {
+                                                value: "en",
+                                                label: t(
+                                                    "localAsr.foundryLanguageEn",
+                                                ),
+                                            },
+                                        ]}
                                         style={{
                                             fontSize: 13,
-                                            padding: "6px 10px",
-                                            borderRadius: 8,
-                                            border: "0.5px solid rgba(0,0,0,0.12)",
-                                            background: "var(--ol-surface)",
-                                            color: "var(--ol-ink)",
+                                            height: 31,
                                             minWidth: 132,
                                         }}
-                                    >
-                                        <option value="">
-                                            {t("localAsr.foundryLanguageAuto")}
-                                        </option>
-                                        <option value="zh">
-                                            {t("localAsr.foundryLanguageZh")}
-                                        </option>
-                                        <option value="en">
-                                            {t("localAsr.foundryLanguageEn")}
-                                        </option>
-                                    </select>
+                                    />
                                 </label>
                             </div>
                         </div>
@@ -3085,49 +3074,48 @@ export function LocalAsr({ embedded = false }: LocalAsrProps = {}) {
                                     }}
                                 >
                                     {t("localAsr.mirrorLabel")}
-                                    <select
+                                    {/* 2.0 UI 走查：统一官方 SelectLite。 */}
+                                    <SelectLite
                                         value={selectedSherpaMirrorValue}
-                                        onChange={(e) =>
-                                            void handleMirrorChange(
-                                                e.target.value,
-                                            )
+                                        onChange={(v) =>
+                                            void handleMirrorChange(v)
                                         }
                                         disabled={
                                             sherpaBusy !== null ||
                                             selectedSherpaUsesReleaseArchive
                                         }
+                                        ariaLabel={t("localAsr.mirrorLabel")}
+                                        options={
+                                            selectedSherpaUsesReleaseArchive
+                                                ? [
+                                                    {
+                                                        value: "github-release",
+                                                        label: t(
+                                                            "localAsr.mirrorGithubRelease",
+                                                        ),
+                                                    },
+                                                ]
+                                                : [
+                                                    {
+                                                        value: "huggingface",
+                                                        label: t(
+                                                            "localAsr.mirrorHuggingface",
+                                                        ),
+                                                    },
+                                                    {
+                                                        value: "hf-mirror",
+                                                        label: t(
+                                                            "localAsr.mirrorHfMirror",
+                                                        ),
+                                                    },
+                                                ]
+                                        }
                                         style={{
                                             fontSize: 13,
                                             height: 31,
-                                            padding: "0 10px",
-                                            borderRadius: 8,
-                                            border: "0.5px solid rgba(0,0,0,0.12)",
-                                            background: "var(--ol-surface)",
-                                            color: "var(--ol-ink)",
                                             minWidth: 200,
                                         }}
-                                    >
-                                        {selectedSherpaUsesReleaseArchive ? (
-                                            <option value="github-release">
-                                                {t(
-                                                    "localAsr.mirrorGithubRelease",
-                                                )}
-                                            </option>
-                                        ) : (
-                                            <>
-                                                <option value="huggingface">
-                                                    {t(
-                                                        "localAsr.mirrorHuggingface",
-                                                    )}
-                                                </option>
-                                                <option value="hf-mirror">
-                                                    {t(
-                                                        "localAsr.mirrorHfMirror",
-                                                    )}
-                                                </option>
-                                            </>
-                                        )}
-                                    </select>
+                                    />
                                 </label>
                             </div>
                         </div>

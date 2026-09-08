@@ -19,6 +19,8 @@ interface HeatmapProps {
   endDate: Date;
   cellSize?: number;
   gap?: number;
+  /** 格子边长上限：概览单屏固定页需要控制热力图总高度，宽容器下不再无限放大。 */
+  maxCellSize?: number;
   /** 值→颜色的插值曲线：log 适合量级差异大的数据。 */
   interpolation?: 'linear' | 'sqrt' | 'log';
   /** 最小非零值的颜色（hex）。 */
@@ -60,6 +62,7 @@ export function Heatmap({
   endDate,
   cellSize = 11,
   gap = 3,
+  maxCellSize,
   interpolation = 'sqrt',
   minColor = '#bfdbfe',
   maxColor = '#1d4ed8',
@@ -141,14 +144,16 @@ export function Heatmap({
       const per = usable / weekCount;
       const g = per >= 13 ? 3 : 2;
       // step = cell + gap = per ⇒ weekCount × step = usable，格子精确铺满右缘。
-      // 只留 5px 下限防窄容器过挤，不设上限——宽容器时格子随之放大仍贴边。
-      setFitCell(Math.max(5, per - g));
+      // 只留 5px 下限防窄容器过挤；maxCellSize 给概览单屏页封顶（不传则宽容器
+      // 时格子随之放大仍贴边）。
+      const fitted = Math.max(5, per - g);
+      setFitCell(maxCellSize != null ? Math.min(fitted, maxCellSize) : fitted);
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [weekCount, cellSize, daysOfTheWeek]);
+  }, [weekCount, cellSize, daysOfTheWeek, maxCellSize]);
 
   const cell = fitCell ?? cellSize;
   const cellGap = cell >= 11 ? Math.min(gap, 3) : 2;

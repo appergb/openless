@@ -25,6 +25,7 @@ import { AutoUpdateSection } from './AutoUpdateSection';
 import { AboutSection } from './AboutSection';
 import { detectOS } from '../../components/WindowChrome';
 import { getPlatformCapabilities } from '../../lib/platform';
+import { listChannels } from '../../lib/ipc';
 import type { PlatformCapabilities } from '../../lib/types';
 import { useHotkeySettings } from '../../state/HotkeySettingsContext';
 import { availableServiceViews, resolveServiceView, type ServiceViewId } from './navigation';
@@ -77,14 +78,47 @@ export function ServicesTab() {
   const selectedView = resolveServiceView(view, views);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // 语言模型 / 语音识别是必配项：tab 上挂状态点 —— 未配置红、已配置黄
+  // （2.0 UI 走查）。任何渠道增删改/启停后 ChannelList 会广播
+  // ol-channels-changed，这里即时重算。
+  const [requiredConfigured, setRequiredConfigured] = useState<{ llm: boolean; asr: boolean }>({ llm: false, asr: false });
   useEffect(() => {
-    contentRef.current?.closest('.ol-thinscroll')?.scrollTo({ top: 0 });
-  }, [selectedView]);
+    let cancelled = false;
+    const load = () => {
+      void Promise.all([listChannels('llm'), listChannels('asr')])
+        .then(([llm, asr]) => {
+          if (cancelled) return;
+          setRequiredConfigured({
+            llm: llm.some(channel => channel.enabled),
+            asr: asr.some(channel => channel.enabled),
+          });
+        })
+        .catch(() => { /* 读取失败保持上一次状态，不打扰用户 */ });
+    };
+    load();
+    window.addEventListener('ol-channels-changed', load);
+    return () => { cancelled = true; window.removeEventListener('ol-channels-changed', load); };
+  }, []);
 
   return (
     <>
       <div role="group" aria-label={t('modal.serviceViews.label')} className="ol-service-views ol-thinscroll">
-        {views.map(id => <button key={id} type="button" aria-pressed={selectedView === id} onClick={() => setView(id)}>{t(`modal.serviceViews.${id}`)}</button>)}
+        {views.map(id => {
+          const required = id === 'llm' || id === 'asr';
+          const configured = id === 'llm' ? requiredConfigured.llm : id === 'asr' ? requiredConfigured.asr : false;
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={selectedView === id}
+              onClick={() => setView(id)}
+              title={required ? t(configured ? 'modal.serviceViews.statusConfigured' : 'modal.serviceViews.statusMissing') : undefined}
+            >
+              {required && <span aria-hidden className="ol-service-status-dot" data-state={configured ? 'ok' : 'missing'} />}
+              {t(`modal.serviceViews.${id}`)}
+            </button>
+          );
+        })}
       </div>
       <div key={selectedView} ref={contentRef} className="ol-service-content">
         {selectedView === 'llm' && <ProvidersSection kind="llm" />}

@@ -27,6 +27,9 @@ body {
   background: transparent;
   user-select: none;
   -webkit-user-select: none;
+  /* 2.0 UI 走查：全局基准字号 14px（此前未设 → 浏览器默认 16 但组件几乎全部
+     显式写 11–13px 小字，视觉偏小）。控件/正文的显式字号已同步上调到 13.5–14。 */
+  font-size: 14px;
 }
 
 #root {
@@ -296,6 +299,297 @@ html[data-ol-conservative-layout="true"] .ol-conservative-scope .ol-select-lite-
   background: var(--ol-settings-content-bg);
 }
 
+/* 桌面端设置侧栏导航（2.0 UI 走查）：选中底色由滑动 thumb 提供，按钮自身透明；
+   hover 给弱底色反馈；选中项文字蓝色加粗走 [aria-current]。 */
+.ol-settings-rail-btn {
+  color: var(--ol-ink-2);
+  background: transparent;
+  font-weight: 400;
+  transition: color 0.16s var(--ol-motion-quick), background 0.16s var(--ol-motion-quick);
+}
+.ol-settings-rail-btn:not([aria-current="page"]):hover {
+  background: var(--ol-nav-hover-bg);
+  color: var(--ol-ink);
+}
+.ol-settings-rail-btn[aria-current="page"] {
+  color: var(--ol-blue);
+  font-weight: 600;
+}
+
+/* 翻译页顶部两栏（2.0 UI 走查）：左栏略宽让语言 chips 每行 4 个，
+   与右栏卡片高度更接近；窄屏叠成单栏。 */
+.ol-translation-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+@media (max-width: 880px) {
+  .ol-translation-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 语言/标签选择 chip（2.0 UI 走查 · 翻译页）：底色走 token 以兼容深色模式，
+   选中态走 [aria-pressed]，悬浮给描边+加深反馈。 */
+.ol-chip {
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  text-align: center;
+  border: 0.5px solid var(--ol-line);
+  background: var(--ol-pill-bg);
+  color: var(--ol-ink-2);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+  transition: background 0.14s var(--ol-motion-quick), border-color 0.14s var(--ol-motion-quick),
+    color 0.14s var(--ol-motion-quick);
+}
+.ol-chip:hover {
+  border-color: var(--ol-line-strong);
+  background: var(--ol-control-muted-strong);
+}
+.ol-chip[aria-pressed="true"] {
+  background: var(--ol-blue);
+  border-color: var(--ol-blue);
+  color: #fff;
+  font-weight: 600;
+}
+.ol-chip[aria-pressed="true"]:hover {
+  border-color: var(--ol-blue);
+}
+
+/* 列表项通用入场（2.0 UI 走查「从哪来回到哪去」）：新条目淡入轻降。
+   key 稳定时只有真正新增/过滤变化的项会重播，存量项不动。 */
+@keyframes ol-item-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── 2.0 开屏 PV（仅首启播放一次）──────────────────────────────────────
+   任意窗口比例下 object-fit: cover 裁切铺满、无黑边；黑底防首帧前闪白。
+   入场短促淡入；播放结束后整层从最后一帧画面慢慢变透明直至消失——
+   「从哪来到哪去」，渐隐时长与 SplashVideo.tsx 的 FADE_MS 保持一致。 */
+.ol-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: #000;
+  animation: ol-splash-in 0.25s ease both;
+}
+.ol-splash[data-fading] {
+  animation: ol-splash-out 1.2s ease both;
+  pointer-events: none;
+}
+.ol-splash-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+@keyframes ol-splash-in {
+  from { opacity: 0; }
+}
+@keyframes ol-splash-out {
+  to { opacity: 0; }
+}
+
+/* ── 词典页（2.0 UI 走查）────────────────────────────────────────────── */
+
+/* 来源分段筛选：灰底胶囊容器 + 白色浮起选中片（参考 Typeless 词典稿）。 */
+.ol-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--ol-surface-2);
+  border: 0.5px solid var(--ol-line);
+}
+.ol-seg-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ol-ink-3);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: default;
+  transition: background 0.18s var(--ol-motion-quick), color 0.18s var(--ol-motion-quick),
+    box-shadow 0.18s var(--ol-motion-soft);
+}
+.ol-seg-item:not(.ol-seg-item-active):hover {
+  color: var(--ol-ink);
+}
+.ol-seg-item-active {
+  background: var(--ol-surface);
+  color: var(--ol-ink);
+  font-weight: 600;
+  box-shadow: var(--ol-shadow-sm);
+}
+
+/* 圆形搜索（2.0 UI 走查重做）：同一个胶囊容器原地变形 —— 收起 36px 圆钮，
+   展开 220px 搜索框；放大镜图标始终贴右缘不动，输入文字在左侧淡入。
+   展开/收起共用同一条 width 过渡，两个方向都有动画（从哪来回到哪去）。 */
+.ol-search {
+  display: flex;
+  align-items: center;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 0.5px solid var(--ol-line);
+  background: var(--ol-surface-2);
+  transition: width 0.28s var(--ol-motion-spring), background 0.16s var(--ol-motion-quick),
+    border-color 0.16s var(--ol-motion-quick);
+}
+.ol-search:hover {
+  border-color: var(--ol-line-strong);
+}
+.ol-search-open {
+  width: 220px;
+  background: var(--ol-surface);
+  border-color: var(--ol-line-strong);
+}
+.ol-search-field {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--ol-ink);
+  /* 收起态 padding 必须为 0：否则输入框虽然宽度塌成 0，左右 padding 仍占位，
+     会把 36px 的放大镜按钮顶出圆形容器、被 overflow 裁掉（2.0 UI 走查修复）。 */
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.16s var(--ol-motion-quick), padding 0.28s var(--ol-motion-spring);
+}
+.ol-search-open .ol-search-field {
+  opacity: 1;
+  padding: 0 4px 0 12px;
+}
+.ol-search-field::placeholder {
+  color: var(--ol-ink-4);
+}
+.ol-search-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--ol-ink-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  transition: color 0.16s var(--ol-motion-quick);
+}
+.ol-search-icon:hover {
+  color: var(--ol-ink);
+}
+
+/* 词条卡片：默认安静（图标+文字+命中数）；hover/focus-within 变灰并从右侧
+   浮现编辑/删除操作。操作按钮常驻 DOM，只过渡 opacity，布局不跳动。 */
+.ol-word-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 0.5px solid var(--ol-line);
+  background: var(--ol-surface);
+  transition: background 0.16s var(--ol-motion-quick), border-color 0.16s var(--ol-motion-quick),
+    opacity 0.18s var(--ol-motion-soft);
+  animation: ol-chip-in 0.22s var(--ol-motion-spring);
+}
+.ol-word-card:hover,
+.ol-word-card:focus-within {
+  background: var(--ol-surface-2);
+  border-color: var(--ol-line-strong);
+}
+.ol-word-card[data-disabled="true"] {
+  opacity: 0.55;
+}
+.ol-word-card-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: var(--ol-ink-4);
+}
+.ol-word-card-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--ol-ink);
+  font-family: var(--ol-font-mono);
+  font-size: 13px;
+  cursor: default;
+}
+.ol-word-card-hits {
+  flex-shrink: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ol-control-muted);
+  color: var(--ol-ink-4);
+  font-variant-numeric: tabular-nums;
+}
+.ol-word-card-actions {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.16s var(--ol-motion-quick);
+}
+.ol-word-card:hover .ol-word-card-actions,
+.ol-word-card:focus-within .ol-word-card-actions {
+  opacity: 1;
+}
+.ol-word-card-action {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ol-ink-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  transition: background 0.14s var(--ol-motion-quick), color 0.14s var(--ol-motion-quick);
+}
+.ol-word-card-action:hover {
+  background: var(--ol-control-muted-strong);
+  color: var(--ol-ink);
+}
+
 .ol-service-views {
   position: sticky;
   top: 0;
@@ -311,6 +605,9 @@ html[data-ol-conservative-layout="true"] .ol-conservative-scope .ol-select-lite-
 
 .ol-service-views > button {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 12px 14px;
   border: 0;
   border-bottom: 2px solid transparent;
@@ -321,6 +618,17 @@ html[data-ol-conservative-layout="true"] .ol-conservative-scope .ol-select-lite-
   color: var(--ol-ink-3);
   cursor: pointer;
 }
+
+/* 必配服务（语言模型/语音识别）tab 上的状态点：未配置红、已配置黄（2.0 UI 走查）。 */
+.ol-service-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.16s var(--ol-motion-quick);
+}
+.ol-service-status-dot[data-state="missing"] { background: var(--ol-red, #ef4444); }
+.ol-service-status-dot[data-state="ok"] { background: var(--ol-warn); }
 
 .ol-service-views > button[aria-pressed="true"] {
   color: var(--ol-blue);

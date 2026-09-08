@@ -542,6 +542,9 @@ export interface UserPreferences {
   androidOverlayCancelSwipeDirection: AndroidOverlayCancelSwipeDirection;
   /** Android: floating overlay control diameter in dp. */
   androidOverlaySizeDp: number;
+  /** 开屏 PV 的主版本世代标记（如 '2'）。空 = 从未播过；由 Rust 侧
+   *  take_splash_playback 独家推进，设置保存链路会原样保留，前端只读不写。 */
+  splashSeenVersion?: string;
 }
 
 export interface MarketplaceListItem {

@@ -33,6 +33,11 @@ export function setVocabEnabled(id: string, enabled: boolean): Promise<void> {
     return invokeOrMock("set_vocab_enabled", { id, enabled }, () => undefined)
 }
 
+/** 编辑词条文本：id / hits / enabled 保持不变（后端 update_vocab）。 */
+export function updateVocab(id: string, phrase: string): Promise<void> {
+    return invokeOrMock("update_vocab", { id, phrase }, () => undefined)
+}
+
 export function listCorrectionRules(): Promise<CorrectionRule[]> {
     return invokeOrMock(
         "list_correction_rules",
