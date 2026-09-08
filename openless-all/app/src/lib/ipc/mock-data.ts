@@ -1,3 +1,4 @@
+export const mockCredentialValues = new Map<string, string>()
 import type {
     ActivityDay,
     CorrectionRule,

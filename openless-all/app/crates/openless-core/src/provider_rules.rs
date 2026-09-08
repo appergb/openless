@@ -62,7 +62,9 @@ const LLM_PROVIDER_TYPES: &[(&str, &str)] = &[
     ("codingPlanX", "codingPlanX"),
     ("minimax", "minimax"),
     ("stepfun", "stepfun"),
-    ("custom", "custom"),
+    ("custom", "customChatCompletions"),
+    ("custom_responses", "customResponses"),
+    ("custom_messages", "customMessages"),
 ];
 
 const OMNI_PROVIDER_TYPES: &[(&str, &str)] = &[
@@ -133,6 +135,8 @@ pub struct ProviderDescriptor {
     pub auth_requirement: AuthRequirement,
     pub validation_probe: ValidationProbe,
     pub static_models: Vec<String>,
+    pub default_request_format: Option<crate::llm_protocol::LlmRequestFormat>,
+    pub supported_request_formats: Vec<crate::llm_protocol::LlmRequestFormat>,
 }
 
 pub fn provider_descriptors(kind: ProviderKind) -> Vec<ProviderDescriptor> {
@@ -210,6 +214,16 @@ fn provider_descriptor_with_label(
         ),
     };
     Some(ProviderDescriptor {
+        default_request_format: (kind == ProviderKind::Llm
+            && crate::llm_protocol::LlmRequestFormat::selectable(&id))
+        .then(|| crate::llm_protocol::LlmRequestFormat::default_for(&id)),
+        supported_request_formats: if kind == ProviderKind::Llm
+            && crate::llm_protocol::LlmRequestFormat::selectable(&id)
+        {
+            crate::llm_protocol::LlmRequestFormat::ALL.to_vec()
+        } else {
+            Vec::new()
+        },
         kind,
         provider_type,
         label_key: label_key.to_string(),
@@ -422,6 +436,8 @@ pub fn equivalent_endpoint(left: &str, right: &str) -> bool {
             .trim()
             .trim_end_matches('/')
             .trim_end_matches("/chat/completions")
+            .trim_end_matches("/responses")
+            .trim_end_matches("/messages")
             .trim_end_matches('/')
     }
     normalize(left).eq_ignore_ascii_case(normalize(right))

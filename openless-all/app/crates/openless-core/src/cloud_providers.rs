@@ -77,6 +77,8 @@ pub const SHARED_CLOUD_LLM_PROVIDER_TYPES: &[&str] = &[
     "minimax",
     "stepfun",
     "custom",
+    "custom_responses",
+    "custom_messages",
 ];
 
 pub const SHARED_OMNI_PROVIDER_TYPES: &[&str] = &["openai", "gemini", "dashscope-omni", "custom"];
@@ -1037,12 +1039,9 @@ async fn build_cloud_polisher_provider(
         return Ok(CloudPolisherProvider::Gemini(provider));
     }
 
-    let base_url = endpoint
-        .trim()
-        .trim_end_matches('/')
-        .trim_end_matches("/chat/completions")
-        .trim_end_matches('/')
-        .to_string();
+    let protocol =
+        crate::llm_protocol::LlmProtocolConfig::load(credentials, channel_id, provider_type)
+            .await?;
     let temperature = read_channel_credential(
         credentials,
         CredentialNamespace::Llm,
@@ -1068,10 +1067,11 @@ async fn build_cloud_polisher_provider(
     let config = crate::polish::OpenAICompatibleConfig::new(
         provider_type,
         "OpenLess LLM",
-        base_url,
+        endpoint,
         api_key,
         model,
     )
+    .with_protocol(protocol)
     .with_thinking_enabled(context.polish.llm_thinking_enabled)
     .with_temperature(crate::polish::openai_compatible_temperature_for_provider(
         provider_type,

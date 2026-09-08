@@ -1108,6 +1108,7 @@ mod tests {
             .services()
             .provider
             .list_models(ProviderRequest {
+                thinking_enabled: false,
                 kind: ProviderKind::Llm,
                 channel_id: None,
             })

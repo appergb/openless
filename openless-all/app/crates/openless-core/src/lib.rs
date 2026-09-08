@@ -31,6 +31,7 @@ pub mod host_document;
 mod hotkey_interpreter;
 mod less_computer;
 pub mod llm_gemini;
+pub mod llm_protocol;
 mod marketplace;
 pub mod model_store;
 pub mod net;

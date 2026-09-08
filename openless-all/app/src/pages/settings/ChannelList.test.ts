@@ -38,6 +38,8 @@ const descriptors: ProviderDescriptor[] = [
     : 'api_key',
   validationProbe: 'unsupported',
   staticModels: [],
+  defaultRequestFormat: null,
+  supportedRequestFormats: [],
 }));
 
 const asrPresets = (os: OS, supportsQwen3Mlx = true, currentProviderId?: string) =>

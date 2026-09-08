@@ -3438,7 +3438,40 @@ impl OpenLessBackend {
         key: CredentialKey,
         value: SecretValue,
     ) -> Result<CredentialsStatus, BackendError> {
+        if key.namespace == crate::CredentialNamespace::Llm
+            && crate::llm_protocol::CONFIG_ACCOUNTS.contains(&key.account.as_str())
+        {
+            crate::llm_protocol::LlmProtocolConfig::default()
+                .apply(&key.account, value.expose_secret())?;
+        }
+        let invalidate = if key.namespace == crate::CredentialNamespace::Llm {
+            let id = match &key.provider_id {
+                Some(id) => id.clone(),
+                None => {
+                    self.deps
+                        .credential_store
+                        .active_provider(crate::ProviderSlot::Llm)
+                        .await?
+                }
+            };
+            self.list_channels(ChannelKind::Llm)
+                .await?
+                .into_iter()
+                .find(|channel| channel.id == id)
+                .map(|_| id)
+        } else {
+            None
+        };
         self.deps.credential_store.write(key, value).await?;
+        if let Some(id) = invalidate {
+            self.deps
+                .credential_store
+                .mutate_channel(ChannelMutation::InvalidateTest {
+                    kind: ChannelKind::Llm,
+                    id,
+                })
+                .await?;
+        }
         self.refresh_and_publish_credentials().await
     }
 
@@ -3485,13 +3518,51 @@ impl OpenLessBackend {
         id: String,
         provider_type: String,
     ) -> Result<(), BackendError> {
-        self.apply_channel_mutation(ChannelMutation::SetProviderType {
-            kind,
-            id,
-            provider_type,
-        })
-        .await
-        .map(|_| ())
+        let provider_type = provider_type.trim().to_string();
+        if provider_type.trim().is_empty() {
+            return Err(BackendError::new(
+                BackendErrorCode::InvalidArgument,
+                "provider type must not be blank",
+            ));
+        }
+        let previous = self
+            .list_channels(kind)
+            .await?
+            .into_iter()
+            .find(|channel| channel.id == id)
+            .ok_or_else(|| {
+                BackendError::new(BackendErrorCode::InvalidArgument, "unknown channel")
+            })?;
+        let key = CredentialKey::new(
+            crate::CredentialNamespace::Llm,
+            Some(id.clone()),
+            crate::llm_protocol::REQUEST_FORMAT_ACCOUNT,
+        )?;
+        let reset = kind == ChannelKind::Llm && previous.provider_type != provider_type;
+        let old_format = if reset {
+            let value = self.deps.credential_store.read(key.clone()).await?;
+            self.deps.credential_store.remove(key.clone()).await?;
+            value
+        } else {
+            None
+        };
+        let result = self
+            .deps
+            .credential_store
+            .mutate_channel(ChannelMutation::SetProviderType {
+                kind,
+                id,
+                provider_type,
+            })
+            .await
+            .map(|_| ());
+        if result.is_err() {
+            if let Some(value) = old_format {
+                self.deps.credential_store.write(key, value).await?;
+            }
+        }
+        result?;
+        self.refresh_and_publish_credentials().await.map(|_| ())
     }
 
     pub async fn delete_channel_if_blank(
@@ -8250,6 +8321,108 @@ mod tests {
             events.try_recv().unwrap().kind,
             BackendEventKind::CredentialsChanged(_)
         ));
+    }
+
+    #[tokio::test]
+    async fn llm_protocol_mutations_reset_only_the_format_and_invalidate_tests() {
+        use crate::credentials::{CredentialNamespace, InMemoryCredentialStore, SecretValue};
+        use crate::llm_protocol::*;
+        let backend = OpenLessBackend::new(
+            BackendConfig {
+                data_dir: std::env::temp_dir()
+                    .join(format!("openless-protocol-{}", uuid::Uuid::new_v4())),
+                ..BackendConfig::default()
+            },
+            BackendDependencies {
+                host_actions: Arc::new(FakeHost::default()),
+                text_inserter: Arc::new(FakeInserter),
+                dictation_engine: Arc::new(FakeEngine),
+                task_spawner: Arc::new(TokioTaskSpawner),
+                credential_store: Arc::new(InMemoryCredentialStore::default()),
+                services: crate::domains::BackendServices::unsupported(),
+                local_asr_runtime: None,
+                marketplace_config: None,
+                selection_runtime: None,
+                selection_polisher: None,
+                qa_runtime: None,
+            },
+        )
+        .unwrap();
+        let id = backend
+            .create_channel(ChannelKind::Llm, "custom".into(), "test".into())
+            .await
+            .unwrap();
+        let key = |account: &str| {
+            CredentialKey::new(CredentialNamespace::Llm, Some(id.clone()), account).unwrap()
+        };
+        backend
+            .set_credential(key(REQUEST_FORMAT_ACCOUNT), SecretValue::new("messages"))
+            .await
+            .unwrap();
+        backend
+            .set_credential(
+                key(crate::credentials::LLM_API_KEY_ACCOUNT),
+                SecretValue::new("fixture-key"),
+            )
+            .await
+            .unwrap();
+        backend
+            .record_channel_test(ChannelKind::Llm, id.clone(), true, Some(1), None)
+            .await
+            .unwrap();
+        assert!(backend.list_channels(ChannelKind::Llm).await.unwrap()[0]
+            .last_test
+            .is_some());
+        backend
+            .set_credential(
+                key(crate::credentials::LLM_MODEL_ACCOUNT),
+                SecretValue::new("new-model"),
+            )
+            .await
+            .unwrap();
+        assert!(backend.list_channels(ChannelKind::Llm).await.unwrap()[0]
+            .last_test
+            .is_none());
+        assert_eq!(
+            backend
+                .read_credential(key(REQUEST_FORMAT_ACCOUNT))
+                .await
+                .unwrap()
+                .unwrap()
+                .expose_secret(),
+            "messages"
+        );
+        assert!(backend
+            .set_credential(key(REQUEST_FORMAT_ACCOUNT), SecretValue::new("invalid"))
+            .await
+            .is_err());
+        backend
+            .set_channel_provider_type(ChannelKind::Llm, id.clone(), "custom_responses".into())
+            .await
+            .unwrap();
+        assert!(backend
+            .read_credential(key(REQUEST_FORMAT_ACCOUNT))
+            .await
+            .unwrap()
+            .is_none());
+        assert_eq!(
+            backend
+                .read_credential(key(crate::credentials::LLM_API_KEY_ACCOUNT))
+                .await
+                .unwrap()
+                .unwrap()
+                .expose_secret(),
+            "fixture-key"
+        );
+        assert_eq!(
+            backend
+                .read_credential(key(crate::credentials::LLM_MODEL_ACCOUNT))
+                .await
+                .unwrap()
+                .unwrap()
+                .expose_secret(),
+            "new-model"
+        );
     }
 
     #[tokio::test]

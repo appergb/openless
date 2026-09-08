@@ -23,6 +23,7 @@ use crate::domains::{
     ProviderApi, ProviderCheckResult, ProviderKind, ProviderModelsResult, ProviderRequest,
 };
 use crate::errors::{BackendError, BackendErrorCode};
+use crate::llm_protocol::{LlmProtocolConfig, LlmRequestFormat};
 use crate::ports::{TextPolisher, TextStreamChunk, TextStreamSink, TranscriptionEngine};
 use crate::provider_rules::{
     api_key_required, default_asr_endpoint, default_asr_model, default_llm_endpoint,
@@ -158,6 +159,13 @@ impl ProviderService {
         };
 
         Ok(ResolvedProvider {
+            thinking_enabled: request.thinking_enabled,
+            protocol: if request.kind == ProviderKind::Llm {
+                LlmProtocolConfig::load(self.credentials.as_ref(), &provider_id, &provider_type)
+                    .await?
+            } else {
+                LlmProtocolConfig::default()
+            },
             kind: request.kind,
             provider_id,
             provider_type,
@@ -350,6 +358,8 @@ impl ProviderApi for ProviderService {
 
 #[derive(Debug, Clone)]
 struct ResolvedProvider {
+    thinking_enabled: bool,
+    protocol: LlmProtocolConfig,
     kind: ProviderKind,
     provider_id: String,
     provider_type: String,
@@ -362,6 +372,7 @@ struct ResolvedProvider {
 impl ResolvedProvider {
     fn context(&self) -> DictationContext {
         let mut context = DictationContext::default();
+        context.polish.llm_thinking_enabled = self.thinking_enabled;
         let invocation = ProviderInvocation {
             provider_id: self.provider_id.clone(),
             provider_type: self.provider_type.clone(),
@@ -448,7 +459,9 @@ fn validate_configuration(resolved: &ResolvedProvider) -> Result<(), BackendErro
             validate_provider_endpoint(endpoint, resolved.kind == ProviderKind::Asr)?;
         }
         if let Some(headers) = resolved.extra_headers.as_deref() {
-            parse_extra_headers(headers)?;
+            resolved
+                .protocol
+                .validate_headers(&parse_extra_headers(headers)?)?;
         }
     }
     Ok(())
@@ -585,6 +598,19 @@ fn sanitize_validation_error(error: BackendError) -> BackendError {
         return error;
     }
     let message = error.message.as_str();
+    for code in [
+        "llmResponseIncomplete",
+        "llmStreamError",
+        "llmRequestFormatInvalid",
+        "llmThinkingModeInvalid",
+        "llmTokenLimitInvalid",
+        "llmThinkingBudgetInvalid",
+        "llmProtocolHeaderConflict",
+    ] {
+        if message == code || message == format!("parse error: {code}") {
+            return provider_error(code);
+        }
+    }
     if message.ends_with("is not configured") {
         return error;
     }
@@ -620,8 +646,7 @@ async fn fetch_models(
         .or_else(|| default_omni_endpoint(&resolved.provider_type))
         .ok_or_else(|| provider_error("provider endpoint is not configured"))?;
     let url = models_url(endpoint)?;
-    let is_gemini =
-        crate::net::sanitized_url_for_logs(&url).contains("generativelanguage.googleapis.com");
+    let is_gemini = resolved.provider_type == "gemini";
     let mut request_headers = Vec::new();
     if let Some(api_key) = resolved
         .api_key
@@ -631,8 +656,15 @@ async fn fetch_models(
         if is_gemini {
             request_headers.push(("x-goog-api-key".to_string(), api_key.to_string()));
         } else {
-            request_headers.push(("Authorization".to_string(), format!("Bearer {api_key}")));
+            request_headers.extend(resolved.protocol.format.headers(api_key));
         }
+    }
+    if resolved.protocol.format == LlmRequestFormat::Messages
+        && !request_headers
+            .iter()
+            .any(|(name, _)| name == "anthropic-version")
+    {
+        request_headers.extend(resolved.protocol.format.headers(""));
     }
     if let Some(extra_headers) = resolved.extra_headers.as_deref() {
         for (name, value) in parse_extra_headers(extra_headers)? {
@@ -710,18 +742,8 @@ fn parse_model_list(body: &[u8], is_gemini: bool) -> Result<Vec<String>, Backend
 }
 
 fn models_url(endpoint: &str) -> Result<String, BackendError> {
-    let mut url = url::Url::parse(endpoint.trim())
-        .map_err(|_| invalid_request("provider endpoint is invalid"))?;
-    let path = url.path().trim_end_matches('/');
-    let next_path = if path.ends_with("/models") {
-        path.to_string()
-    } else if let Some(prefix) = path.strip_suffix("/chat/completions") {
-        format!("{prefix}/models")
-    } else {
-        format!("{path}/models")
-    };
-    url.set_path(&next_path);
-    Ok(url.to_string())
+    crate::llm_protocol::endpoint_url(endpoint, "/models")
+        .map_err(|_| invalid_request("provider endpoint is invalid"))
 }
 
 fn map_transport_error(error: ProviderTransportError) -> BackendError {
@@ -867,6 +889,44 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn validation_and_model_lists_use_channel_protocol_and_thinking() {
+        use crate::llm_protocol::*;
+        for (format, preset, sse, path) in [
+            ("responses", "custom_responses", "data: {\"type\":\"response.output_text.delta\",\"delta\":\"ok\"}\n\ndata: {\"type\":\"response.completed\"}\n\n", "/v1/responses"),
+            ("messages", "custom_messages", "data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"ok\"}}\n\ndata: {\"type\":\"message_stop\"}\n\n", "/v1/messages"),
+        ] {
+            for enabled in [false, true] {
+                let (endpoint, request) = spawn_http_response("200 OK", "text/event-stream", sse);
+                let credentials = Arc::new(InMemoryCredentialStore::default());
+                let channel = create_channel_with_values(&credentials, ChannelKind::Llm, preset, &[
+                    (LLM_ENDPOINT_ACCOUNT, &endpoint), (LLM_MODEL_ACCOUNT, "test"), (LLM_API_KEY_ACCOUNT, "fixture-key"),
+                    (REQUEST_FORMAT_ACCOUNT, format),
+                ]).await;
+                let service = ProviderService::new(credentials, Arc::new(crate::TokioTaskSpawner));
+                service.validate(ProviderRequest { kind: ProviderKind::Llm, channel_id: Some(channel), thinking_enabled: enabled }).await.unwrap();
+                let request = request.recv_timeout(Duration::from_secs(2)).unwrap();
+                let request = String::from_utf8(request).unwrap();
+                assert!(request.starts_with(&format!("POST {path} ")));
+                let body: serde_json::Value = serde_json::from_str(request.split_once("\r\n\r\n").unwrap().1).unwrap();
+                if format == "responses" { assert_eq!(body["reasoning"]["effort"], if enabled { "medium" } else { "low" }); }
+                else { assert_eq!(body["thinking"]["type"], if enabled { "adaptive" } else { "disabled" }); }
+            }
+            let (endpoint, request) = spawn_http_response("200 OK", "application/json", r#"{"data":[{"id":"model"}]}"#);
+            let credentials = Arc::new(InMemoryCredentialStore::default());
+            let channel = create_channel_with_values(&credentials, ChannelKind::Llm, "openai", &[
+                (LLM_ENDPOINT_ACCOUNT, &format!("{endpoint}/{format}")), (LLM_MODEL_ACCOUNT, "test"),
+                (LLM_API_KEY_ACCOUNT, "fixture-key"), (REQUEST_FORMAT_ACCOUNT, format),
+            ]).await;
+            let service = ProviderService::new(credentials, Arc::new(crate::TokioTaskSpawner));
+            assert_eq!(service.list_models(ProviderRequest { kind: ProviderKind::Llm, channel_id: Some(channel), thinking_enabled: false }).await.unwrap().models, vec!["model"]);
+            let request = String::from_utf8(request.recv_timeout(Duration::from_secs(2)).unwrap()).unwrap().to_ascii_lowercase();
+            assert!(request.starts_with("get /v1/models "));
+            if format == "messages" { assert!(request.contains("x-api-key: fixture-key")); }
+            else { assert!(request.contains("authorization: bearer fixture-key")); }
+        }
+    }
+
+    #[tokio::test]
     async fn openai_compatible_asr_without_key_reaches_the_configured_endpoint() {
         let (endpoint, request) =
             spawn_http_response("200 OK", "application/json", r#"{"text":"ok"}"#);
@@ -885,6 +945,7 @@ mod tests {
 
         service
             .validate(ProviderRequest {
+                thinking_enabled: false,
                 kind: ProviderKind::Asr,
                 channel_id: Some(channel),
             })
@@ -918,6 +979,7 @@ mod tests {
 
         service
             .validate(ProviderRequest {
+                thinking_enabled: false,
                 kind: ProviderKind::Llm,
                 channel_id: Some(channel),
             })
@@ -951,6 +1013,7 @@ mod tests {
 
         let error = service
             .validate(ProviderRequest {
+                thinking_enabled: false,
                 kind: ProviderKind::Llm,
                 channel_id: Some(channel),
             })
@@ -981,6 +1044,7 @@ mod tests {
 
         let result = service
             .list_models(ProviderRequest {
+                thinking_enabled: false,
                 kind: ProviderKind::Asr,
                 channel_id: Some(channel),
             })
@@ -1024,6 +1088,7 @@ mod tests {
 
         service
             .validate(ProviderRequest {
+                thinking_enabled: false,
                 kind: ProviderKind::Asr,
                 channel_id: Some(channel),
             })
@@ -1092,6 +1157,7 @@ mod tests {
         let (service, credentials) = service_with_channel().await;
         let error = service
             .list_models(ProviderRequest {
+                thinking_enabled: false,
                 kind: ProviderKind::Llm,
                 channel_id: Some("missing".to_string()),
             })
@@ -1108,6 +1174,7 @@ mod tests {
         let service = ProviderService::new(credentials, Arc::new(crate::TokioTaskSpawner));
         let error = service
             .validate(ProviderRequest {
+                thinking_enabled: false,
                 kind: ProviderKind::Omni,
                 channel_id: Some("channel".to_string()),
             })
@@ -1166,6 +1233,7 @@ mod tests {
 
         let first_resolved = service
             .resolve(ProviderRequest {
+                thinking_enabled: false,
                 kind: ProviderKind::Llm,
                 channel_id: Some(first_id.clone()),
             })
@@ -1173,6 +1241,7 @@ mod tests {
             .unwrap();
         let second_resolved = service
             .resolve(ProviderRequest {
+                thinking_enabled: false,
                 kind: ProviderKind::Llm,
                 channel_id: Some(second_id.clone()),
             })
@@ -1180,6 +1249,7 @@ mod tests {
             .unwrap();
         let active_resolved = service
             .resolve(ProviderRequest {
+                thinking_enabled: false,
                 kind: ProviderKind::Llm,
                 channel_id: None,
             })
@@ -1286,6 +1356,7 @@ mod tests {
 
         let result = service
             .list_models(ProviderRequest {
+                thinking_enabled: false,
                 kind: ProviderKind::Llm,
                 channel_id: Some(channel),
             })
@@ -1327,6 +1398,7 @@ mod tests {
             transport.push_response(status, br#"{"data":[]}"#);
             let error = service
                 .list_models(ProviderRequest {
+                    thinking_enabled: false,
                     kind: ProviderKind::Llm,
                     channel_id: Some(channel.clone()),
                 })
@@ -1340,6 +1412,7 @@ mod tests {
         transport.push_response(200, br#"not-json secret-body"#);
         let error = service
             .list_models(ProviderRequest {
+                thinking_enabled: false,
                 kind: ProviderKind::Llm,
                 channel_id: Some(channel.clone()),
             })
@@ -1351,6 +1424,7 @@ mod tests {
         transport.push_response(200, vec![b'x'; MODEL_LIST_MAX_BYTES + 1]);
         let error = service
             .list_models(ProviderRequest {
+                thinking_enabled: false,
                 kind: ProviderKind::Llm,
                 channel_id: Some(channel.clone()),
             })
@@ -1389,6 +1463,7 @@ mod tests {
             transport.push_error(transport_error);
             let error = service
                 .list_models(ProviderRequest {
+                    thinking_enabled: false,
                     kind: ProviderKind::Llm,
                     channel_id: Some(channel.clone()),
                 })
@@ -1409,6 +1484,7 @@ mod tests {
         let error = service
             .list_models_with_cancellation(
                 ProviderRequest {
+                    thinking_enabled: false,
                     kind: ProviderKind::Llm,
                     channel_id: Some(channel),
                 },
@@ -1441,6 +1517,7 @@ mod tests {
         let error = service
             .list_models_with_cancellation(
                 ProviderRequest {
+                    thinking_enabled: false,
                     kind: ProviderKind::Asr,
                     channel_id: Some(channel),
                 },
@@ -1490,6 +1567,8 @@ mod tests {
         ];
         for (provider_type, expected_models) in expected {
             let resolved = ResolvedProvider {
+                thinking_enabled: false,
+                protocol: LlmProtocolConfig::default(),
                 kind: ProviderKind::Asr,
                 provider_id: provider_type.to_string(),
                 provider_type: provider_type.to_string(),
