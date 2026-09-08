@@ -92,6 +92,7 @@ export function CheckUpdateButton({ channel, compact = false }: { channel: Updat
       {isDialogStatus(status) && (
         <UpdateDialog
           status={status}
+          currentVersion={updater.currentVersion}
           version={updater.version}
           progress={updater.progress}
           downloaded={updater.downloaded}
